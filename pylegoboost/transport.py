@@ -5,43 +5,62 @@ import traceback
 from abc import abstractmethod
 from gattlib import DiscoveryService, GATTRequester
 
-from pylegoboost.constants import DEVICE_NAME
+from pylegoboost.constants import DEVICE_NAME, LEGO_MOVE_HUB
 
 log = logging.getLogger('transport')
-
-LEGO_MOVE_HUB = "LEGO Move Hub"
-
-
-def strtohex(sval):
-    return " ".join("{:02x}".format(ord(c)) for c in sval)
 
 
 # noinspection PyMethodOverriding
 class Requester(GATTRequester):
+    def __init__(self, p_object, *args, **kwargs):
+        super(Requester, self).__init__(p_object, *args, **kwargs)
+        self.notification_sink = None
+
     def on_notification(self, handle, data):
-        log.debug("Notification on handle %s: %s", handle, strtohex(data))
+        if self.notification_sink:
+            self.notification_sink(handle, data)
 
     def on_indication(self, handle, data):
-        log.debug("Indication on handle %s: %s", handle, strtohex(data))
+        log.debug("Indication on handle %s: %s", handle, data.encode("hex"))
 
 
-class Transport(object):
+class Connection(object):
     @abstractmethod
     def read(self, handle):
         pass
 
+    # TODO: it always writes same handle, hardcode it?
     @abstractmethod
     def write(self, handle, data):
         pass
 
+    @abstractmethod
+    def notify(self, handle, data):
+        pass
 
-class BLETransport(Transport):
+
+class ConnectionMock(Connection):
+    """
+    For unit testing purposes
+    """
+
+    def notify(self, handle, data):
+        pass
+
+    def write(self, handle, data):
+        pass
+
+    def read(self, handle):
+        pass
+
+
+class BLEConnection(Connection):
     """
     :type requester: Requester
     """
 
     def __init__(self):
-        super(Transport, self).__init__()
+        super(Connection, self).__init__()
         self.requester = None
 
     def connect(self, bt_iface_name='hci0'):
@@ -63,6 +82,7 @@ class BLETransport(Transport):
 
     def _get_requester(self, address, bt_iface_name):
         self.requester = Requester(address, True, bt_iface_name)
+        self.requester.notification_sink = self.notify
 
     def read(self, handle):
         log.debug("Reading from: %s", handle)
@@ -73,8 +93,11 @@ class BLETransport(Transport):
         return data
 
     def write(self, handle, data):
-        log.debug("Writing to %s: %s", handle, data)
+        log.debug("Writing to %s: %s", handle, data.encode("hex"))
         return self.requester.write_by_handle(handle, data)
+
+    def notify(self, handle, data):
+        log.debug("Notification on %s: %s", handle, data.encode("hex"))
 
 
 class DebugServer(object):
@@ -126,7 +149,7 @@ class DebugServer(object):
         pass
 
 
-class DebugServerTransport(Transport):
+class DebugServerConnection(Connection):
     def __init__(self):
         self.sock = socket.socket()
         self.sock.connect(('localhost', 9090))
