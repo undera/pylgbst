@@ -28,7 +28,7 @@ def demo_motors_timed(movehub):
     log.info("Motors movement demo: timed")
     for level in range(0, 101, 5):
         level /= 100.0
-        log.info("Speed level: %s%%", level)
+        log.info("Speed level: %s%%", level * 100)
         movehub.motor_A.timed(0.2, level)
         movehub.motor_B.timed(0.2, -level)
     movehub.motor_AB.timed(1.5, -0.2, 0.2)
@@ -54,16 +54,23 @@ def demo_motors_angled(movehub):
 def demo_port_cd_motor(movehub):
     motor = None
     if isinstance(movehub.port_D, EncodedMotor):
+        log.info("Rotation motor is on port D")
         motor = movehub.port_D
     elif isinstance(movehub.port_C, EncodedMotor):
-        motor = movehub.port_D
+        log.info("Rotation motor is on port C")
+        motor = movehub.port_C
     else:
         log.warning("Motor not found on ports C or D")
 
     if motor:
-        motor.angled(20, 1)
+        motor.angled(20, 0.2)
+        sleep(3)
+        motor.angled(20, -0.2)
         sleep(1)
-        motor.angled(20, -1)
+
+        motor.angled(20, -0.1)
+        sleep(2)
+        motor.angled(20, 0.1)
         sleep(1)
 
 
@@ -94,6 +101,6 @@ if __name__ == '__main__':
     sleep(1)
     # hub.get_name()
     demo_port_cd_motor(hub)
-    # demo_all(hub)
+    #demo_all(hub)
     # demo_led_colors(hub)
     sleep(1)

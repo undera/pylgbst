@@ -57,10 +57,25 @@ class MoveHub(object):
 
         if msg_type == MSG_PORT_INFO:
             self._handle_port_info(data)
+        elif msg_type == MSG_PORT_STATUS:
+            self._handle_port_status(data)
         else:
-            log.warning("Unhandled msg type %s: %s", msg_type, orig.encode("hex"))
+            log.warning("Unhandled msg type 0x%x: %s", msg_type, orig.encode("hex"))
 
         pass
+
+    def _handle_port_status(self, data):
+        port = ord(data[3])
+        status = ord(data[4])
+
+        if status == STATUS_STARTED:
+            self.devices[port].started()
+        elif status == STATUS_FINISHED:
+            self.devices[port].finished()
+        elif status == STATUS_CONFLICT:
+            log.warning("Command conflict on port %s", PORTS[port])
+        else:
+            log.warning("Unhandled status value: 0x%x", status)
 
     def _handle_port_info(self, data):
         port = ord(data[3])
@@ -69,7 +84,7 @@ class MoveHub(object):
         if port in PORTS and dev_type in DEVICE_TYPES:
             log.debug("Device %s at port %s", DEVICE_TYPES[dev_type], PORTS[port])
         else:
-            log.debug("Device 0x%x at port 0x%x", dev_type, port)
+            log.warning("Device 0x%x at port 0x%x", dev_type, port)
 
         if dev_type == TYPE_MOTOR:
             self.devices[port] = EncodedMotor(self, port)
@@ -114,12 +129,19 @@ class Peripheral(object):
         super(Peripheral, self).__init__()
         self.parent = parent
         self.port = port
+        self.working = False
 
     def _set_port_val(self, value):
         cmd = self.PACKET_VER + self.SET_PORT_VAL + chr(self.port)
         cmd += value
 
         self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE, chr(len(cmd)) + cmd)
+
+    def started(self):
+        self.working = True
+
+    def finished(self):
+        self.working = False
 
 
 class LED(Peripheral):

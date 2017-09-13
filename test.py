@@ -62,8 +62,10 @@ class GeneralTest(unittest.TestCase):
         conn.notifications.append((14, '1b0e00 0f00 04 3a 0128000000000100000001'))
         conn.notifications.append((14, '1b0e00 0f00 04 3b 0115000200000002000000'))
         conn.notifications.append((14, '1b0e00 0f00 04 3c 0114000200000002000000'))
+        conn.notifications.append((14, '1b0e00 0f00 8202 01'))
+        conn.notifications.append((14, '1b0e00 0f00 8202 0a'))
         time.sleep(1)
-        demo_all(hub)
+        #demo_all(hub)
         conn.running = False
 
         while not conn.finished:
