@@ -1,3 +1,6 @@
+"""
+This package holds communication aspects
+"""
 import json
 import logging
 import socket
@@ -12,6 +15,11 @@ log = logging.getLogger('transport')
 
 # noinspection PyMethodOverriding
 class Requester(GATTRequester):
+    """
+    Wrapper to access `on_notification` capability of GATT
+    Set "notification_sink" field to a callable that will handle incoming data
+    """
+
     def __init__(self, p_object, *args, **kwargs):
         super(Requester, self).__init__(p_object, *args, **kwargs)
         self.notification_sink = None
@@ -45,6 +53,7 @@ class ConnectionMock(Connection):
     """
 
     def notify(self, handle, data):
+        # TODO
         pass
 
     def write(self, handle, data):
@@ -56,6 +65,9 @@ class ConnectionMock(Connection):
 
 class BLEConnection(Connection):
     """
+    Main transport class, uses real Bluetooth LE connection.
+    Loops with timeout of 5 seconds to find device named "Lego MOVE Hub"
+
     :type requester: Requester
     """
 
@@ -97,10 +109,19 @@ class BLEConnection(Connection):
         return self.requester.write_by_handle(handle, data)
 
     def notify(self, handle, data):
+        # TODO
         log.debug("Notification on %s: %s", handle, data.encode("hex"))
 
 
 class DebugServer(object):
+    """
+    Starts TCP server to be used with DebugServerConnection to speed-up development process
+    It holds BLE connection to Move Hub, so no need to re-start it every time
+    Usage: DebugServer(BLEConnection().connect()).start()
+
+    :type ble: BLEConnection
+    """
+
     def __init__(self, ble_trans):
         self.sock = socket.socket()
         self.ble = ble_trans
@@ -110,6 +131,7 @@ class DebugServer(object):
         self.sock.listen(1)
 
         while True:
+            log.info("Accepting connections at %s", port)
             conn, addr = self.sock.accept()
             try:
                 self._handle_conn(conn)
@@ -126,7 +148,7 @@ class DebugServer(object):
         buf = ""
         while True:
             data = conn.recv(1024)
-            log.debug("Recv: %s", data)
+            log.debug("Recv: %s", data.strip())
             if not data:
                 break
 
@@ -145,18 +167,65 @@ class DebugServer(object):
 
                         # conn.send(data.upper())
 
-    def _handle_cmd(self, line):
-        pass
+    def _handle_cmd(self, cmd):
+        if cmd['type'] == 'write':
+            self.ble.write(cmd['handle'], cmd['data'].decode('hex'))
+        elif cmd['type'] == 'read':
+            self.sock.send(self.ble.read(cmd['handle']).encode('hex') + "\n")
+        else:
+            raise ValueError("Unhandled cmd: %s", cmd)
 
 
 class DebugServerConnection(Connection):
+    """
+    Connection type to be used with DebugServer, replaces BLEConnection
+    """
+
     def __init__(self):
+        self.buf = ""
         self.sock = socket.socket()
         self.sock.connect(('localhost', 9090))
 
-        # sock.send('hello, world!')
-
-        # data = sock.recv(1024)
-
     def __del__(self):
         self.sock.close()
+
+    def notify(self, handle, data):
+        # TODO
+        pass
+
+    def write(self, handle, data):
+        payload = {
+            "type": "write",
+            "handle": handle,
+            "data": data.encode("hex")
+        }
+        self._send(payload)
+
+    def read(self, handle):
+        payload = {
+            "type": "read",
+            "handle": handle
+        }
+        self._send(payload)
+        return self._recv()
+
+    def _send(self, payload):
+        log.debug("Sending to debug server: %s", payload)
+        self.sock.send(json.dumps(payload) + "\n")
+
+    def _recv(self):
+        while True:
+            data = self.sock.recv(1024)
+            log.debug("Recv from debug server: %s", data.strip())
+            if not data:
+                break
+
+            self.buf += data
+
+            if "\n" in self.buf:
+                line = self.buf[:self.buf.index("\n")]
+                self.buf = self.buf[self.buf.index("\n") + 1:]
+                if line:
+                    return line.decode("hex")
+                break
+        raise RuntimeError("No data read")

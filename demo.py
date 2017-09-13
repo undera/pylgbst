@@ -3,7 +3,7 @@ import traceback
 from time import sleep
 
 from pylegoboost import MoveHub, COLORS_MAP
-from pylegoboost.transport import DebugServerConnection, BLEConnection
+from pylegoboost.comms import DebugServerConnection, BLEConnection
 
 log = logging.getLogger("demo")
 

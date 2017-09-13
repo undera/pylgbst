@@ -3,7 +3,7 @@ from pylegoboost.constants import *
 
 class MoveHub(object):
     """
-    :type connection: pylegoboost.transport.Connection
+    :type connection: pylegoboost.comms.Connection
     :type led: LED
     """
 
@@ -20,6 +20,9 @@ class MoveHub(object):
 
         # self.button
         # self.tilt_sensor
+
+        # transport.write(ENABLE_NOTIFICATIONS_HANDLE, ENABLE_NOTIFICATIONS_VALUE)
+        # transport.write(MOVE_HUB_HARDWARE_HANDLE, b'\x0a\x00\x41\x01\x08\x01\x00\x00\x00\x01')
 
 
 class Peripheral(object):
