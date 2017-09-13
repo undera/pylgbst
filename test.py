@@ -53,6 +53,7 @@ class ConnectionMock(Connection):
 class GeneralTest(unittest.TestCase):
     def test_led(self):
         conn = ConnectionMock()
+        conn.notifications.append((14, '1b0e00 0900 04 39 0227003738'))
         hub = MoveHub(conn)
         led = LED(hub, PORT_LED)
         led.set_color(COLOR_RED)
@@ -60,6 +61,7 @@ class GeneralTest(unittest.TestCase):
 
     def test_motor(self):
         conn = ConnectionMock()
+        conn.notifications.append((14, '1b0e00 0900 04 39 0227003738'))
         hub = MoveHub(conn)
         motor = EncodedMotor(hub, PORT_AB)
         motor.timed(1.5)
@@ -69,8 +71,6 @@ class GeneralTest(unittest.TestCase):
 
     def test_capabilities(self):
         conn = ConnectionMock()
-        hub = MoveHub(conn)
-        time.sleep(1)
         conn.notifications.append((14, '1b0e00 0f00 04 01 0125000000001000000010'))
         conn.notifications.append((14, '1b0e00 0f00 04 02 0126000000001000000010'))
         conn.notifications.append((14, '1b0e00 0f00 04 37 0127000100000001000000'))
@@ -82,7 +82,8 @@ class GeneralTest(unittest.TestCase):
         conn.notifications.append((14, '1b0e00 0f00 04 3c 0114000200000002000000'))
         conn.notifications.append((14, '1b0e00 0f00 8202 01'))
         conn.notifications.append((14, '1b0e00 0f00 8202 0a'))
-        time.sleep(1)
+
+        hub = MoveHub(conn)
         # demo_all(hub)
         conn.running = False
 

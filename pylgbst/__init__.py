@@ -32,9 +32,9 @@ class MoveHub(object):
         self.connection.set_notify_handler(self._notify)
         self.connection.write(ENABLE_NOTIFICATIONS_HANDLE, ENABLE_NOTIFICATIONS_VALUE)
 
-        # while not self.notified:
-        # log.debug("Waiting to be notified")
-        # time.sleep(1)
+        while not self.devices:
+            log.debug("Waiting to be notified about devices...")
+            time.sleep(0.1)
 
         self.port_C = None
         self.port_D = None
