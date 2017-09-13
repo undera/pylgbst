@@ -9,7 +9,7 @@ matrix:
     python: 3.5
 
 install:
-- pip install codecov nose-exclude locustio
+- pip install codecov gattlib
 script: coverage run --source=. `which nosetests` .
 after_success:
 - coverage report -m
