@@ -1,3 +1,6 @@
+import struct
+import time
+
 from pylegoboost.constants import *
 
 
@@ -11,9 +14,9 @@ class MoveHub(object):
         self.connection = connection
 
         self.led = LED(self)
-        # self.motor_a
-        # self.motor_b
-        # self.motor_ab
+        self.motor_A = EncodedMotor(self, PORT_A)
+        self.motor_B = EncodedMotor(self, PORT_B)
+        self.motor_AB = EncodedMotor(self, PORT_AB)
 
         # self.port_c
         # self.port_d
@@ -37,16 +40,67 @@ class Peripheral(object):
 
 class LED(Peripheral):
     def set_color(self, color):
-        if color not in COLORS_MAP:
+        if color not in COLORS:
             raise ValueError("Color %s is not in list of available colors" % color)
 
         cmd = CMD_SET_COLOR + chr(color)
         self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE, cmd)
 
 
-class InteractiveMotor(object):
-    pass
+class EncodedMotor(Peripheral):
+    PACKET_VER = b'\x01'
+    SET_PORT_VAL = b'\x81'
+    MOTOR_TIMED_END = b'\x64\x7f\x03'
+    TRAILER = b'\x64\x7f\x03'  # NOTE: \x64 is 100, might mean something
+    TIMED_GROUP = b'\x0A'
+    TIMED_SINGLE = b'\x09'
+    MOVEMENT_TYPE = b'\x11'
+
+    def __init__(self, parent, port):
+        super(EncodedMotor, self).__init__(parent)
+        if port not in PORTS:
+            raise ValueError("Invalid port for motor: %s" % port)
+        self.port = port
+
+    def _speed_abs(self, relative):
+        relative *= 100
+        if relative < 0:
+            relative += 255
+        return int(relative)
+
+    def timed(self, seconds, speed_primary=1, speed_secondary=None, async=False):
+        if speed_primary < -1 or speed_primary > 1:
+            raise ValueError("Invalid primary motor speed value: %s", speed_primary)
+
+        if speed_secondary is None:
+            speed_secondary = speed_primary
+
+        if speed_secondary < -1 or speed_secondary > 1:
+            raise ValueError("Invalid secondary motor speed value: %s", speed_primary)
+
+        time_ms = int(seconds * 1000)
+
+        # set for port
+        command = self.SET_PORT_VAL + chr(self.port)
+
+        # movement type
+        command += self.MOVEMENT_TYPE
+        command += self.TIMED_GROUP if self.port == PORT_AB else self.TIMED_SINGLE
+
+        command += struct.pack('<H', time_ms)
+
+        command += chr(self._speed_abs(speed_primary))
+
+        ###
+        if self.port == PORT_AB:
+            command += chr(self._speed_abs(speed_secondary))
+
+        command += self.TRAILER
+
+        self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE, chr(len(command)) + self.PACKET_VER + command)
+        if not async:
+            time.sleep(seconds)
 
 
-class ColorDistanceSensor(object):
+class ColorDistanceSensor(Peripheral):
     pass

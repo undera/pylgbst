@@ -37,7 +37,6 @@ class Connection(object):
     def read(self, handle):
         pass
 
-    # TODO: it always writes same handle, hardcode it?
     @abstractmethod
     def write(self, handle, data):
         pass
@@ -57,10 +56,11 @@ class ConnectionMock(Connection):
         pass
 
     def write(self, handle, data):
-        pass
+        log.debug("Writing to %s: %s", handle, data.encode("hex"))
 
     def read(self, handle):
-        pass
+        log.debug("Reading from: %s", handle)
+        return None  # TODO
 
 
 class BLEConnection(Connection):
