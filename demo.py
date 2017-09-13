@@ -2,8 +2,8 @@ import logging
 import traceback
 from time import sleep
 
-from pylegoboost import MoveHub, COLORS, EncodedMotor, PORT_D
-from pylegoboost.comms import DebugServerConnection, BLEConnection
+from pylgbst import MoveHub, COLORS, EncodedMotor, PORT_D
+from pylgbst.comms import DebugServerConnection, BLEConnection
 
 log = logging.getLogger("demo")
 

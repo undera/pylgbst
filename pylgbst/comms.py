@@ -10,7 +10,7 @@ from abc import abstractmethod
 from gattlib import DiscoveryService, GATTRequester
 from threading import Thread
 
-from pylegoboost.constants import DEVICE_NAME, LEGO_MOVE_HUB
+from pylgbst.constants import DEVICE_NAME, LEGO_MOVE_HUB
 
 log = logging.getLogger('transport')
 

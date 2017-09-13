@@ -4,8 +4,8 @@ import unittest
 from threading import Thread
 
 from demo import demo_all
-from pylegoboost import MoveHub
-from pylegoboost.comms import Connection
+from pylgbst import MoveHub
+from pylgbst.comms import Connection
 
 logging.basicConfig(level=logging.DEBUG)
 

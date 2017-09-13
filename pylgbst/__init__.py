@@ -2,7 +2,7 @@ import logging
 import struct
 import time
 
-from pylegoboost.constants import *
+from pylgbst.constants import *
 
 log = logging.getLogger('movehub')
 
