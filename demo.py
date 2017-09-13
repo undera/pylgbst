@@ -12,7 +12,7 @@ def demo_all(movehub):
     demo_led_colors(movehub)
     demo_motors_timed(movehub)
     demo_motors_angled(movehub)
-    demo_port_c_motor(movehub)
+    demo_port_cd_motor(movehub)
 
 
 def demo_led_colors(movehub):
@@ -51,12 +51,20 @@ def demo_motors_angled(movehub):
     sleep(1)
 
 
-def demo_port_c_motor(movehub):
-    portd = EncodedMotor(movehub, PORT_D)
-    portd.angled(90, 1)
-    sleep(1)
-    portd.angled(90, -1)
-    sleep(1)
+def demo_port_cd_motor(movehub):
+    motor = None
+    if isinstance(movehub.port_D, EncodedMotor):
+        motor = movehub.port_D
+    elif isinstance(movehub.port_C, EncodedMotor):
+        motor = movehub.port_D
+    else:
+        log.warning("Motor not found on ports C or D")
+
+    if motor:
+        motor.angled(20, 1)
+        sleep(1)
+        motor.angled(20, -1)
+        sleep(1)
 
 
 def vernie_head(movehub):
@@ -74,7 +82,7 @@ def vernie_head(movehub):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
 
     try:
         connection = DebugServerConnection()
@@ -84,10 +92,8 @@ if __name__ == '__main__':
 
     hub = MoveHub(connection)
     sleep(1)
-    #hub.get_name()
-
-    for x in range(1, 60):
-        sleep(1)
-
-        # demo_led_colors(hub)
-        # demo_all(movehub)
+    # hub.get_name()
+    demo_port_cd_motor(hub)
+    # demo_all(hub)
+    # demo_led_colors(hub)
+    sleep(1)

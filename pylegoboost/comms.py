@@ -49,19 +49,6 @@ class Connection(object):
         pass
 
 
-class ConnectionMock(Connection):
-    """
-    For unit testing purposes
-    """
-
-    def write(self, handle, data):
-        log.debug("Writing to %s: %s", handle, data.encode("hex"))
-
-    def read(self, handle):
-        log.debug("Reading from: %s", handle)
-        return None  # TODO
-
-
 class BLEConnection(Connection):
     """
     Main transport class, uses real Bluetooth LE connection.

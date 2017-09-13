@@ -9,7 +9,8 @@ Best way to start is to look at [demo.py](demo.py) file, or maybe run it.
 
 # Ideas
 
-
+Make it 2/3 compatible
+Add travis unit tests and coverage
 
 # Links
 
