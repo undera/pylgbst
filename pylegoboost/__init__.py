@@ -85,7 +85,7 @@ class EncodedMotor(Peripheral):
 
         command += self.TRAILER
 
-        self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE, chr(len(command)) + self.PACKET_VER + command)
+        self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE, chr(len(command) + 1) + self.PACKET_VER + command)
 
     def timed(self, seconds, speed_primary=1, speed_secondary=None, async=False):
         if speed_secondary is None:

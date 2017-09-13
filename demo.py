@@ -10,9 +10,9 @@ log = logging.getLogger("demo")
 
 def demo_all(conn):
     movehub = MoveHub(conn)
-    # demo_led_colors(movehub)
-    # demo_motors_timed(movehub)
-    # demo_motors_angled(movehub)
+    demo_led_colors(movehub)
+    demo_motors_timed(movehub)
+    demo_motors_angled(movehub)
     demo_port_c_motor(movehub)
 
 
@@ -49,6 +49,7 @@ def demo_motors_angled(movehub):
     movehub.motor_AB.angled(360, 1, -1)
     sleep(1)
     movehub.motor_AB.angled(360, -1, 1)
+    sleep(1)
 
 
 def demo_port_c_motor(movehub):
@@ -56,6 +57,7 @@ def demo_port_c_motor(movehub):
     portd.angled(90, 1)
     sleep(1)
     portd.angled(90, -1)
+    sleep(1)
 
 
 if __name__ == '__main__':
