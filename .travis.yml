@@ -1,0 +1,16 @@
+sudo: false
+language: python
+
+matrix:
+  include:
+  - os: linux
+    python: 2.7
+  - os: linux
+    python: 3.5
+
+install:
+- pip install codecov nose-exclude locustio
+script: coverage run --source=. `which nosetests` .
+after_success:
+- coverage report -m
+- codecov

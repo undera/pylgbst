@@ -7,6 +7,7 @@ Best way to start is to look at [demo.py](demo.py) file, and run it.
 ## Features
 
 - auto-detect and connect for Bluetooth device
+- auto-detects devices connected to Hub
 - permanent Bluetooth connection server for faster debugging
 - angled and timed movement for motors
 - LED color change
