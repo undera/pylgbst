@@ -21,8 +21,8 @@ class MoveHub(object):
         self.motor_B = EncodedMotor(self, PORT_B)
         self.motor_AB = EncodedMotor(self, PORT_AB)
 
-        # self.port_c
-        # self.port_d
+        self.port_c = None
+        self.port_d = None
 
         # self.button
         # self.tilt_sensor
@@ -94,7 +94,10 @@ class EncodedMotor(Peripheral):
         # movement type
         command = self.TIMED_GROUP if self.port == PORT_AB else self.TIMED_SINGLE
         # time
-        command += struct.pack('<H', int(seconds * 1000))
+        msec = int(seconds * 1000)
+        if msec > 255 * 255:
+            raise ValueError("Too large value for seconds: %s", seconds)
+        command += struct.pack('<H', msec)
 
         self._wrap_and_write(command, speed_primary, speed_secondary)
 
@@ -111,6 +114,7 @@ class EncodedMotor(Peripheral):
         command += struct.pack('<I', angle)
 
         self._wrap_and_write(command, speed_primary, speed_secondary)
+        # TODO: how to tell when motor has stopped?
 
 
 class ColorDistanceSensor(Peripheral):

@@ -2,7 +2,7 @@ import logging
 import traceback
 from time import sleep
 
-from pylegoboost import MoveHub, COLORS
+from pylegoboost import MoveHub, COLORS, EncodedMotor, PORT_D
 from pylegoboost.comms import DebugServerConnection, BLEConnection
 
 log = logging.getLogger("demo")
@@ -12,7 +12,8 @@ def demo_all(conn):
     movehub = MoveHub(conn)
     # demo_led_colors(movehub)
     # demo_motors_timed(movehub)
-    demo_motors_angled(movehub)
+    # demo_motors_angled(movehub)
+    demo_port_c_motor(movehub)
 
 
 def demo_led_colors(movehub):
@@ -44,6 +45,17 @@ def demo_motors_angled(movehub):
         sleep(1)
         movehub.motor_B.angled(angle, -1)
         sleep(1)
+
+    movehub.motor_AB.angled(360, 1, -1)
+    sleep(1)
+    movehub.motor_AB.angled(360, -1, 1)
+
+
+def demo_port_c_motor(movehub):
+    portd = EncodedMotor(movehub, PORT_D)
+    portd.angled(90, 1)
+    sleep(1)
+    portd.angled(90, -1)
 
 
 if __name__ == '__main__':
