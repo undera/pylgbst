@@ -63,43 +63,42 @@ class EncodedMotor(Peripheral):
         self.port = port
 
     def _speed_abs(self, relative):
-        relative *= 100
+        if relative < -1 or relative > 1:
+            raise ValueError("Invalid speed value: %s", relative)
+
+        relative *= 255
         if relative < 0:
             relative += 255
         return int(relative)
 
-    def timed(self, seconds, speed_primary=1, speed_secondary=None, async=False):
-        if speed_primary < -1 or speed_primary > 1:
-            raise ValueError("Invalid primary motor speed value: %s", speed_primary)
-
-        if speed_secondary is None:
-            speed_secondary = speed_primary
-
-        if speed_secondary < -1 or speed_secondary > 1:
-            raise ValueError("Invalid secondary motor speed value: %s", speed_primary)
-
-        time_ms = int(seconds * 1000)
-
+    def _wrap_and_write(self, command, speed_primary, speed_secondary):
         # set for port
-        command = self.SET_PORT_VAL + chr(self.port)
-
-        # movement type
-        command += self.MOVEMENT_TYPE
-        command += self.TIMED_GROUP if self.port == PORT_AB else self.TIMED_SINGLE
-
-        command += struct.pack('<H', time_ms)
+        command = self.SET_PORT_VAL + chr(self.port) + self.MOVEMENT_TYPE + command
 
         command += chr(self._speed_abs(speed_primary))
-
-        ###
         if self.port == PORT_AB:
             command += chr(self._speed_abs(speed_secondary))
 
         command += self.TRAILER
 
         self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE, chr(len(command)) + self.PACKET_VER + command)
+
+    def timed(self, seconds, speed_primary=1, speed_secondary=None, async=False):
+        if speed_secondary is None:
+            speed_secondary = speed_primary
+
+        # movement type
+        command = self.TIMED_GROUP if self.port == PORT_AB else self.TIMED_SINGLE
+        # time
+        command += struct.pack('<H', int(seconds * 1000))
+
+        self._wrap_and_write(command, speed_primary, speed_secondary)
+
         if not async:
             time.sleep(seconds)
+
+    def angled(self, angle, speed_primary, speed_secondary):
+        pass
 
 
 class ColorDistanceSensor(Peripheral):
