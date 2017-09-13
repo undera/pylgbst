@@ -3,9 +3,9 @@ import time
 import unittest
 from threading import Thread
 
-from demo import demo_all
-from pylgbst import MoveHub
+from pylgbst import MoveHub, COLOR_RED, LED, EncodedMotor, PORT_AB
 from pylgbst.comms import Connection
+from pylgbst.constants import PORT_LED
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -19,6 +19,7 @@ class ConnectionMock(Connection):
 
     def __init__(self):
         super(ConnectionMock, self).__init__()
+        self.writes = []
         self.notifications = []
         self.notification_handler = None
         self.running = True
@@ -42,6 +43,7 @@ class ConnectionMock(Connection):
 
     def write(self, handle, data):
         log.debug("Writing to %s: %s", handle, data.encode("hex"))
+        self.writes.append((handle, data.encode("hex")))
 
     def read(self, handle):
         log.debug("Reading from: %s", handle)
@@ -49,6 +51,22 @@ class ConnectionMock(Connection):
 
 
 class GeneralTest(unittest.TestCase):
+    def test_led(self):
+        conn = ConnectionMock()
+        hub = MoveHub(conn)
+        led = LED(hub, PORT_LED)
+        led.set_color(COLOR_RED)
+        self.assertEquals("0701813211510009", conn.writes[1][1])
+
+    def test_motor(self):
+        conn = ConnectionMock()
+        hub = MoveHub(conn)
+        motor = EncodedMotor(hub, PORT_AB)
+        motor.timed(1.5)
+        self.assertEquals("0c018139110adc056464647f03", conn.writes[1][1])
+        motor.angled(90)
+        self.assertEquals("0e018139110c5a0000006464647f03", conn.writes[2][1])
+
     def test_capabilities(self):
         conn = ConnectionMock()
         hub = MoveHub(conn)
@@ -65,7 +83,7 @@ class GeneralTest(unittest.TestCase):
         conn.notifications.append((14, '1b0e00 0f00 8202 01'))
         conn.notifications.append((14, '1b0e00 0f00 8202 0a'))
         time.sleep(1)
-        #demo_all(hub)
+        # demo_all(hub)
         conn.running = False
 
         while not conn.finished:
