@@ -1,18 +1,22 @@
-Best way to start is to look at [demo.py](demo.py) file, or maybe run it.
+# Python library to interact with LEGO Move Hub
 
-# Features
+Requires `gattlib` to be installed, currently Python 2.7 only
+
+Best way to start is to look at [demo.py](demo.py) file, and run it.
+
+## Features
 
 - auto-detect and connect for Bluetooth device
 - permanent Bluetooth connection server for faster debugging
 - angled and timed movement for motors
 - LED color change
 
-# Ideas
+## Ideas
 
 Make it 2/3 compatible
 Add travis unit tests and coverage
 
-# Links
+## Links
 
 - https://github.com/JorgePe/BOOSTreveng - source of protocol knowledge
 - https://github.com/RealTimeWeb/blockpy
