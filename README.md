@@ -1,21 +1,20 @@
+Best way to start is to look at [demo.py](demo.py) file, or maybe run it.
+
+# Features
+
+- auto-detect and connect for Bluetooth device
+- permanent Bluetooth connection server for faster debugging
+- angled and timed movement for motors
+- LED color change
+
 # Ideas
 
-Make a server that will listen to wire proto to speed up debug
 
 
 # Links
 
-https://github.com/JorgePe/BOOSTreveng
-
-https://github.com/hobbyquaker/node-movehub
-
-https://github.com/JorgePe/pyb00st
-
-
-
-https://github.com/RealTimeWeb/blockpy
-
-https://ru.wikipedia.org/wiki/App_Inventor
-
-https://en.wikipedia.org/wiki/Blockly
+- https://github.com/JorgePe/BOOSTreveng - source of protocol knowledge
+- https://github.com/RealTimeWeb/blockpy
+- https://ru.wikipedia.org/wiki/App_Inventor
+- https://en.wikipedia.org/wiki/Blockly
 

@@ -14,6 +14,8 @@ class MoveHub(object):
     """
 
     def __init__(self, connection):
+        self.notified = False
+
         self.connection = connection
 
         self.led = LED(self)
@@ -21,14 +23,29 @@ class MoveHub(object):
         self.motor_B = EncodedMotor(self, PORT_B)
         self.motor_AB = EncodedMotor(self, PORT_AB)
 
-        self.port_c = None
-        self.port_d = None
-
         # self.button
         # self.tilt_sensor
 
-        # transport.write(ENABLE_NOTIFICATIONS_HANDLE, ENABLE_NOTIFICATIONS_VALUE)
+        # enables notifications reading
+        self.connection.set_notify_handler(self._notify)
+        self.connection.write(ENABLE_NOTIFICATIONS_HANDLE, ENABLE_NOTIFICATIONS_VALUE)
+
+        # while not self.notified:
+        # log.debug("Waiting to be notified")
+        # time.sleep(1)
+
+        # self.port_C = None
+        # self.port_D = None
+
         # transport.write(MOVE_HUB_HARDWARE_HANDLE, b'\x0a\x00\x41\x01\x08\x01\x00\x00\x00\x01')
+
+    def _notify(self, handle, data):
+        # TODO
+        log.debug("Notification on %s: %s", handle, data.encode("hex"))
+
+    def get_name(self):
+        # note: reading this too fast makes it hang
+        self.connection.read(DEVICE_NAME)
 
 
 class Peripheral(object):

@@ -8,8 +8,7 @@ from pylegoboost.comms import DebugServerConnection, BLEConnection
 log = logging.getLogger("demo")
 
 
-def demo_all(conn):
-    movehub = MoveHub(conn)
+def demo_all(movehub):
     demo_led_colors(movehub)
     demo_motors_timed(movehub)
     demo_motors_angled(movehub)
@@ -60,6 +59,20 @@ def demo_port_c_motor(movehub):
     sleep(1)
 
 
+def vernie_head(movehub):
+    portd = EncodedMotor(movehub, PORT_D)
+    while True:
+        angle = 20
+        portd.angled(angle, 0.2)
+        sleep(2)
+        portd.angled(angle, -0.2)
+        sleep(2)
+        portd.angled(angle, -0.2)
+        sleep(2)
+        portd.angled(angle, 0.2)
+        sleep(2)
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
 
@@ -69,4 +82,12 @@ if __name__ == '__main__':
         logging.warning("Failed to use debug server: %s", traceback.format_exc())
         connection = BLEConnection().connect()
 
-    demo_all(connection)
+    hub = MoveHub(connection)
+    sleep(1)
+    #hub.get_name()
+
+    for x in range(1, 60):
+        sleep(1)
+
+        # demo_led_colors(hub)
+        # demo_all(movehub)

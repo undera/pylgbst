@@ -4,9 +4,11 @@ This package holds communication aspects
 import json
 import logging
 import socket
+import time
 import traceback
 from abc import abstractmethod
 from gattlib import DiscoveryService, GATTRequester
+from threading import Thread
 
 from pylegoboost.constants import DEVICE_NAME, LEGO_MOVE_HUB
 
@@ -25,6 +27,7 @@ class Requester(GATTRequester):
         self.notification_sink = None
 
     def on_notification(self, handle, data):
+        # log.debug("requester notified, sink: %s", self.notification_sink)
         if self.notification_sink:
             self.notification_sink(handle, data)
 
@@ -42,7 +45,7 @@ class Connection(object):
         pass
 
     @abstractmethod
-    def notify(self, handle, data):
+    def set_notify_handler(self, handler):
         pass
 
 
@@ -50,10 +53,6 @@ class ConnectionMock(Connection):
     """
     For unit testing purposes
     """
-
-    def notify(self, handle, data):
-        # TODO
-        pass
 
     def write(self, handle, data):
         log.debug("Writing to %s: %s", handle, data.encode("hex"))
@@ -66,13 +65,13 @@ class ConnectionMock(Connection):
 class BLEConnection(Connection):
     """
     Main transport class, uses real Bluetooth LE connection.
-    Loops with timeout of 5 seconds to find device named "Lego MOVE Hub"
+    Loops with timeout of 1 seconds to find device named "Lego MOVE Hub"
 
     :type requester: Requester
     """
 
     def __init__(self):
-        super(Connection, self).__init__()
+        super(BLEConnection, self).__init__()
         self.requester = None
 
     def connect(self, bt_iface_name='hci0'):
@@ -80,7 +79,7 @@ class BLEConnection(Connection):
 
         while not self.requester:
             log.info("Discovering devices using %s...", bt_iface_name)
-            devices = service.discover(5)
+            devices = service.discover(1)
             log.debug("Devices: %s", devices)
 
             for address, name in devices.items():
@@ -94,7 +93,13 @@ class BLEConnection(Connection):
 
     def _get_requester(self, address, bt_iface_name):
         self.requester = Requester(address, True, bt_iface_name)
-        self.requester.notification_sink = self.notify
+
+    def set_notify_handler(self, handler):
+        if self.requester:
+            log.debug("Setting notification handler: %s", handler)
+            self.requester.notification_sink = handler
+        else:
+            raise RuntimeError("No requester available")
 
     def read(self, handle):
         log.debug("Reading from: %s", handle)
@@ -107,10 +112,6 @@ class BLEConnection(Connection):
     def write(self, handle, data):
         log.debug("Writing to %s: %s", handle, data.encode("hex"))
         return self.requester.write_by_handle(handle, data)
-
-    def notify(self, handle, data):
-        # TODO
-        log.debug("Notification on %s: %s", handle, data.encode("hex"))
 
 
 class DebugServer(object):
@@ -133,13 +134,25 @@ class DebugServer(object):
         while True:
             log.info("Accepting connections at %s", port)
             conn, addr = self.sock.accept()
+            self.ble.requester.notification_sink = lambda x, y: self._notify(conn, x, y)
             try:
                 self._handle_conn(conn)
+            except BaseException:
+                log.error("Problem handling incoming connection: %s", traceback.format_exc())
             finally:
+                self.ble.requester.notification_sink = None
                 conn.close()
 
     def __del__(self):
         self.sock.close()
+
+    def _notify(self, conn, handle, data):
+        payload = {"type": "notification", "handle": handle, "data": data.encode('hex')}
+        log.debug("Send notification: %s", payload)
+        try:
+            conn.send(json.dumps(payload) + "\n")
+        except BaseException:
+            log.error("Problem sending notification: %s", traceback.format_exc())
 
     def _handle_conn(self, conn):
         """
@@ -165,13 +178,14 @@ class DebugServer(object):
                     except BaseException:
                         log.error("Failed to handle cmd: %s", traceback.format_exc())
 
-                        # conn.send(data.upper())
-
     def _handle_cmd(self, cmd):
         if cmd['type'] == 'write':
             self.ble.write(cmd['handle'], cmd['data'].decode('hex'))
         elif cmd['type'] == 'read':
-            self.sock.send(self.ble.read(cmd['handle']).encode('hex') + "\n")
+            data = self.ble.read(cmd['handle'])
+            payload = {"type": "response", "data": data.encode('hex')}
+            log.debug("Send response: %s", payload)
+            self.sock.send(json.dumps(payload) + "\n")
         else:
             raise ValueError("Unhandled cmd: %s", cmd)
 
@@ -181,17 +195,20 @@ class DebugServerConnection(Connection):
     Connection type to be used with DebugServer, replaces BLEConnection
     """
 
-    def __init__(self):
+    def __init__(self, port=9090):
+        super(DebugServerConnection, self).__init__()
+        self.notify_handler = None
         self.buf = ""
         self.sock = socket.socket()
-        self.sock.connect(('localhost', 9090))
+        self.sock.connect(('localhost', port))
+        self.incoming = []
+
+        self.reader = Thread(target=self._recv)
+        self.reader.setDaemon(True)
+        self.reader.start()
 
     def __del__(self):
         self.sock.close()
-
-    def notify(self, handle, data):
-        # TODO
-        pass
 
     def write(self, handle, data):
         payload = {
@@ -207,7 +224,13 @@ class DebugServerConnection(Connection):
             "handle": handle
         }
         self._send(payload)
-        return self._recv()
+
+        while True:
+            for item in self.incoming:
+                if item['type'] == 'response':
+                    self.incoming.remove(item)
+                    return item['data'].decode('hex')
+            time.sleep(0.1)
 
     def _send(self, payload):
         log.debug("Sending to debug server: %s", payload)
@@ -222,10 +245,17 @@ class DebugServerConnection(Connection):
 
             self.buf += data
 
-            if "\n" in self.buf:
+            while "\n" in self.buf:
                 line = self.buf[:self.buf.index("\n")]
                 self.buf = self.buf[self.buf.index("\n") + 1:]
                 if line:
-                    return line.decode("hex")
-                break
-        raise RuntimeError("No data read")
+                    item = json.loads(line)
+                    if item['type'] == 'notification' and self.notify_handler:
+                        self.notify_handler(item['handle'], item['data'].decode('hex'))
+                    elif item['type'] == 'response':
+                        self.incoming.append(item)
+                    else:
+                        log.warning("Dropped inbound: %s", item)
+
+    def set_notify_handler(self, handler):
+        self.notify_handler = handler
