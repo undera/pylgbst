@@ -11,7 +11,8 @@ log = logging.getLogger("demo")
 def demo_all(conn):
     movehub = MoveHub(conn)
     # demo_led_colors(movehub)
-    demo_motors_timed(movehub)
+    # demo_motors_timed(movehub)
+    demo_motors_angled(movehub)
 
 
 def demo_led_colors(movehub):
@@ -35,8 +36,18 @@ def demo_motors_timed(movehub):
     movehub.motor_AB.timed(0.5, -1)
 
 
+def demo_motors_angled(movehub):
+    log.info("Motors movement demo: angled")
+    for angle in range(0, 361, 90):
+        log.info("Angle: %s", angle)
+        movehub.motor_B.angled(angle, 1)
+        sleep(1)
+        movehub.motor_B.angled(angle, -1)
+        sleep(1)
+
+
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
 
     try:
         connection = DebugServerConnection()

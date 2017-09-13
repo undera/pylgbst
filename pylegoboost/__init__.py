@@ -1,7 +1,10 @@
+import logging
 import struct
 import time
 
 from pylegoboost.constants import *
+
+log = logging.getLogger('movehub')
 
 
 class MoveHub(object):
@@ -48,13 +51,14 @@ class LED(Peripheral):
 
 
 class EncodedMotor(Peripheral):
+    TRAILER = b'\x64\x7f\x03'  # NOTE: \x64 is 100, might mean something
     PACKET_VER = b'\x01'
     SET_PORT_VAL = b'\x81'
-    MOTOR_TIMED_END = b'\x64\x7f\x03'
-    TRAILER = b'\x64\x7f\x03'  # NOTE: \x64 is 100, might mean something
-    TIMED_GROUP = b'\x0A'
-    TIMED_SINGLE = b'\x09'
     MOVEMENT_TYPE = b'\x11'
+    TIMED_SINGLE = b'\x09'
+    TIMED_GROUP = b'\x0A'
+    ANGLED_SINGLE = b'\x0B'
+    ANGLED_GROUP = b'\x0C'
 
     def __init__(self, parent, port):
         super(EncodedMotor, self).__init__(parent)
@@ -66,10 +70,10 @@ class EncodedMotor(Peripheral):
         if relative < -1 or relative > 1:
             raise ValueError("Invalid speed value: %s", relative)
 
-        relative *= 255
-        if relative < 0:
-            relative += 255
-        return int(relative)
+        absolute = round(relative * 100)
+        if absolute < 0:
+            absolute += 255
+        return int(absolute)
 
     def _wrap_and_write(self, command, speed_primary, speed_secondary):
         # set for port
@@ -97,8 +101,16 @@ class EncodedMotor(Peripheral):
         if not async:
             time.sleep(seconds)
 
-    def angled(self, angle, speed_primary, speed_secondary):
-        pass
+    def angled(self, angle, speed_primary=1, speed_secondary=None):
+        if speed_secondary is None:
+            speed_secondary = speed_primary
+
+        # movement type
+        command = self.ANGLED_GROUP if self.port == PORT_AB else self.ANGLED_SINGLE
+        # angle
+        command += struct.pack('<I', angle)
+
+        self._wrap_and_write(command, speed_primary, speed_secondary)
 
 
 class ColorDistanceSensor(Peripheral):
