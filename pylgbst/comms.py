@@ -4,15 +4,35 @@ This package holds communication aspects
 import json
 import logging
 import socket
+import sys
 import time
 import traceback
 from abc import abstractmethod
-from gattlib import DiscoveryService, GATTRequester
 from threading import Thread
+
+from gattlib import DiscoveryService, GATTRequester
 
 from pylgbst.constants import DEVICE_NAME, LEGO_MOVE_HUB
 
 log = logging.getLogger('transport')
+
+if sys.version_info[0] == 2:
+    def str2hex(data):
+        return data.encode("hex")
+
+
+    def hex2str(data):
+        return data.decode("hex")
+else:
+    import binascii
+
+
+    def str2hex(data):
+        return binascii.hexlify(data)
+
+
+    def hex2str(data):
+        return binascii.unhexlify(data)
 
 
 # noinspection PyMethodOverriding
@@ -32,7 +52,7 @@ class Requester(GATTRequester):
             self.notification_sink(handle, data)
 
     def on_indication(self, handle, data):
-        log.debug("Indication on handle %s: %s", handle, data.encode("hex"))
+        log.debug("Indication on handle %s: %s", handle, str2hex(data))
 
 
 class Connection(object):
@@ -97,7 +117,7 @@ class BLEConnection(Connection):
         return data
 
     def write(self, handle, data):
-        log.debug("Writing to %s: %s", handle, data.encode("hex"))
+        log.debug("Writing to %s: %s", handle, str2hex(data))
         return self.requester.write_by_handle(handle, data)
 
 
@@ -134,7 +154,7 @@ class DebugServer(object):
         self.sock.close()
 
     def _notify(self, conn, handle, data):
-        payload = {"type": "notification", "handle": handle, "data": data.encode('hex')}
+        payload = {"type": "notification", "handle": handle, "data": str2hex(data)}
         log.debug("Send notification: %s", payload)
         try:
             conn.send(json.dumps(payload) + "\n")
@@ -167,10 +187,10 @@ class DebugServer(object):
 
     def _handle_cmd(self, cmd):
         if cmd['type'] == 'write':
-            self.ble.write(cmd['handle'], cmd['data'].decode('hex'))
+            self.ble.write(cmd['handle'], hex2str(cmd['data']))
         elif cmd['type'] == 'read':
             data = self.ble.read(cmd['handle'])
-            payload = {"type": "response", "data": data.encode('hex')}
+            payload = {"type": "response", "data": str2hex(data)}
             log.debug("Send response: %s", payload)
             self.sock.send(json.dumps(payload) + "\n")
         else:
@@ -201,7 +221,7 @@ class DebugServerConnection(Connection):
         payload = {
             "type": "write",
             "handle": handle,
-            "data": data.encode("hex")
+            "data": str2hex(data)
         }
         self._send(payload)
 
@@ -216,7 +236,7 @@ class DebugServerConnection(Connection):
             for item in self.incoming:
                 if item['type'] == 'response':
                     self.incoming.remove(item)
-                    return item['data'].decode('hex')
+                    return hex2str(item['data'])
             time.sleep(0.1)
 
     def _send(self, payload):
@@ -238,7 +258,7 @@ class DebugServerConnection(Connection):
                 if line:
                     item = json.loads(line)
                     if item['type'] == 'notification' and self.notify_handler:
-                        self.notify_handler(item['handle'], item['data'].decode('hex'))
+                        self.notify_handler(item['handle'], hex2str(item['data']))
                     elif item['type'] == 'response':
                         self.incoming.append(item)
                     else:

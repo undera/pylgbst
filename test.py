@@ -4,7 +4,7 @@ import unittest
 from threading import Thread
 
 from pylgbst import MoveHub, COLOR_RED, LED, EncodedMotor, PORT_AB
-from pylgbst.comms import Connection
+from pylgbst.comms import Connection, str2hex
 from pylgbst.constants import PORT_LED
 
 logging.basicConfig(level=logging.DEBUG)
@@ -36,14 +36,14 @@ class ConnectionMock(Connection):
             if self.notification_handler:
                 while self.notifications:
                     handle, data = self.notifications.pop(0)
-                    self.notification_handler(handle, data.replace(' ', '').decode('hex'))
+                    self.notification_handler(handle, hex2str(data.replace(' ', '')))
             time.sleep(0.1)
 
         self.finished = True
 
     def write(self, handle, data):
-        log.debug("Writing to %s: %s", handle, data.encode("hex"))
-        self.writes.append((handle, data.encode("hex")))
+        log.debug("Writing to %s: %s", handle, str2hex(data))
+        self.writes.append((handle, str2hex(data)))
 
     def read(self, handle):
         log.debug("Reading from: %s", handle)

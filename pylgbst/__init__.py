@@ -2,6 +2,7 @@ import logging
 import struct
 import time
 
+from pylgbst.comms import str2hex
 from pylgbst.constants import *
 
 log = logging.getLogger('movehub')
@@ -50,7 +51,7 @@ class MoveHub(object):
         Using https://github.com/JorgePe/BOOSTreveng/blob/master/Notifications.md
         """
         orig = data
-        log.debug("Notification on %s: %s", handle, orig.encode("hex"))
+        log.debug("Notification on %s: %s", handle, str2hex(orig))
         data = data[3:]
 
         msg_type = ord(data[2])
@@ -60,7 +61,7 @@ class MoveHub(object):
         elif msg_type == MSG_PORT_STATUS:
             self._handle_port_status(data)
         else:
-            log.warning("Unhandled msg type 0x%x: %s", msg_type, orig.encode("hex"))
+            log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
 
         pass
 
