@@ -4,7 +4,7 @@ import unittest
 from threading import Thread
 
 from pylgbst import MoveHub, COLOR_RED, LED, EncodedMotor, PORT_AB
-from pylgbst.comms import Connection, str2hex
+from pylgbst.comms import Connection, str2hex, hex2str
 from pylgbst.constants import PORT_LED
 
 logging.basicConfig(level=logging.DEBUG)
