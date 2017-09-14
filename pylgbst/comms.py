@@ -48,7 +48,7 @@ else:
 
 
     def int2byte(val):
-        return bytes(val, )
+        return bytes((val,))
 
 
 # noinspection PyMethodOverriding

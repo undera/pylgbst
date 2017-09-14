@@ -81,6 +81,8 @@ class MoveHub(object):
                 self._handle_sensor_data(data)
             elif msg_type == MSG_SENSOR_SUBSCRIBE_ACK:
                 log.debug("Sensor subscribe ack on port %s", PORTS[get_byte(data, 3)])
+            elif msg_type == MSG_PORT_CMD_ERROR:
+                log.warning("Command error: %s", str2hex(data[3:]))
             else:
                 log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
         else:
@@ -88,6 +90,9 @@ class MoveHub(object):
 
     def _handle_sensor_data(self, data):
         port = get_byte(data, 3)
+        if port not in self.devices:
+            log.warning("Notification on port with no device: %s", PORTS[port])
+            return
         sensor = self.devices[port]
         if isinstance(sensor, TiltSensor):
             sensor.handle_notification(data)

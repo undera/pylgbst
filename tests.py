@@ -5,7 +5,7 @@ from threading import Thread
 
 from pylgbst import MoveHub, COLOR_RED, LED, EncodedMotor, PORT_AB
 from pylgbst.comms import Connection, str2hex, hex2str
-from pylgbst.constants import PORT_LED, TILT_STATES, TILT_SENSOR_MODE_FULL, TILT_SENSOR_MODE_2AXIS, \
+from pylgbst.constants import PORT_LED, TILT_STATES, TILT_SENSOR_MODE_2AXIS_FULL, TILT_SENSOR_MODE_2AXIS_SIMPLE, \
     MOVE_HUB_HARDWARE_HANDLE
 
 HANDLE = MOVE_HUB_HARDWARE_HANDLE
@@ -92,12 +92,12 @@ class GeneralTest(unittest.TestCase):
         hub.connection.notifications.append((HANDLE, "1b0e000500453a05"))
         hub.connection.notifications.append((HANDLE, "1b0e000a00473a010100000001"))
         time.sleep(1)
-        hub.tilt_sensor.subscribe(callback, TILT_SENSOR_MODE_2AXIS)
+        hub.tilt_sensor.subscribe(callback, TILT_SENSOR_MODE_2AXIS_SIMPLE)
 
         hub.connection.notifications.append((HANDLE, "1b0e000500453a09"))
         time.sleep(1)
 
-        hub.tilt_sensor.subscribe(callback, TILT_SENSOR_MODE_FULL)
+        hub.tilt_sensor.subscribe(callback, TILT_SENSOR_MODE_2AXIS_FULL)
         hub.connection.notifications.append((HANDLE, "1b0e000600453a04fe"))
         time.sleep(1)
 

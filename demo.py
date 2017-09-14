@@ -26,9 +26,9 @@ def demo_tilt_sensor_precise(movehub):
     demo_tilt_sensor_simple.cnt = 0
     limit = 100
 
-    def callback(param1, param2):
+    def callback(pitch, roll, yaw):
         demo_tilt_sensor_simple.cnt += 1
-        log.info("Tilt #%s of %s: %s %s", demo_tilt_sensor_simple.cnt, limit, param1, param2)
+        log.info("Tilt #%s of %s: roll:%s pitch:%s yaw:%s", demo_tilt_sensor_simple.cnt, limit, pitch, roll, yaw)
 
     movehub.tilt_sensor.subscribe(callback, mode=TILT_SENSOR_MODE_FULL)
     while demo_tilt_sensor_simple.cnt < limit:
@@ -129,9 +129,9 @@ if __name__ == '__main__':
         connection = BLEConnection().connect()
 
     hub = MoveHub(connection)
-    #demo_tilt_sensor_precise(hub)
+    demo_tilt_sensor_precise(hub)
 
-    demo_all(hub)
+    # demo_all(hub)
 
     log.info("Sleeping 60s")
     sleep(60)

@@ -126,38 +126,45 @@ class EncodedMotor(Peripheral):
 
 
 class TiltSensor(Peripheral):
+    TRAILER = b'\x01\x00\x00\x00'
+
     def __init__(self, parent, port):
         super(TiltSensor, self).__init__(parent, port)
-        self.mode = TILT_SENSOR_MODE_OFF
-
-    def _switch_mode(self, mode):
-        self.mode = mode
-        self._subscribe_on_port(int2byte(mode) + b'\x01\x00\x00\x00\x01')
+        self.mode = None
 
     def subscribe(self, callback, mode=TILT_SENSOR_MODE_BASIC):
-        if mode not in (TILT_SENSOR_MODE_BASIC, TILT_SENSOR_MODE_2AXIS, TILT_SENSOR_MODE_FULL):
-            raise ValueError("Wrong tilt sensor mode: 0x%x", mode)
-
-        self._switch_mode(mode)
-        self._subscribers.add(callback)  # TODO: maybe join it into `_subscribe_on_port`
+        # TODO: check input for valid mode
+        self.mode = mode
+        self._subscribe_on_port(int2byte(self.mode) + self.TRAILER + int2byte(1))
+        self._subscribers.add(callback)
 
     def unsubscribe(self, callback):
         self._subscribers.remove(callback)
         if not self._subscribers:
-            self._switch_mode(TILT_SENSOR_MODE_OFF)
+            self._subscribe_on_port(int2byte(self.mode) + self.TRAILER + int2byte(0))
 
     def handle_notification(self, data):
         if self.mode == TILT_SENSOR_MODE_BASIC:
-            self._notify_subscribers(get_byte(data, 4))
-        elif self.mode == TILT_SENSOR_MODE_FULL:
+            state = get_byte(data, 4)
+            self._notify_subscribers(state)
+        elif self.mode == TILT_SENSOR_MODE_2AXIS_SIMPLE:
+            # TODO: figure out right interpreting of this
+            state = get_byte(data, 4)
+            self._notify_subscribers(state)
+        elif self.mode == TILT_SENSOR_MODE_BUMP:
+            bump_count = get_byte(data, 4)
+            self._notify_subscribers(bump_count)
+        elif self.mode == TILT_SENSOR_MODE_2AXIS_FULL:
             roll = self._byte2deg(get_byte(data, 4))
             pitch = self._byte2deg(get_byte(data, 5))
             self._notify_subscribers(roll, pitch)
-        elif self.mode == TILT_SENSOR_MODE_2AXIS:
-            # TODO: figure out right interpreting of this
-            self._notify_subscribers(get_byte(data, 4))
+        elif self.mode == TILT_SENSOR_MODE_FULL:
+            roll = self._byte2deg(get_byte(data, 4))
+            pitch = self._byte2deg(get_byte(data, 5))
+            yaw = self._byte2deg(get_byte(data, 6))  # did I get the order right?
+            self._notify_subscribers(roll, pitch, yaw)
         else:
-            log.debug("Got tilt sensor data while in finished mode: %s", self.mode)
+            log.debug("Got tilt sensor data while in unexpected mode: %s", self.mode)
 
     def _byte2deg(self, val):
         if val > 90:
