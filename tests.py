@@ -5,7 +5,10 @@ from threading import Thread
 
 from pylgbst import MoveHub, COLOR_RED, LED, EncodedMotor, PORT_AB
 from pylgbst.comms import Connection, str2hex, hex2str
-from pylgbst.constants import PORT_LED, TILT_STATES
+from pylgbst.constants import PORT_LED, TILT_STATES, TILT_SENSOR_MODE_FULL, TILT_SENSOR_MODE_2AXIS, \
+    MOVE_HUB_HARDWARE_HANDLE
+
+HANDLE = MOVE_HUB_HARDWARE_HANDLE
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -76,7 +79,7 @@ class GeneralTest(unittest.TestCase):
 
     def test_tilt_sensor(self):
         hub = HubMock()
-        hub.connection.notifications.append((14, '1b0e00 0f00 04 3a 0128000000000100000001'))
+        hub.connection.notifications.append((HANDLE, '1b0e00 0f00 04 3a 0128000000000100000001'))
         time.sleep(1)
 
         def callback(param1, param2=None, param3=None):
@@ -86,10 +89,20 @@ class GeneralTest(unittest.TestCase):
                 log.debug("Tilt: %s %s %s", param1, param2, param3)
 
         hub.tilt_sensor.subscribe(callback)
-        hub.connection.notifications.append((14, "1b0e000500453a05"))
-        hub.connection.notifications.append((14, "1b0e000600453a04fe"))
+        hub.connection.notifications.append((HANDLE, "1b0e000500453a05"))
+        hub.connection.notifications.append((HANDLE, "1b0e000a00473a010100000001"))
         time.sleep(1)
+        hub.tilt_sensor.subscribe(callback, TILT_SENSOR_MODE_2AXIS)
+
+        hub.connection.notifications.append((HANDLE, "1b0e000500453a09"))
+        time.sleep(1)
+
+        hub.tilt_sensor.subscribe(callback, TILT_SENSOR_MODE_FULL)
+        hub.connection.notifications.append((HANDLE, "1b0e000600453a04fe"))
+        time.sleep(1)
+
         self._wait_notifications_handled(hub)
+        hub.tilt_sensor.unsubscribe(callback)
         # self.assertEquals("0a01413a000100000001", hub.connection.writes[0][1])
 
     def test_motor(self):

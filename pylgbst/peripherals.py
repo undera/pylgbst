@@ -22,7 +22,7 @@ class Peripheral(object):
         self.parent = parent
         self.port = port
         self.working = False
-        self._subscribers = []
+        self._subscribers = set()
 
     def __repr__(self):
         return "%s on port %s" % (self.__class__.__name__, PORTS[self.port] if self.port in PORTS else 'N/A')
@@ -129,14 +129,20 @@ class ColorDistanceSensor(Peripheral):
 
 
 class TiltSensor(Peripheral):
-    def _switch_mode(self, simple):
-        self._subscribe_on_port(chr(simple) + b'\x01\x00\x00\x00\x01')
+    def __init__(self, parent, port):
+        super(TiltSensor, self).__init__(parent, port)
+        self.mode = TILT_SENSOR_MODE_OFF
+
+    def _switch_mode(self, mode):
+        self.mode = mode
+        self._subscribe_on_port(chr(mode) + b'\x01\x00\x00\x00\x01')
 
     def subscribe(self, callback, mode=TILT_SENSOR_MODE_BASIC):
-        if mode not in (TILT_SENSOR_MODE_BASIC, TILT_SENSOR_MODE_SOME1, TILT_SENSOR_MODE_FULL):
+        if mode not in (TILT_SENSOR_MODE_BASIC, TILT_SENSOR_MODE_2AXIS, TILT_SENSOR_MODE_FULL):
             raise ValueError("Wrong tilt sensor mode: 0x%x", mode)
+
         self._switch_mode(mode)
-        self._subscribers.append(callback)  # TODO: maybe join it into `_subscribe_on_port`
+        self._subscribers.add(callback)  # TODO: maybe join it into `_subscribe_on_port`
 
         # 1b0e00 0a00 47 3a020100000001
         # 1b0e00 0a00 47 3a020100000001
@@ -146,22 +152,31 @@ class TiltSensor(Peripheral):
     def unsubscribe(self, callback):
         self._subscribers.remove(callback)
         if not self._subscribers:
-            self._switch_mode(3)
+            self._switch_mode(TILT_SENSOR_MODE_OFF)
 
     def handle_notification(self, data):
-        if len(data) == 5:
-            state = get_byte(data, 4)
-            self._notify_subscribers(state)
-        elif len(data) == 6:
-            # TODO: how to interpret these 2 bytes?
-            self._notify_subscribers(get_byte(data, 4), get_byte(data, 5))
+        if self.mode == TILT_SENSOR_MODE_BASIC:
+            self._notify_subscribers(get_byte(data, 4))
+        elif self.mode == TILT_SENSOR_MODE_FULL:
+            roll = self._byte2deg(get_byte(data, 4))
+            pitch = self._byte2deg(get_byte(data, 5))
+            self._notify_subscribers(roll, pitch)
+        elif self.mode == TILT_SENSOR_MODE_2AXIS:
+            # TODO: figure out right interpreting of this
+            self._notify_subscribers(get_byte(data, 4))
         else:
-            log.warning("Unexpected length for tilt sensor data: %s", len(data))
+            log.debug("Got tilt sensor data while in finished mode: %s", self.mode)
+
+    def _byte2deg(self, val):
+        if val > 90:
+            return val - 256
+        else:
+            return val
 
 
 class Button(Peripheral):
     def __init__(self, parent):
-        super(Button, self).__init__(parent, None)
+        super(Button, self).__init__(parent, 0)
 
 
 LISTEN_COLOR_SENSOR_ON_C = b'   \x0a\x00 \x41\x01 \x08\x01\x00\x00\x00\x01'
