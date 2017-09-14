@@ -59,6 +59,17 @@ class GeneralTest(unittest.TestCase):
         led.set_color(COLOR_RED)
         self.assertEquals("0701813211510009", conn.writes[1][1])
 
+    def test_tilt_sensor(self):
+        conn = ConnectionMock()
+        conn.notifications.append((14, '1b0e000f00043a0128000000000100000001'))
+        hub = MoveHub(conn)
+
+        def callback():
+            pass
+
+        hub.tilt_sensor.subscribe(callback)
+        self.assertEquals("0701813211510009", conn.writes[1][1])
+
     def test_motor(self):
         conn = ConnectionMock()
         conn.notifications.append((14, '1b0e00 0900 04 39 0227003738'))

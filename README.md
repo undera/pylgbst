@@ -12,10 +12,22 @@ Best way to start is to look at [demo.py](demo.py) file, and run it.
 - angled and timed movement for motors
 - LED color change
 
-## Ideas
+## Usage
 
-Make it 2/3 compatible
-Add travis unit tests and coverage
+```python
+from pylgbst import MoveHub
+
+hub=MoveHub()
+print (hub.get_name())
+for device in hub.devices:
+    print (device)
+```
+
+## Roadmap
+
+- Make it 2/3 compatible
+- Add travis unit tests and coverage
+- Give nice documentation examples, don't forget to mention logging
 
 ## Links
 
