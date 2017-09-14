@@ -17,10 +17,11 @@ Best way to start is to look at [demo.py](demo.py) file, and run it.
 ```python
 from pylgbst import MoveHub
 
-hub=MoveHub()
-print (hub.get_name())
+hub = MoveHub()
+print(hub.get_name())
+
 for device in hub.devices:
-    print (device)
+    print(device)
 ```
 
 ## Roadmap

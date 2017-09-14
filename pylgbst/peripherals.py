@@ -8,7 +8,6 @@ class Peripheral(object):
     """
     :type parent: MoveHub
     """
-    PACKET_VER = b'\x01'
 
     def __init__(self, parent, port):
         super(Peripheral, self).__init__()
@@ -17,7 +16,7 @@ class Peripheral(object):
         self.working = False
 
     def _set_port_val(self, value):
-        cmd = self.PACKET_VER + chr(MSG_SET_PORT_VAL) + chr(self.port)
+        cmd = PACKET_VER + chr(MSG_SET_PORT_VAL) + chr(self.port)
         cmd += value
 
         self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE, chr(len(cmd)) + cmd)  # should we +1 cmd len here?
@@ -29,7 +28,7 @@ class Peripheral(object):
         self.working = False
 
     def __repr__(self):
-        return "%s on port %s" % (self.__class__.__name__, PORTS[self.port])
+        return "%s on port %s" % (self.__class__.__name__, PORTS[self.port] if self.port in PORTS else 'N/A')
 
 
 class LED(Peripheral):
@@ -111,3 +110,24 @@ class ColorDistanceSensor(Peripheral):
 
 class TiltSensor(Peripheral):
     pass
+
+
+class Button(Peripheral):
+    def __init__(self, parent, port):
+        del port
+        super(Button, self).__init__(parent, None)
+
+
+LISTEN_COLOR_SENSOR_ON_C = b'   \x0a\x00 \x41\x01 \x08\x01\x00\x00\x00\x01'
+LISTEN_COLOR_SENSOR_ON_D = b'   \x0a\x00 \x41\x02 \x08\x01\x00\x00\x00\x01'
+
+LISTEN_DIST_SENSOR_ON_C = b'    \x0a\x00 \x41\x01 \x08\x01\x00\x00\x00\x01'
+LISTEN_DIST_SENSOR_ON_D = b'    \x0a\x00 \x41\x02 \x08\x01\x00\x00\x00\x01'
+
+LISTEN_ENCODER_ON_A = b'        \x0a\x00 \x41\x37 \x02\x01\x00\x00\x00\x01'
+LISTEN_ENCODER_ON_B = b'        \x0a\x00 \x41\x38 \x02\x01\x00\x00\x00\x01'
+LISTEN_ENCODER_ON_C = b'        \x0a\x00 \x41\x01 \x02\x01\x00\x00\x00\x01'
+LISTEN_ENCODER_ON_D = b'        \x0a\x00 \x41\x02 \x02\x01\x00\x00\x00\x01'
+
+LISTEN_TILT_BASIC = b'          \x0a\x00 \x41\x3a \x02\x01\x00\x00\x00\x01'
+LISTEN_TILT_FULL = b'           \x0a\x00 \x41\x3a \x00\x01\x00\x00\x00\x01'

@@ -26,13 +26,14 @@ class MoveHub(object):
         self.motor_AB = None
         self.tilt_sensor = None
         self.color_distance_sensor = None
-        # self.button
+        self.external_motor = None
+        self.button = Button(self)
 
         # enables notifications reading
         self.connection.set_notify_handler(self._notify)
         self.connection.write(ENABLE_NOTIFICATIONS_HANDLE, ENABLE_NOTIFICATIONS_VALUE)
 
-        while len(self.devices):
+        while None in (self.led, self.motor_A, self.motor_B, self.motor_AB, self.tilt_sensor):
             log.debug("Waiting to be notified about devices...")
             time.sleep(0.1)
 
@@ -90,6 +91,7 @@ class MoveHub(object):
             self.devices[port] = EncodedMotor(self, port)
         elif dev_type == TYPE_IMOTOR:
             self.devices[port] = EncodedMotor(self, port)
+            self.external_motor = self.devices[port]
         elif dev_type == TYPE_DISTANCE_COLOR_SENSOR:
             self.devices[port] = ColorDistanceSensor(self, port)
             self.color_distance_sensor = self.devices[port]
@@ -99,6 +101,7 @@ class MoveHub(object):
             self.devices[port] = TiltSensor(self, port)
         else:
             log.warning("Unhandled peripheral type 0x%x on port 0x%x", dev_type, port)
+            self.devices[port] = Peripheral(self, port)
 
         if port == PORT_A:
             self.motor_A = self.devices[port]
@@ -116,18 +119,3 @@ class MoveHub(object):
             self.tilt_sensor = self.devices[port]
         else:
             log.warning("Unhandled port: %s", PORTS[port])
-
-
-LISTEN_COLOR_SENSOR_ON_C = b'\x0a\x00 \x41\x01 \x08\x01\x00\x00\x00\x01'
-LISTEN_COLOR_SENSOR_ON_D = b'\x0a\x00 \x41\x02 \x08\x01\x00\x00\x00\x01'
-
-LISTEN_DIST_SENSOR_ON_C = b'\x0a\x00 \x41\x01 \x08\x01\x00\x00\x00\x01'
-LISTEN_DIST_SENSOR_ON_D = b'\x0a\x00 \x41\x02 \x08\x01\x00\x00\x00\x01'
-
-LISTEN_ENCODER_ON_A = b'\x0a\x00 \x41\x37 \x02\x01\x00\x00\x00\x01'
-LISTEN_ENCODER_ON_B = b'\x0a\x00 \x41\x38 \x02\x01\x00\x00\x00\x01'
-LISTEN_ENCODER_ON_C = b'\x0a\x00 \x41\x01 \x02\x01\x00\x00\x00\x01'
-LISTEN_ENCODER_ON_D = b'\x0a\x00 \x41\x02 \x02\x01\x00\x00\x00\x01'
-
-LISTEN_TILT_BASIC = b'\x0a\x00 \x41\x3a \x02\x01\x00\x00\x00\x01'
-LISTEN_TILT_FULL = b'\x0a\x00 \x41\x3a \x00\x01\x00\x00\x00\x01'

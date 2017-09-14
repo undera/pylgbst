@@ -95,7 +95,6 @@ class BLEConnection(Connection):
                     self._get_requester(address, bt_iface_name)
                     break
 
-        log.info("Device declares itself as: %s", self.read(DEVICE_NAME))
         return self
 
     def _get_requester(self, address, bt_iface_name):
@@ -109,6 +108,7 @@ class BLEConnection(Connection):
             raise RuntimeError("No requester available")
 
     def read(self, handle):
+        # FIXME: repeating reads hang...
         log.debug("Reading from: %s", handle)
         data = self.requester.read_by_handle(handle)
         log.debug("Result: %s", data)
