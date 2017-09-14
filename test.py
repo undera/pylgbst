@@ -3,7 +3,7 @@ import time
 import unittest
 from threading import Thread
 
-from pylgbst import MoveHub, COLOR_RED, LED, EncodedMotor, PORT_AB
+from pylgbst import MoveHub, COLOR_RED, LED, EncodedMotor, PORT_AB, Peripheral
 from pylgbst.comms import Connection, str2hex, hex2str
 from pylgbst.constants import PORT_LED
 
@@ -50,19 +50,24 @@ class ConnectionMock(Connection):
         return None  # TODO
 
 
+class HubMock(MoveHub):
+    def _wait_for_devices(self):
+        pass
+
+
 class GeneralTest(unittest.TestCase):
     def test_led(self):
         conn = ConnectionMock()
         conn.notifications.append((14, '1b0e00 0900 04 39 0227003738'))
-        hub = MoveHub(conn)
+        hub = HubMock(conn)
         led = LED(hub, PORT_LED)
         led.set_color(COLOR_RED)
-        self.assertEquals("0701813211510009", conn.writes[1][1])
+        self.assertEquals("0701813211510009", conn.writes[0][1])
 
     def test_tilt_sensor(self):
         conn = ConnectionMock()
         conn.notifications.append((14, '1b0e000f00043a0128000000000100000001'))
-        hub = MoveHub(conn)
+        hub = HubMock(conn)
 
         def callback():
             pass
@@ -73,12 +78,12 @@ class GeneralTest(unittest.TestCase):
     def test_motor(self):
         conn = ConnectionMock()
         conn.notifications.append((14, '1b0e00 0900 04 39 0227003738'))
-        hub = MoveHub(conn)
+        hub = HubMock(conn)
         motor = EncodedMotor(hub, PORT_AB)
         motor.timed(1.5)
-        self.assertEquals("0c018139110adc056464647f03", conn.writes[1][1])
+        self.assertEquals("0c018139110adc056464647f03", conn.writes[0][1])
         motor.angled(90)
-        self.assertEquals("0e018139110c5a0000006464647f03", conn.writes[2][1])
+        self.assertEquals("0e018139110c5a0000006464647f03", conn.writes[1][1])
 
     def test_capabilities(self):
         conn = ConnectionMock()

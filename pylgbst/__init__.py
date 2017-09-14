@@ -8,8 +8,17 @@ log = logging.getLogger('movehub')
 class MoveHub(object):
     """
     :type connection: pylegoboost.comms.Connection
-    :type led: LED
     :type devices: dict[int,Peripheral]
+    :type led: LED
+    :type tilt_sensor: TiltSensor
+    :type button: Button
+    :type color_distance_sensor: ColorDistanceSensor
+    :type external_motor: EncodedMotor
+    :type port_C: Peripheral
+    :type port_D: Peripheral
+    :type motor_A: EncodedMotor
+    :type motor_B: EncodedMotor
+    :type motor_AB: EncodedMotor
     """
 
     def __init__(self, connection=None):
@@ -20,6 +29,7 @@ class MoveHub(object):
         self.devices = {}
 
         # shorthand fields
+        self.button = Button(self)
         self.led = None
         self.motor_A = None
         self.motor_B = None
@@ -27,20 +37,25 @@ class MoveHub(object):
         self.tilt_sensor = None
         self.color_distance_sensor = None
         self.external_motor = None
-        self.button = Button(self)
+        self.port_C = None
+        self.port_D = None
 
+        self._wait_for_devices()
+
+    def _wait_for_devices(self):
         # enables notifications reading
         self.connection.set_notify_handler(self._notify)
         self.connection.write(ENABLE_NOTIFICATIONS_HANDLE, ENABLE_NOTIFICATIONS_VALUE)
 
-        while None in (self.led, self.motor_A, self.motor_B, self.motor_AB, self.tilt_sensor):
-            log.debug("Waiting to be notified about devices...")
-            time.sleep(0.1)
-
-        self.port_C = None
-        self.port_D = None
-
-        # transport.write(MOVE_HUB_HARDWARE_HANDLE, b'\x0a\x00\x41\x01\x08\x01\x00\x00\x00\x01')
+        builtin_devices = ()
+        for num in range(0, 60):
+            builtin_devices = (self.led, self.motor_A, self.motor_B, self.motor_AB, self.tilt_sensor, self.button)
+            if None not in builtin_devices:
+                return
+            log.debug("Waiting for builtin devices to appear: %s", builtin_devices)
+            time.sleep(1)
+        log.warning("Got only these devices: %s", builtin_devices)
+        raise RuntimeError("Failed to obtain all builtin devices")
 
     def get_name(self):
         # note: reading this too fast makes it hang

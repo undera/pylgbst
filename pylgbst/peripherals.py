@@ -82,7 +82,7 @@ class EncodedMotor(Peripheral):
         command = self.TIMED_GROUP if self.port == PORT_AB else self.TIMED_SINGLE
         # time
         msec = int(seconds * 1000)
-        if msec > 255 * 255:
+        if msec >= pow(2, 16):
             raise ValueError("Too large value for seconds: %s", seconds)
         command += struct.pack('<H', msec)
 
@@ -113,8 +113,7 @@ class TiltSensor(Peripheral):
 
 
 class Button(Peripheral):
-    def __init__(self, parent, port):
-        del port
+    def __init__(self, parent):
         super(Button, self).__init__(parent, None)
 
 
