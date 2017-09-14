@@ -75,7 +75,7 @@ class GeneralTest(unittest.TestCase):
         hub = HubMock()
         led = LED(hub, PORT_LED)
         led.set_color(COLOR_RED)
-        self.assertEquals("0801813211510009", hub.connection.writes[0][1])
+        self.assertEqual("0801813211510009", hub.connection.writes[0][1])
 
     def test_tilt_sensor(self):
         hub = HubMock()
@@ -111,9 +111,9 @@ class GeneralTest(unittest.TestCase):
         hub = HubMock(conn)
         motor = EncodedMotor(hub, PORT_AB)
         motor.timed(1.5)
-        self.assertEquals("0d018139110adc056464647f03", conn.writes[0][1])
+        self.assertEqual("0d018139110adc056464647f03", conn.writes[0][1])
         motor.angled(90)
-        self.assertEquals("0f018139110c5a0000006464647f03", conn.writes[1][1])
+        self.assertEqual("0f018139110c5a0000006464647f03", conn.writes[1][1])
 
     def test_capabilities(self):
         conn = ConnectionMock()
