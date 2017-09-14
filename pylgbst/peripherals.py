@@ -147,6 +147,7 @@ class TiltSensor(Peripheral):
 
         if not self._subscribers:
             self._write_to_hub(MSG_SENSOR_SUBSCRIBE, int2byte(self.mode) + b'\x00\x00\x00' + int2byte(0))
+            self.mode = None
 
     def handle_notification(self, data):
         if self.mode == TILT_SENSOR_MODE_BASIC:
@@ -179,8 +180,15 @@ class TiltSensor(Peripheral):
 
 
 class ColorDistanceSensor(Peripheral):
-    def subscribe(self, callback):
-        params = b'\x08\x01\x00\x00\x00'
+    def __init__(self, parent, port):
+        super(ColorDistanceSensor, self).__init__(parent, port)
+        self.mode = None
+
+    def subscribe(self, callback, mode=CLR_DIST_MODE_COLOR_DISTANCE_INCHES_SUBINCHES, granularity=1):
+        self.mode = mode
+        params = int2byte(mode)
+        params += int2byte(granularity)
+        params += b'\x00\x00\x00'
         params += int2byte(1)  # enable
         self._write_to_hub(MSG_SENSOR_SUBSCRIBE, params)
         self._subscribers.add(callback)
@@ -190,15 +198,45 @@ class ColorDistanceSensor(Peripheral):
             self._subscribers.remove(callback)
 
         if not self._subscribers:
-            self._write_to_hub(MSG_SENSOR_SUBSCRIBE, b'\x08\x01\x00\x00\x00' + int2byte(0))
+            self._write_to_hub(MSG_SENSOR_SUBSCRIBE, int2byte(self.mode) + b'\x01\x00\x00\x00' + int2byte(0))
+            self.mode = None
 
     def handle_notification(self, data):
-        color = get_byte(data, 4)
-        distance = get_byte(data, 5)
-        partial = get_byte(data, 7)
-        if partial:
-            distance += 1.0 / partial
-        self._notify_subscribers(color if color != 0xFF else None, float(distance))
+        if self.mode == CLR_DIST_MODE_COLOR_DISTANCE_INCHES_SUBINCHES:
+            color = get_byte(data, 4)
+            distance = get_byte(data, 5)
+            partial = get_byte(data, 7)
+            if partial:
+                distance += 1.0 / partial
+            self._notify_subscribers(color if color != 0xFF else None, float(distance))
+        elif self.mode == CLR_DIST_MODE_COLOR_ONLY:
+            color = get_byte(data, 4)
+            self._notify_subscribers(color if color != 0xFF else None)
+        elif self.mode == CLR_DIST_MODE_DISTANCE_INCHES:
+            distance = get_byte(data, 4)
+            self._notify_subscribers(float(distance))
+        elif self.mode == CLR_DIST_MODE_DISTANCE_HOW_CLOSE:
+            distance = get_byte(data, 4)
+            self._notify_subscribers(float(distance))
+        elif self.mode == CLR_DIST_MODE_DISTANCE_SUBINCH_HOW_CLOSE:
+            distance = get_byte(data, 4)
+            self._notify_subscribers(float(distance))
+        elif self.mode == CLR_DIST_MODE_OFF1 or self.mode == CLR_DIST_MODE_OFF2:
+            log.info("Turned off led on %s", self)
+        elif self.mode == CLR_DIST_MODE_COUNT_2INCH:
+            count = struct.unpack("<L", data[4:8])[0]  # is it all 4 bytes or just 2?
+            self._notify_subscribers(count)
+        elif self.mode == CLR_DIST_MODE_STREAM_3_VALUES:
+            # TODO: understand better meaning of these 3 values
+            val1 = struct.unpack("<H", data[4:6])[0]
+            val2 = struct.unpack("<H", data[6:8])[0]
+            val3 = struct.unpack("<H", data[8:10])[0]
+            self._notify_subscribers(val1, val2, val3)
+        elif self.mode == CLR_DIST_MODE_LUMINOSITY:
+            luminosity = struct.unpack("<H", data[4:6])[0]
+            self._notify_subscribers(luminosity)
+        else:
+            log.warning("Unhandled data in mode %s: %s", self.mode, str2hex(data))
 
 
 # 0a00 41 01 01 enable
@@ -208,12 +246,6 @@ class Button(Peripheral):
     def __init__(self, parent):
         super(Button, self).__init__(parent, 0)
 
-
-LISTEN_COLOR_SENSOR_ON_C = b'   \x0a\x00 \x41\x01 \x08\x01\x00\x00\x00\x01'
-LISTEN_COLOR_SENSOR_ON_D = b'   \x0a\x00 \x41\x02 \x08\x01\x00\x00\x00\x01'
-
-LISTEN_DIST_SENSOR_ON_C = b'    \x0a\x00 \x41\x01 \x08\x01\x00\x00\x00\x01'
-LISTEN_DIST_SENSOR_ON_D = b'    \x0a\x00 \x41\x02 \x08\x01\x00\x00\x00\x01'
 
 LISTEN_ENCODER_ON_A = b'        \x0a\x00 \x41\x37 \x02\x01\x00\x00\x00\x01'
 LISTEN_ENCODER_ON_B = b'        \x0a\x00 \x41\x38 \x02\x01\x00\x00\x00\x01'
