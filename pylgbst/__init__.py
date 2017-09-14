@@ -7,12 +7,12 @@ log = logging.getLogger('movehub')
 
 class MoveHub(object):
     """
-    :type connection: pylegoboost.comms.Connection
+    :type connection: pylgbst.comms.Connection
     :type devices: dict[int,Peripheral]
     :type led: LED
     :type tilt_sensor: TiltSensor
     :type button: Button
-    :type color_distance_sensor: ColorDistanceSensor
+    :type color_distance_sensor: pylgbst.peripherals.ColorDistanceSensor
     :type external_motor: EncodedMotor
     :type port_C: Peripheral
     :type port_D: Peripheral
@@ -67,35 +67,36 @@ class MoveHub(object):
         """
         orig = data
 
-        if handle == MOVE_HUB_HARDWARE_HANDLE:
-            data = data[3:]
-            log.debug("Notification on %s: %s", handle, str2hex(orig))
-
-            msg_type = get_byte(data, 2)
-
-            if msg_type == MSG_PORT_INFO:
-                self._handle_port_info(data)
-            elif msg_type == MSG_PORT_STATUS:
-                self._handle_port_status(data)
-            elif msg_type == MSG_SENSOR_DATA:
-                self._handle_sensor_data(data)
-            elif msg_type == MSG_SENSOR_SUBSCRIBE_ACK:
-                log.debug("Sensor subscribe ack on port %s", PORTS[get_byte(data, 3)])
-            elif msg_type == MSG_PORT_CMD_ERROR:
-                log.warning("Command error: %s", str2hex(data[3:]))
-            else:
-                log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
-        else:
+        if handle != MOVE_HUB_HARDWARE_HANDLE:
             log.warning("Unsupported notification handle: 0x%s", handle)
+            return
+
+        data = data[3:]
+        log.debug("Notification on %s: %s", handle, str2hex(orig))
+
+        msg_type = get_byte(data, 2)
+
+        if msg_type == MSG_PORT_INFO:
+            self._handle_port_info(data)
+        elif msg_type == MSG_PORT_STATUS:
+            self._handle_port_status(data)
+        elif msg_type == MSG_SENSOR_DATA:
+            self._handle_sensor_data(data)
+        elif msg_type == MSG_SENSOR_SUBSCRIBE_ACK:
+            log.debug("Sensor subscribe ack on port %s", PORTS[get_byte(data, 3)])
+        elif msg_type == MSG_PORT_CMD_ERROR:
+            log.warning("Command error: %s", str2hex(data[3:]))
+        else:
+            log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
 
     def _handle_sensor_data(self, data):
         port = get_byte(data, 3)
         if port not in self.devices:
             log.warning("Notification on port with no device: %s", PORTS[port])
             return
-        sensor = self.devices[port]
-        if isinstance(sensor, TiltSensor):
-            sensor.handle_notification(data)
+
+        device = self.devices[port]
+        device.handle_notification(data)
 
     def _handle_port_status(self, data):
         port = get_byte(data, 3)
@@ -122,11 +123,11 @@ class MoveHub(object):
         if dev_type == TYPE_MOTOR:
             self.devices[port] = EncodedMotor(self, port)
         elif dev_type == TYPE_IMOTOR:
-            self.devices[port] = EncodedMotor(self, port)
-            self.external_motor = self.devices[port]
+            self.external_motor = EncodedMotor(self, port)
+            self.devices[port] = self.external_motor
         elif dev_type == TYPE_DISTANCE_COLOR_SENSOR:
-            self.devices[port] = ColorDistanceSensor(self, port)
-            self.color_distance_sensor = self.devices[port]
+            self.color_distance_sensor = ColorDistanceSensor(self, port)
+            self.devices[port] = self.color_distance_sensor
         elif dev_type == TYPE_LED:
             self.devices[port] = LED(self, port)
         elif dev_type == TYPE_TILT_SENSOR:

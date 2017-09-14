@@ -1,12 +1,6 @@
-import logging
-import time
 import unittest
-from threading import Thread
 
-from pylgbst import MoveHub, COLOR_RED, LED, EncodedMotor, PORT_AB
-from pylgbst.comms import Connection, str2hex, hex2str
-from pylgbst.constants import PORT_LED, TILT_STATES, TILT_SENSOR_MODE_2AXIS_FULL, TILT_SENSOR_MODE_2AXIS_SIMPLE, \
-    MOVE_HUB_HARDWARE_HANDLE
+from pylgbst import *
 
 HANDLE = MOVE_HUB_HARDWARE_HANDLE
 
@@ -103,7 +97,7 @@ class GeneralTest(unittest.TestCase):
 
         self._wait_notifications_handled(hub)
         hub.tilt_sensor.unsubscribe(callback)
-        # self.assertEquals("0a01413a000100000001", hub.connection.writes[0][1])
+        # TODO: assert
 
     def test_motor(self):
         conn = ConnectionMock()
@@ -132,3 +126,21 @@ class GeneralTest(unittest.TestCase):
         hub = MoveHub(conn)
         # demo_all(hub)
         self._wait_notifications_handled(hub)
+
+    def test_color_sensor(self):
+        #
+        hub = HubMock()
+        hub.connection.notifications.append((HANDLE, '1b0e000f0004010125000000001000000010'))
+        time.sleep(1)
+
+        def callback(color, unk1, unk2):
+            name = COLORS[color] if color is not None else 'NONE'
+            log.info("Color: %s %s %s", name, unk1, unk2)
+
+        hub.color_distance_sensor.subscribe(callback)
+
+        hub.connection.notifications.append((HANDLE, "1b0e0008004501ff0aff00"))
+        time.sleep(1)
+        # TODO: assert
+        self._wait_notifications_handled(hub)
+        hub.color_distance_sensor.unsubscribe(callback)

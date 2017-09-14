@@ -24,7 +24,7 @@ def demo_tilt_sensor_simple(movehub):
 def demo_tilt_sensor_precise(movehub):
     log.info("Tilt sensor precise test. Turn device in different ways.")
     demo_tilt_sensor_simple.cnt = 0
-    limit = 100
+    limit = 50
 
     def callback(pitch, roll, yaw):
         demo_tilt_sensor_simple.cnt += 1
@@ -40,7 +40,7 @@ def demo_tilt_sensor_precise(movehub):
 def demo_led_colors(movehub):
     # LED colors demo
     log.info("LED colors demo")
-    for color in COLORS.keys():
+    for color in COLORS.keys()[1:] + [COLOR_BLACK]:
         log.info("Setting LED color to: %s", COLORS[color])
         movehub.led.set_color(color)
         sleep(1)
@@ -110,6 +110,22 @@ def vernie_head(movehub):
         sleep(2)
 
 
+def demo_color_sensor(movehub):
+    log.info("Color sensor test: give it 3 things to detect color")
+    demo_color_sensor.cnt = 0
+
+    def callback(color, distance):
+        demo_color_sensor.cnt += 1
+        clr = COLORS[color] if color in COLORS else None
+        log.info("#%s: Color %s, distance %s", demo_color_sensor.cnt, clr, distance)
+
+    movehub.color_distance_sensor.subscribe(callback)
+    while demo_color_sensor.cnt < 300:
+        time.sleep(1)
+
+    movehub.color_distance_sensor.unsubscribe(callback)
+
+
 def demo_all(movehub):
     demo_led_colors(movehub)
     demo_motors_timed(movehub)
@@ -117,6 +133,7 @@ def demo_all(movehub):
     demo_port_cd_motor(movehub)
     demo_tilt_sensor_simple(movehub)
     demo_tilt_sensor_precise(movehub)
+    demo_color_sensor(movehub)
 
 
 if __name__ == '__main__':
@@ -129,7 +146,7 @@ if __name__ == '__main__':
         connection = BLEConnection().connect()
 
     hub = MoveHub(connection)
-    demo_tilt_sensor_precise(hub)
+    demo_color_sensor(hub)
 
     # demo_all(hub)
 

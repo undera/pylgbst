@@ -2,7 +2,7 @@ import logging
 import struct
 import time
 
-from pylgbst import get_byte, int2byte
+from pylgbst import get_byte, int2byte, str2hex
 from pylgbst.constants import *
 
 log = logging.getLogger('peripherals')
@@ -33,10 +33,6 @@ class Peripheral(object):
         self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE,
                                      int2byte(len(cmd) + 1) + cmd)  # should we +1 cmd len here?
 
-    def _set_port_val(self, value):
-        # FIXME: became obsolete
-        self._write_to_hub(MSG_SET_PORT_VAL, value)
-
     def started(self):
         self.working = True
 
@@ -47,14 +43,21 @@ class Peripheral(object):
         for subscriber in self._subscribers:
             subscriber(*args, **kwargs)
 
+    def handle_notification(self, data):
+        log.warning("Unhandled device notification for %s: %s", self, str2hex(data))
+
 
 class LED(Peripheral):
     def set_color(self, color):
         if color not in COLORS:
             raise ValueError("Color %s is not in list of available colors" % color)
 
-        cmd = b'\x11\x51\x00' + int2byte(color)
-        self._set_port_val(cmd)
+        cmd = b'\xFF\x51\x00' + int2byte(color)
+        self._write_to_hub(MSG_SET_PORT_VAL, cmd)
+
+    def finished(self):
+        super(LED, self).finished()
+        log.debug("LED has changed color")
 
 
 class EncodedMotor(Peripheral):
@@ -89,7 +92,7 @@ class EncodedMotor(Peripheral):
 
         command += self.TRAILER
 
-        self._set_port_val(command)
+        self._write_to_hub(MSG_SET_PORT_VAL, command)
 
     def timed(self, seconds, speed_primary=1, speed_secondary=None, async=False):
         if speed_secondary is None:
@@ -128,19 +131,22 @@ class TiltSensor(Peripheral):
         super(TiltSensor, self).__init__(parent, port)
         self.mode = None
 
-    def subscribe(self, callback, mode=TILT_SENSOR_MODE_BASIC, threshold=1):
+    def subscribe(self, callback, mode=TILT_SENSOR_MODE_BASIC, granularity=1):
         self.mode = mode
+
         params = int2byte(self.mode)
-        params += int2byte(threshold)
+        params += int2byte(granularity)
         params += self.TRAILER
         params += int2byte(1)  # enable
-        self._write_to_hub(MSG_SENSOR_SUBSCRIBE, params + self.TRAILER)
+        self._write_to_hub(MSG_SENSOR_SUBSCRIBE, params)
         self._subscribers.add(callback)
 
-    def unsubscribe(self, callback):
-        self._subscribers.remove(callback)
+    def unsubscribe(self, callback=None):
+        if callback in self._subscribers:
+            self._subscribers.remove(callback)
+
         if not self._subscribers:
-            self._write_to_hub(MSG_SENSOR_SUBSCRIBE, int2byte(self.mode) + self.TRAILER + int2byte(0))
+            self._write_to_hub(MSG_SENSOR_SUBSCRIBE, int2byte(self.mode) + b'\x00\x00\x00' + int2byte(0))
 
     def handle_notification(self, data):
         if self.mode == TILT_SENSOR_MODE_BASIC:
@@ -173,7 +179,29 @@ class TiltSensor(Peripheral):
 
 
 class ColorDistanceSensor(Peripheral):
-    pass
+    def subscribe(self, callback):
+        params = b'\x08\x01\x00\x00\x00'
+        params += int2byte(1)  # enable
+        self._write_to_hub(MSG_SENSOR_SUBSCRIBE, params)
+        self._subscribers.add(callback)
+
+    def unsubscribe(self, callback=None):
+        if callback in self._subscribers:
+            self._subscribers.remove(callback)
+
+        if not self._subscribers:
+            self._write_to_hub(MSG_SENSOR_SUBSCRIBE, b'\x08\x01\x00\x00\x00' + int2byte(0))
+
+    def handle_notification(self, data):
+        color = get_byte(data, 4)
+        distance = get_byte(data, 5)
+        partial = get_byte(data, 7)
+        if partial:
+            distance += 1.0 / partial
+        self._notify_subscribers(color if color != 0xFF else None, float(distance))
+
+
+# 0a00 41 01 01 enable
 
 
 class Button(Peripheral):
