@@ -37,10 +37,6 @@ class Peripheral(object):
         # FIXME: became obsolete
         self._write_to_hub(MSG_SET_PORT_VAL, value)
 
-    def _subscribe_on_port(self, params):
-        # FIXME: became obsolete
-        self._write_to_hub(MSG_SENSOR_SUBSCRIBE, params)
-
     def started(self):
         self.working = True
 
@@ -126,22 +122,25 @@ class EncodedMotor(Peripheral):
 
 
 class TiltSensor(Peripheral):
-    TRAILER = b'\x01\x00\x00\x00'
+    TRAILER = b'\x00\x00\x00'
 
     def __init__(self, parent, port):
         super(TiltSensor, self).__init__(parent, port)
         self.mode = None
 
-    def subscribe(self, callback, mode=TILT_SENSOR_MODE_BASIC):
-        # TODO: check input for valid mode
+    def subscribe(self, callback, mode=TILT_SENSOR_MODE_BASIC, threshold=1):
         self.mode = mode
-        self._subscribe_on_port(int2byte(self.mode) + self.TRAILER + int2byte(1))
+        params = int2byte(self.mode)
+        params += int2byte(threshold)
+        params += self.TRAILER
+        params += int2byte(1)  # enable
+        self._write_to_hub(MSG_SENSOR_SUBSCRIBE, params + self.TRAILER)
         self._subscribers.add(callback)
 
     def unsubscribe(self, callback):
         self._subscribers.remove(callback)
         if not self._subscribers:
-            self._subscribe_on_port(int2byte(self.mode) + self.TRAILER + int2byte(0))
+            self._write_to_hub(MSG_SENSOR_SUBSCRIBE, int2byte(self.mode) + self.TRAILER + int2byte(0))
 
     def handle_notification(self, data):
         if self.mode == TILT_SENSOR_MODE_BASIC:

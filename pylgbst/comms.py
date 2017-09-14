@@ -36,7 +36,7 @@ else:
 
 
     def str2hex(data):
-        return binascii.hexlify(data)
+        return binascii.hexlify(data).decode("utf8")
 
 
     def hex2str(data):
