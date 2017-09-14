@@ -15,6 +15,7 @@ from pylgbst.constants import LEGO_MOVE_HUB
 
 log = logging.getLogger('transport')
 
+# could use `six` here, but just for 1 function
 if sys.version_info[0] == 2:
     def str2hex(data):
         return data.encode("hex")
@@ -26,6 +27,10 @@ if sys.version_info[0] == 2:
 
     def get_byte(seq, index):
         return ord(seq[index])
+
+
+    def int2byte(val):
+        return chr(val)
 else:
     import binascii
 
@@ -40,6 +45,10 @@ else:
 
     def get_byte(seq, index):
         return seq[index]
+
+
+    def int2byte(val):
+        return bytes(val, )
 
 
 # noinspection PyMethodOverriding

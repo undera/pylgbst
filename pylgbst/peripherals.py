@@ -2,7 +2,7 @@ import logging
 import struct
 import time
 
-from pylgbst import get_byte
+from pylgbst import get_byte, int2byte
 from pylgbst.constants import *
 
 log = logging.getLogger('peripherals')
@@ -28,9 +28,10 @@ class Peripheral(object):
         return "%s on port %s" % (self.__class__.__name__, PORTS[self.port] if self.port in PORTS else 'N/A')
 
     def _write_to_hub(self, msg_type, params):
-        cmd = PACKET_VER + chr(msg_type) + chr(self.port)
+        cmd = int2byte(PACKET_VER) + int2byte(msg_type) + int2byte(self.port)
         cmd += params
-        self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE, chr(len(cmd) + 1) + cmd)  # should we +1 cmd len here?
+        self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE,
+                                     int2byte(len(cmd) + 1) + cmd)  # should we +1 cmd len here?
 
     def _set_port_val(self, value):
         # FIXME: became obsolete
@@ -56,7 +57,7 @@ class LED(Peripheral):
         if color not in COLORS:
             raise ValueError("Color %s is not in list of available colors" % color)
 
-        cmd = '\x11\x51\x00' + chr(color)
+        cmd = '\x11\x51\x00' + int2byte(color)
         self._set_port_val(cmd)
 
 
@@ -86,9 +87,9 @@ class EncodedMotor(Peripheral):
         # set for port
         command = self.MOVEMENT_TYPE + command
 
-        command += chr(self._speed_abs(speed_primary))
+        command += int2byte(self._speed_abs(speed_primary))
         if self.port == PORT_AB:
-            command += chr(self._speed_abs(speed_secondary))
+            command += int2byte(self._speed_abs(speed_secondary))
 
         command += self.TRAILER
 
@@ -124,10 +125,6 @@ class EncodedMotor(Peripheral):
         # TODO: how to tell when motor has stopped?
 
 
-class ColorDistanceSensor(Peripheral):
-    pass
-
-
 class TiltSensor(Peripheral):
     def __init__(self, parent, port):
         super(TiltSensor, self).__init__(parent, port)
@@ -135,7 +132,7 @@ class TiltSensor(Peripheral):
 
     def _switch_mode(self, mode):
         self.mode = mode
-        self._subscribe_on_port(chr(mode) + b'\x01\x00\x00\x00\x01')
+        self._subscribe_on_port(int2byte(mode) + b'\x01\x00\x00\x00\x01')
 
     def subscribe(self, callback, mode=TILT_SENSOR_MODE_BASIC):
         if mode not in (TILT_SENSOR_MODE_BASIC, TILT_SENSOR_MODE_2AXIS, TILT_SENSOR_MODE_FULL):
@@ -143,11 +140,6 @@ class TiltSensor(Peripheral):
 
         self._switch_mode(mode)
         self._subscribers.add(callback)  # TODO: maybe join it into `_subscribe_on_port`
-
-        # 1b0e00 0a00 47 3a020100000001
-        # 1b0e00 0a00 47 3a020100000001
-
-        # 1b0e000a00  47 3a030100000001 - sent finish?
 
     def unsubscribe(self, callback):
         self._subscribers.remove(callback)
@@ -172,6 +164,10 @@ class TiltSensor(Peripheral):
             return val - 256
         else:
             return val
+
+
+class ColorDistanceSensor(Peripheral):
+    pass
 
 
 class Button(Peripheral):
