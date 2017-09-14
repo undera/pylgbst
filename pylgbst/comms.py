@@ -8,11 +8,10 @@ import sys
 import time
 import traceback
 from abc import abstractmethod
+from gattlib import DiscoveryService, GATTRequester
 from threading import Thread
 
-from gattlib import DiscoveryService, GATTRequester
-
-from pylgbst.constants import DEVICE_NAME, LEGO_MOVE_HUB
+from pylgbst.constants import LEGO_MOVE_HUB
 
 log = logging.getLogger('transport')
 
@@ -23,6 +22,10 @@ if sys.version_info[0] == 2:
 
     def hex2str(data):
         return data.decode("hex")
+
+
+    def get_byte(seq, index):
+        return ord(seq[index])
 else:
     import binascii
 
@@ -33,6 +36,10 @@ else:
 
     def hex2str(data):
         return binascii.unhexlify(data)
+
+
+    def get_byte(seq, index):
+        return seq[index]
 
 
 # noinspection PyMethodOverriding
@@ -108,7 +115,7 @@ class BLEConnection(Connection):
             raise RuntimeError("No requester available")
 
     def read(self, handle):
-        # FIXME: repeating reads hang...
+        # FIXME: repeating reads hangs it...
         log.debug("Reading from: %s", handle)
         data = self.requester.read_by_handle(handle)
         log.debug("Result: %s", data)

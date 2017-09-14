@@ -66,10 +66,10 @@ class MoveHub(object):
         Using https://github.com/JorgePe/BOOSTreveng/blob/master/Notifications.md
         """
         orig = data
-        log.debug("Notification on %s: %s", handle, str2hex(orig))
         data = data[3:]
+        log.debug("Notification on %s: %s", handle, str2hex(orig))
 
-        msg_type = ord(data[2])
+        msg_type = get_byte(data, 2)
 
         if msg_type == MSG_PORT_INFO:
             self._handle_port_info(data)
@@ -81,8 +81,8 @@ class MoveHub(object):
         pass
 
     def _handle_port_status(self, data):
-        port = ord(data[3])
-        status = ord(data[4])
+        port = get_byte(data, 3)
+        status = get_byte(data, 4)
 
         if status == STATUS_STARTED:
             self.devices[port].started()
@@ -94,8 +94,8 @@ class MoveHub(object):
             log.warning("Unhandled status value: 0x%x", status)
 
     def _handle_port_info(self, data):
-        port = ord(data[3])
-        dev_type = ord(data[5])
+        port = get_byte(data, 3)
+        dev_type = get_byte(data, 5)
 
         if port in PORTS and dev_type in DEVICE_TYPES:
             log.debug("Device %s at port %s", DEVICE_TYPES[dev_type], PORTS[port])

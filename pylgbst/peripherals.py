@@ -15,20 +15,27 @@ class Peripheral(object):
         self.port = port
         self.working = False
 
-    def _set_port_val(self, value):
-        cmd = PACKET_VER + chr(MSG_SET_PORT_VAL) + chr(self.port)
-        cmd += value
+    def __repr__(self):
+        return "%s on port %s" % (self.__class__.__name__, PORTS[self.port] if self.port in PORTS else 'N/A')
 
-        self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE, chr(len(cmd)) + cmd)  # should we +1 cmd len here?
+    def _write_to_hub(self, msg_type, params):
+        cmd = PACKET_VER + chr(msg_type) + chr(self.port)
+        cmd += params
+        self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE, chr(len(cmd) + 1) + cmd)  # should we +1 cmd len here?
+
+    def _set_port_val(self, value):
+        # FIXME: became obsolete
+        self._write_to_hub(MSG_SET_PORT_VAL, value)
+
+    def _subscribe_on_port(self, params):
+        # FIXME: became obsolete
+        self._write_to_hub(MSG_PORT_SUBSCRIBE, params)
 
     def started(self):
         self.working = True
 
     def finished(self):
         self.working = False
-
-    def __repr__(self):
-        return "%s on port %s" % (self.__class__.__name__, PORTS[self.port] if self.port in PORTS else 'N/A')
 
 
 class LED(Peripheral):
@@ -109,7 +116,9 @@ class ColorDistanceSensor(Peripheral):
 
 
 class TiltSensor(Peripheral):
-    pass
+    def subscribe(self, callback):
+        self._subscribe_on_port(params)
+        self._subscribers.append(callback)
 
 
 class Button(Peripheral):
