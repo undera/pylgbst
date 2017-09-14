@@ -1,18 +1,40 @@
-import logging
-import traceback
 from time import sleep
 
-from pylgbst import MoveHub, COLORS, EncodedMotor, PORT_D
-from pylgbst.comms import DebugServerConnection, BLEConnection
+from pylgbst import *
 
 log = logging.getLogger("demo")
 
 
-def demo_all(movehub):
-    demo_led_colors(movehub)
-    demo_motors_timed(movehub)
-    demo_motors_angled(movehub)
-    demo_port_cd_motor(movehub)
+def demo_tilt_sensor_simple(movehub):
+    log.info("Tilt sensor simple test. Turn device in different ways.")
+    demo_tilt_sensor_simple.cnt = 0
+    limit = 10
+
+    def callback(param1):
+        demo_tilt_sensor_simple.cnt += 1
+        log.info("Tilt #%s of %s: %s", demo_tilt_sensor_simple.cnt, limit, TILT_STATES[param1])
+
+    movehub.tilt_sensor.subscribe(callback)
+    while demo_tilt_sensor_simple.cnt < limit:
+        time.sleep(1)
+
+    movehub.tilt_sensor.unsubscribe(callback)
+
+
+def demo_tilt_sensor_precise(movehub):
+    log.info("Tilt sensor precise test. Turn device in different ways.")
+    demo_tilt_sensor_simple.cnt = 0
+    limit = 100
+
+    def callback(param1, param2):
+        demo_tilt_sensor_simple.cnt += 1
+        log.info("Tilt #%s of %s: %s %s", demo_tilt_sensor_simple.cnt, limit, param1, param2)
+
+    movehub.tilt_sensor.subscribe(callback, mode=TILT_SENSOR_MODE_FULL)
+    while demo_tilt_sensor_simple.cnt < limit:
+        time.sleep(1)
+
+    movehub.tilt_sensor.unsubscribe(callback)
 
 
 def demo_led_colors(movehub):
@@ -88,6 +110,15 @@ def vernie_head(movehub):
         sleep(2)
 
 
+def demo_all(movehub):
+    demo_led_colors(movehub)
+    demo_motors_timed(movehub)
+    demo_motors_angled(movehub)
+    demo_port_cd_motor(movehub)
+    demo_tilt_sensor_simple(movehub)
+    demo_tilt_sensor_precise(movehub)
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
@@ -98,9 +129,12 @@ if __name__ == '__main__':
         connection = BLEConnection().connect()
 
     hub = MoveHub(connection)
-    hub.tilt_sensor.subscribe(lambda: log.info("Tilt"))
+    #demo_tilt_sensor_precise(hub)
+
+    demo_all(hub)
+
+    log.info("Sleeping 60s")
     sleep(60)
-    # demo_all(hub)
 
     # sleep(1)
     # hub.get_name()

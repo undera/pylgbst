@@ -1,7 +1,11 @@
+import logging
 import struct
 import time
 
+from pylgbst import get_byte
 from pylgbst.constants import *
+
+log = logging.getLogger('peripherals')
 
 
 class Peripheral(object):
@@ -42,7 +46,7 @@ class Peripheral(object):
     def finished(self):
         self.working = False
 
-    def notify_subscribers(self, *args, **kwargs):
+    def _notify_subscribers(self, *args, **kwargs):
         for subscriber in self._subscribers:
             subscriber(*args, **kwargs)
 
@@ -125,11 +129,34 @@ class ColorDistanceSensor(Peripheral):
 
 
 class TiltSensor(Peripheral):
-    def subscribe(self, callback):
-        #params = b'\x00\x01\x00\x00\x00\x01'  # full
-        params = b'\x02\x01\x00\x00\x00\x01'  # basic
-        self._subscribe_on_port(params)
+    def _switch_mode(self, simple):
+        self._subscribe_on_port(chr(simple) + b'\x01\x00\x00\x00\x01')
+
+    def subscribe(self, callback, mode=TILT_SENSOR_MODE_BASIC):
+        if mode not in (TILT_SENSOR_MODE_BASIC, TILT_SENSOR_MODE_SOME1, TILT_SENSOR_MODE_FULL):
+            raise ValueError("Wrong tilt sensor mode: 0x%x", mode)
+        self._switch_mode(mode)
         self._subscribers.append(callback)  # TODO: maybe join it into `_subscribe_on_port`
+
+        # 1b0e00 0a00 47 3a020100000001
+        # 1b0e00 0a00 47 3a020100000001
+
+        # 1b0e000a00  47 3a030100000001 - sent finish?
+
+    def unsubscribe(self, callback):
+        self._subscribers.remove(callback)
+        if not self._subscribers:
+            self._switch_mode(3)
+
+    def handle_notification(self, data):
+        if len(data) == 5:
+            state = get_byte(data, 4)
+            self._notify_subscribers(state)
+        elif len(data) == 6:
+            # TODO: how to interpret these 2 bytes?
+            self._notify_subscribers(get_byte(data, 4), get_byte(data, 5))
+        else:
+            log.warning("Unexpected length for tilt sensor data: %s", len(data))
 
 
 class Button(Peripheral):
@@ -147,6 +174,3 @@ LISTEN_ENCODER_ON_A = b'        \x0a\x00 \x41\x37 \x02\x01\x00\x00\x00\x01'
 LISTEN_ENCODER_ON_B = b'        \x0a\x00 \x41\x38 \x02\x01\x00\x00\x00\x01'
 LISTEN_ENCODER_ON_C = b'        \x0a\x00 \x41\x01 \x02\x01\x00\x00\x00\x01'
 LISTEN_ENCODER_ON_D = b'        \x0a\x00 \x41\x02 \x02\x01\x00\x00\x00\x01'
-
-LISTEN_TILT_BASIC = b'          \x0a\x00 \x41\x3a \x02\x01\x00\x00\x00\x01'
-LISTEN_TILT_FULL = b'           \x0a\x00 \x41\x3a \x00\x01\x00\x00\x00\x01'

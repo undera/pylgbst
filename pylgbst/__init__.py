@@ -88,7 +88,7 @@ class MoveHub(object):
         port = get_byte(data, 3)
         sensor = self.devices[port]
         if isinstance(sensor, TiltSensor):
-            sensor.notify_subscribers()
+            sensor.handle_notification(data)
 
     def _handle_port_status(self, data):
         port = get_byte(data, 3)

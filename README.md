@@ -11,6 +11,7 @@ Best way to start is to look at [demo.py](demo.py) file, and run it.
 - permanent Bluetooth connection server for faster debugging
 - angled and timed movement for motors
 - LED color change
+- sensor data subscribe/unsubscribe
 
 ## Usage
 
