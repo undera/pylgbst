@@ -57,7 +57,7 @@ class LED(Peripheral):
         if color not in COLORS:
             raise ValueError("Color %s is not in list of available colors" % color)
 
-        cmd = '\x11\x51\x00' + int2byte(color)
+        cmd = b'\x11\x51\x00' + int2byte(color)
         self._set_port_val(cmd)
 
 
