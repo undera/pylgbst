@@ -151,6 +151,8 @@ class DebugServer(object):
             self.ble.requester.notification_sink = lambda x, y: self._notify(conn, x, y)
             try:
                 self._handle_conn(conn)
+            except KeyboardInterrupt:
+                raise
             except BaseException:
                 log.error("Problem handling incoming connection: %s", traceback.format_exc())
             finally:
@@ -165,6 +167,8 @@ class DebugServer(object):
         log.debug("Send notification: %s", payload)
         try:
             conn.send(json.dumps(payload) + "\n")
+        except KeyboardInterrupt:
+            raise
         except BaseException:
             log.error("Problem sending notification: %s", traceback.format_exc())
 
@@ -189,6 +193,8 @@ class DebugServer(object):
                     log.info("Cmd line: %s", line)
                     try:
                         self._handle_cmd(json.loads(line))
+                    except KeyboardInterrupt:
+                        raise
                     except BaseException:
                         log.error("Failed to handle cmd: %s", traceback.format_exc())
 

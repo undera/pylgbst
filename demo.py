@@ -98,10 +98,12 @@ if __name__ == '__main__':
         connection = BLEConnection().connect()
 
     hub = MoveHub(connection)
-    demo_all(hub)
+    hub.tilt_sensor.subscribe(lambda: log.info("Tilt"))
+    sleep(60)
+    # demo_all(hub)
 
-    #sleep(1)
+    # sleep(1)
     # hub.get_name()
-    #demo_port_cd_motor(hub)
+    # demo_port_cd_motor(hub)
     # demo_led_colors(hub)
-    #sleep(1)
+    # sleep(1)

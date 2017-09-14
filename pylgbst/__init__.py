@@ -40,11 +40,11 @@ class MoveHub(object):
         self.port_C = None
         self.port_D = None
 
+        self.connection.set_notify_handler(self._notify)
+
         self._wait_for_devices()
 
     def _wait_for_devices(self):
-        # enables notifications reading
-        self.connection.set_notify_handler(self._notify)
         self.connection.write(ENABLE_NOTIFICATIONS_HANDLE, ENABLE_NOTIFICATIONS_VALUE)
 
         builtin_devices = ()
@@ -66,19 +66,29 @@ class MoveHub(object):
         Using https://github.com/JorgePe/BOOSTreveng/blob/master/Notifications.md
         """
         orig = data
-        data = data[3:]
-        log.debug("Notification on %s: %s", handle, str2hex(orig))
 
-        msg_type = get_byte(data, 2)
+        if handle == MOVE_HUB_HARDWARE_HANDLE:
+            data = data[3:]
+            log.debug("Notification on %s: %s", handle, str2hex(orig))
 
-        if msg_type == MSG_PORT_INFO:
-            self._handle_port_info(data)
-        elif msg_type == MSG_PORT_STATUS:
-            self._handle_port_status(data)
+            msg_type = get_byte(data, 2)
+
+            if msg_type == MSG_PORT_INFO:
+                self._handle_port_info(data)
+            elif msg_type == MSG_PORT_STATUS:
+                self._handle_port_status(data)
+            elif msg_type == MSG_SENSOR_DATA:
+                self._handle_sensor_data(data)
+            else:
+                log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
         else:
-            log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
+            log.warning("Unsupported notification handle: 0x%s", handle)
 
-        pass
+    def _handle_sensor_data(self, data):
+        port = get_byte(data, 3)
+        sensor = self.devices[port]
+        if isinstance(sensor, TiltSensor):
+            sensor.notify_subscribers()
 
     def _handle_port_status(self, data):
         port = get_byte(data, 3)

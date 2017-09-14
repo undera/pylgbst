@@ -34,13 +34,17 @@ class Peripheral(object):
 
     def _subscribe_on_port(self, params):
         # FIXME: became obsolete
-        self._write_to_hub(MSG_PORT_SUBSCRIBE, params)
+        self._write_to_hub(MSG_SENSOR_SUBSCRIBE, params)
 
     def started(self):
         self.working = True
 
     def finished(self):
         self.working = False
+
+    def notify_subscribers(self, *args, **kwargs):
+        for subscriber in self._subscribers:
+            subscriber(*args, **kwargs)
 
 
 class LED(Peripheral):
@@ -122,8 +126,8 @@ class ColorDistanceSensor(Peripheral):
 
 class TiltSensor(Peripheral):
     def subscribe(self, callback):
-        params = b'\x00\x01\x00\x00\x00\x01'  # full
-        # params = b'\x02\x01\x00\x00\x00\x01'  # basic
+        #params = b'\x00\x01\x00\x00\x00\x01'  # full
+        params = b'\x02\x01\x00\x00\x00\x01'  # basic
         self._subscribe_on_port(params)
         self._subscribers.append(callback)  # TODO: maybe join it into `_subscribe_on_port`
 

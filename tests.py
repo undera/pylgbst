@@ -5,8 +5,7 @@ from threading import Thread
 
 from pylgbst import MoveHub, COLOR_RED, LED, EncodedMotor, PORT_AB
 from pylgbst.comms import Connection, str2hex, hex2str
-from pylgbst.constants import PORT_LED, PORT_TILT_SENSOR
-from pylgbst.peripherals import TiltSensor
+from pylgbst.constants import PORT_LED
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -60,6 +59,13 @@ class HubMock(MoveHub):
 
 
 class GeneralTest(unittest.TestCase):
+    def _wait_notifications_handled(self, hub):
+        hub.connection.running = False
+        for _ in range(1, 1000):
+            time.sleep(0.1)
+            if hub.connection.finished:
+                break
+
     def test_led(self):
         hub = HubMock()
         led = LED(hub, PORT_LED)
@@ -68,13 +74,17 @@ class GeneralTest(unittest.TestCase):
 
     def test_tilt_sensor(self):
         hub = HubMock()
-        hub.tilt_sensor = TiltSensor(hub, PORT_TILT_SENSOR)
+        hub.connection.notifications.append((14, '1b0e00 0f00 04 3a 0128000000000100000001'))
+        time.sleep(1)
 
         def callback():
-            pass
+            log.debug("Tilt")
 
         hub.tilt_sensor.subscribe(callback)
+        hub.connection.notifications.append((14, "1b0e000600453a04fe"))
+        time.sleep(10)
         self.assertEquals("0a01413a000100000001", hub.connection.writes[0][1])
+        self._wait_notifications_handled(hub)
 
     def test_motor(self):
         conn = ConnectionMock()
@@ -102,7 +112,4 @@ class GeneralTest(unittest.TestCase):
 
         hub = MoveHub(conn)
         # demo_all(hub)
-        conn.running = False
-
-        while not conn.finished:
-            time.sleep(0.1)
+        self._wait_notifications_handled(hub)
