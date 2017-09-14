@@ -3,9 +3,10 @@ import time
 import unittest
 from threading import Thread
 
-from pylgbst import MoveHub, COLOR_RED, LED, EncodedMotor, PORT_AB, Peripheral
+from pylgbst import MoveHub, COLOR_RED, LED, EncodedMotor, PORT_AB
 from pylgbst.comms import Connection, str2hex, hex2str
-from pylgbst.constants import PORT_LED
+from pylgbst.constants import PORT_LED, PORT_TILT_SENSOR
+from pylgbst.peripherals import TiltSensor
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -51,29 +52,29 @@ class ConnectionMock(Connection):
 
 
 class HubMock(MoveHub):
+    def __init__(self, connection=None):
+        super(HubMock, self).__init__(connection if connection else ConnectionMock())
+
     def _wait_for_devices(self):
         pass
 
 
 class GeneralTest(unittest.TestCase):
     def test_led(self):
-        conn = ConnectionMock()
-        conn.notifications.append((14, '1b0e00 0900 04 39 0227003738'))
-        hub = HubMock(conn)
+        hub = HubMock()
         led = LED(hub, PORT_LED)
         led.set_color(COLOR_RED)
-        self.assertEquals("0701813211510009", conn.writes[0][1])
+        self.assertEquals("0801813211510009", hub.connection.writes[0][1])
 
     def test_tilt_sensor(self):
-        conn = ConnectionMock()
-        conn.notifications.append((14, '1b0e000f00043a0128000000000100000001'))
-        hub = HubMock(conn)
+        hub = HubMock()
+        hub.tilt_sensor = TiltSensor(hub, PORT_TILT_SENSOR)
 
         def callback():
             pass
 
         hub.tilt_sensor.subscribe(callback)
-        self.assertEquals("0701813211510009", conn.writes[1][1])
+        self.assertEquals("0a01413a000100000001", hub.connection.writes[0][1])
 
     def test_motor(self):
         conn = ConnectionMock()
@@ -81,9 +82,9 @@ class GeneralTest(unittest.TestCase):
         hub = HubMock(conn)
         motor = EncodedMotor(hub, PORT_AB)
         motor.timed(1.5)
-        self.assertEquals("0c018139110adc056464647f03", conn.writes[0][1])
+        self.assertEquals("0d018139110adc056464647f03", conn.writes[0][1])
         motor.angled(90)
-        self.assertEquals("0e018139110c5a0000006464647f03", conn.writes[1][1])
+        self.assertEquals("0f018139110c5a0000006464647f03", conn.writes[1][1])
 
     def test_capabilities(self):
         conn = ConnectionMock()

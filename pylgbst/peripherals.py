@@ -10,10 +10,15 @@ class Peripheral(object):
     """
 
     def __init__(self, parent, port):
+        """
+        :type parent: pylgbst.MoveHub
+        :type port: int
+        """
         super(Peripheral, self).__init__()
         self.parent = parent
         self.port = port
         self.working = False
+        self._subscribers = []
 
     def __repr__(self):
         return "%s on port %s" % (self.__class__.__name__, PORTS[self.port] if self.port in PORTS else 'N/A')
@@ -117,8 +122,10 @@ class ColorDistanceSensor(Peripheral):
 
 class TiltSensor(Peripheral):
     def subscribe(self, callback):
+        params = b'\x00\x01\x00\x00\x00\x01'  # full
+        # params = b'\x02\x01\x00\x00\x00\x01'  # basic
         self._subscribe_on_port(params)
-        self._subscribers.append(callback)
+        self._subscribers.append(callback)  # TODO: maybe join it into `_subscribe_on_port`
 
 
 class Button(Peripheral):

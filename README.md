@@ -29,6 +29,7 @@ for device in hub.devices:
 - Make it 2/3 compatible
 - Add travis unit tests and coverage
 - Give nice documentation examples, don't forget to mention logging
+- make angled motors to be synchronous by default
 
 ## Links
 
