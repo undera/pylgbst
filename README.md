@@ -2,7 +2,7 @@
 
 Requires `gattlib` to be installed, currently Python 2.7 only
 
-Best way to start is to look at [demo.py](demo.py) file, and run it.
+Best way to start is to look into [demo.py](demo.py) file, and run it.
 
 ## Features
 
@@ -20,7 +20,6 @@ Best way to start is to look at [demo.py](demo.py) file, and run it.
 from pylgbst import MoveHub
 
 hub = MoveHub()
-print(hub.get_name())
 
 for device in hub.devices:
     print(device)
@@ -39,6 +38,7 @@ sudo python -c "from pylgbst.comms import *; import logging; logging.basicConfig
 - Give nice documentation examples, don't forget to mention logging
 - make angled motors to be synchronous by default => 3-state status
 - make sure unit tests cover all important code
+- generalize getting device info + give constants (low priority)
 
 ## Links
 

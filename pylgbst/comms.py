@@ -6,13 +6,13 @@ import json
 import logging
 import socket
 import sys
-import time
 import traceback
-from six.moves import queue
 from abc import abstractmethod
 from binascii import unhexlify
 from gattlib import DiscoveryService, GATTRequester
 from threading import Thread
+
+from six.moves import queue
 
 from pylgbst.constants import LEGO_MOVE_HUB, MSG_DEVICE_SHUTDOWN
 
@@ -71,10 +71,6 @@ class Requester(GATTRequester):
 
 class Connection(object):
     @abstractmethod
-    def read(self, handle):
-        pass
-
-    @abstractmethod
     def write(self, handle, data):
         pass
 
@@ -88,17 +84,17 @@ class BLEConnection(Connection):
     Main transport class, uses real Bluetooth LE connection.
     Loops with timeout of 1 seconds to find device named "Lego MOVE Hub"
 
-    :type _requester: Requester
+    :type requester: Requester
     """
 
     def __init__(self):
         super(BLEConnection, self).__init__()
-        self._requester = None
+        self.requester = None
 
     def connect(self, bt_iface_name='hci0'):
         service = DiscoveryService(bt_iface_name)
 
-        while not self._requester:
+        while not self.requester:
             log.info("Discovering devices using %s...", bt_iface_name)
             devices = service.discover(1)
             log.debug("Devices: %s", devices)
@@ -106,30 +102,21 @@ class BLEConnection(Connection):
             for address, name in devices.items():
                 if name == LEGO_MOVE_HUB:
                     logging.info("Found %s at %s", name, address)
-                    self._requester = Requester(address, True, bt_iface_name)
+                    self.requester = Requester(address, True, bt_iface_name)
                     break
 
         return self
 
     def set_notify_handler(self, handler):
-        if self._requester:
+        if self.requester:
             log.debug("Setting notification handler: %s", handler)
-            self._requester.notification_sink = handler
+            self.requester.notification_sink = handler
         else:
             raise RuntimeError("No requester available")
 
-    def read(self, handle):
-        # FIXME: repeating reads hangs it...
-        log.debug("Reading from: %s", handle)
-        data = self._requester.read_by_handle(handle)
-        log.debug("Result: %s", data)
-        if isinstance(data, list):
-            data = data[0]
-        return data
-
     def write(self, handle, data):
         log.debug("Writing to %s: %s", handle, str2hex(data))
-        return self._requester.write_by_handle(handle, data)
+        return self.requester.write_by_handle(handle, data)
 
 
 class DebugServer(object):
@@ -156,7 +143,7 @@ class DebugServer(object):
             conn, addr = self.sock.accept()
             if not self._running:
                 raise KeyboardInterrupt("Shutdown")
-            self.ble._requester.notification_sink = lambda x, y: self._notify(conn, x, y)
+            self.ble.requester.notification_sink = lambda x, y: self._notify(conn, x, y)
             try:
                 self._handle_conn(conn)
             except KeyboardInterrupt:
@@ -164,7 +151,7 @@ class DebugServer(object):
             except BaseException:
                 log.error("Problem handling incoming connection: %s", traceback.format_exc())
             finally:
-                self.ble._requester.notification_sink = self._notify_dummy
+                self.ble.requester.notification_sink = self._notify_dummy
                 conn.close()
 
     def __del__(self):
@@ -220,11 +207,6 @@ class DebugServer(object):
     def _handle_cmd(self, cmd):
         if cmd['type'] == 'write':
             self.ble.write(cmd['handle'], unhexlify(cmd['data']))
-        elif cmd['type'] == 'read':
-            data = self.ble.read(cmd['handle'])
-            payload = {"type": "response", "data": str2hex(data)}
-            log.debug("Send response: %s", payload)
-            self.sock.send(json.dumps(payload) + "\n")
         else:
             raise ValueError("Unhandled cmd: %s", cmd)
 
@@ -257,20 +239,6 @@ class DebugServerConnection(Connection):
             "data": str2hex(data)
         }
         self._send(payload)
-
-    def read(self, handle):
-        payload = {
-            "type": "read",
-            "handle": handle
-        }
-        self._send(payload)
-
-        while True:
-            for item in self.incoming:
-                if item['type'] == 'response':
-                    self.incoming.remove(item)
-                    return unhexlify(item['data'])
-            time.sleep(0.1)
 
     def _send(self, payload):
         log.debug("Sending to debug server: %s", payload)

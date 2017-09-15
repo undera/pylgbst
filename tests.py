@@ -42,10 +42,6 @@ class ConnectionMock(Connection):
         log.debug("Writing to %s: %s", handle, str2hex(data))
         self.writes.append((handle, str2hex(data)))
 
-    def read(self, handle):
-        log.debug("Reading from: %s", handle)
-        return None  # TODO
-
 
 class HubMock(MoveHub):
     def __init__(self, connection=None):

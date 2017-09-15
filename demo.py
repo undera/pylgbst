@@ -177,6 +177,6 @@ if __name__ == '__main__':
     sleep(10)
     # demo_port_cd_motor(hub)
     sleep(10)
-    hub.button.unsubscribe(cb_log)
+    #hub.button.unsubscribe(cb_log)
     sleep(10)
     # demo_all(hub)

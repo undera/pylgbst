@@ -59,10 +59,6 @@ class MoveHub(object):
         log.warning("Got only these devices: %s", builtin_devices)
         raise RuntimeError("Failed to obtain all builtin devices")
 
-    def get_name(self):
-        # note: reading this too fast makes it hang
-        return self.connection.read(DEVICE_NAME)
-
     def _notify(self, handle, data):
         orig = data
 
