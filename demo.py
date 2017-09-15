@@ -30,7 +30,7 @@ def demo_tilt_sensor_precise(movehub):
         demo_tilt_sensor_simple.cnt += 1
         log.info("Tilt #%s of %s: roll:%s pitch:%s yaw:%s", demo_tilt_sensor_simple.cnt, limit, pitch, roll, yaw)
 
-    movehub.tilt_sensor.subscribe(callback, mode=TILT_SENSOR_MODE_FULL)
+    movehub.tilt_sensor.subscribe(callback, mode=TILT_MODE_FULL)
     while demo_tilt_sensor_simple.cnt < limit:
         time.sleep(1)
 
@@ -128,20 +128,28 @@ def demo_color_sensor(movehub):
 
 
 def demo_motor_sensors(movehub):
-    log.info("Motor rotation sensors test")
-    demo_color_sensor.cnt = 0
-    limit = 20
+    log.info("Motor rotation sensors test. Rotate all available motors once")
+    demo_motor_sensors.states = {
+        movehub.motor_A: [None, None],  # callback and last value
+        movehub.motor_B: [None, None],  # callback and last value
+    }
 
-    def callback(color, distance=None):
-        demo_color_sensor.cnt += 1
-        color = COLORS[color] if color in COLORS else color
-        log.info("#%s/%s: Color %s, distance %s", demo_color_sensor.cnt, limit, color, distance)
+    if movehub.external_motor is not None:
+        demo_motor_sensors.states[movehub.external_motor] = [None, None]
 
-    movehub.color_distance_sensor.subscribe(callback)
-    while demo_color_sensor.cnt < limit:
+    def callback(mtr, param1):
+        demo_motor_sensors.states[mtr][1] = param1
+        log.info("%s", {x: demo_motor_sensors.states[x][1] for x in demo_motor_sensors.states})
+
+    for motor in demo_motor_sensors.states:
+        demo_motor_sensors.states[motor][0] = lambda x: callback(motor, x)
+        motor.subscribe(demo_motor_sensors.states[motor][0])
+
+    while None in [x[1] for x in demo_motor_sensors.states.values()]:  # demo_motor_sensors.states < limit:
         time.sleep(1)
 
-    movehub.color_distance_sensor.unsubscribe(callback)
+    for motor in demo_motor_sensors.states:
+        motor.unsubscribe(demo_motor_sensors.states[motor][0])
 
 
 def demo_all(movehub):

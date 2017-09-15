@@ -23,7 +23,7 @@ class Peripheral(object):
         self.port = port
         self.working = False
         self._subscribers = set()
-        self.port_subscription_mode = None
+        self._port_subscription_mode = None
 
     def __repr__(self):
         return "%s on port %s" % (self.__class__.__name__, PORTS[self.port] if self.port in PORTS else 'N/A')
@@ -47,8 +47,8 @@ class Peripheral(object):
         self.working = False
 
     def subscribe(self, callback, mode, granularity=1):
-        self.port_subscription_mode = mode
-        self._port_subscribe(self.port_subscription_mode, granularity, True)
+        self._port_subscription_mode = mode
+        self._port_subscribe(self._port_subscription_mode, granularity, True)
         if callback:
             self._subscribers.add(callback)
 
@@ -57,8 +57,8 @@ class Peripheral(object):
             self._subscribers.remove(callback)
 
         if not self._subscribers:
-            self._port_subscribe(self.port_subscription_mode, 0, False)
-            self.port_subscription_mode = None
+            self._port_subscribe(self._port_subscription_mode, 0, False)
+            self._port_subscription_mode = None
 
     def _notify_subscribers(self, *args, **kwargs):
         for subscriber in self._subscribers:
@@ -153,36 +153,53 @@ class EncodedMotor(Peripheral):
         self._wrap_and_write(command, speed_primary, speed_secondary)
         # TODO: how to tell when motor has stopped?
 
+    def handle_port_data(self, data):
+        if self._port_subscription_mode == MOTOR_MODE_ANGLE:
+            rotation = unpack("<l", data[4:8])[0]
+            self._notify_subscribers(rotation)
+        elif self._port_subscription_mode == MOTOR_MODE_SOMETHING1:
+            # TODO: understand what it means
+            rotation = unpack("<B", data[4])[0]
+            self._notify_subscribers(rotation)
+        elif self._port_subscription_mode == MOTOR_MODE_SPEED:
+            rotation = unpack("<b", data[4])[0]
+            self._notify_subscribers(rotation)
+        else:
+            log.debug("Got motor sensor data while in unexpected mode: %s", self._port_subscription_mode)
+
+    def subscribe(self, callback, mode=MOTOR_MODE_ANGLE, granularity=1):
+        super(EncodedMotor, self).subscribe(callback, mode, granularity)
+
 
 class TiltSensor(Peripheral):
     def __init__(self, parent, port):
         super(TiltSensor, self).__init__(parent, port)
 
-    def subscribe(self, callback, mode=TILT_SENSOR_MODE_BASIC, granularity=1):
+    def subscribe(self, callback, mode=TILT_MODE_BASIC, granularity=1):
         super(TiltSensor, self).subscribe(callback, mode, granularity)
 
     def handle_port_data(self, data):
-        if self.port_subscription_mode == TILT_SENSOR_MODE_BASIC:
+        if self._port_subscription_mode == TILT_MODE_BASIC:
             state = get_byte(data, 4)
             self._notify_subscribers(state)
-        elif self.port_subscription_mode == TILT_SENSOR_MODE_2AXIS_SIMPLE:
+        elif self._port_subscription_mode == TILT_MODE_2AXIS_SIMPLE:
             # TODO: figure out right interpreting of this
             state = get_byte(data, 4)
             self._notify_subscribers(state)
-        elif self.port_subscription_mode == TILT_SENSOR_MODE_BUMP:
+        elif self._port_subscription_mode == TILT_MODE_BUMP:
             bump_count = get_byte(data, 4)
             self._notify_subscribers(bump_count)
-        elif self.port_subscription_mode == TILT_SENSOR_MODE_2AXIS_FULL:
+        elif self._port_subscription_mode == TILT_MODE_2AXIS_FULL:
             roll = self._byte2deg(get_byte(data, 4))
             pitch = self._byte2deg(get_byte(data, 5))
             self._notify_subscribers(roll, pitch)
-        elif self.port_subscription_mode == TILT_SENSOR_MODE_FULL:
+        elif self._port_subscription_mode == TILT_MODE_FULL:
             roll = self._byte2deg(get_byte(data, 4))
             pitch = self._byte2deg(get_byte(data, 5))
             yaw = self._byte2deg(get_byte(data, 6))  # did I get the order right?
             self._notify_subscribers(roll, pitch, yaw)
         else:
-            log.debug("Got tilt sensor data while in unexpected mode: %s", self.port_subscription_mode)
+            log.debug("Got tilt sensor data while in unexpected mode: %s", self._port_subscription_mode)
 
     def _byte2deg(self, val):
         if val > 90:
@@ -199,41 +216,41 @@ class ColorDistanceSensor(Peripheral):
         super(ColorDistanceSensor, self).subscribe(callback, mode, granularity)
 
     def handle_port_data(self, data):
-        if self.port_subscription_mode == CDS_MODE_COLOR_DISTANCE_FLOAT:
+        if self._port_subscription_mode == CDS_MODE_COLOR_DISTANCE_FLOAT:
             color = get_byte(data, 4)
             distance = get_byte(data, 5)
             partial = get_byte(data, 7)
             if partial:
                 distance += 1.0 / partial
             self._notify_subscribers(color if color != 0xFF else None, float(distance))
-        elif self.port_subscription_mode == CDS_MODE_COLOR_ONLY:
+        elif self._port_subscription_mode == CDS_MODE_COLOR_ONLY:
             color = get_byte(data, 4)
             self._notify_subscribers(color if color != 0xFF else None)
-        elif self.port_subscription_mode == CDS_MODE_DISTANCE_INCHES:
+        elif self._port_subscription_mode == CDS_MODE_DISTANCE_INCHES:
             distance = get_byte(data, 4)
             self._notify_subscribers(distance)
-        elif self.port_subscription_mode == CDS_MODE_DISTANCE_HOW_CLOSE:
+        elif self._port_subscription_mode == CDS_MODE_DISTANCE_HOW_CLOSE:
             distance = get_byte(data, 4)
             self._notify_subscribers(distance)
-        elif self.port_subscription_mode == CDS_MODE_DISTANCE_SUBINCH_HOW_CLOSE:
+        elif self._port_subscription_mode == CDS_MODE_DISTANCE_SUBINCH_HOW_CLOSE:
             distance = get_byte(data, 4)
             self._notify_subscribers(distance)
-        elif self.port_subscription_mode == CDS_MODE_OFF1 or self.port_subscription_mode == CDS_MODE_OFF2:
+        elif self._port_subscription_mode == CDS_MODE_OFF1 or self._port_subscription_mode == CDS_MODE_OFF2:
             log.info("Turned off led on %s", self)
-        elif self.port_subscription_mode == CDS_MODE_COUNT_2INCH:
+        elif self._port_subscription_mode == CDS_MODE_COUNT_2INCH:
             count = unpack("<L", data[4:8])[0]  # is it all 4 bytes or just 2?
             self._notify_subscribers(count)
-        elif self.port_subscription_mode == CDS_MODE_STREAM_3_VALUES:
+        elif self._port_subscription_mode == CDS_MODE_STREAM_3_VALUES:
             # TODO: understand better meaning of these 3 values
             val1 = unpack("<H", data[4:6])[0]
             val2 = unpack("<H", data[6:8])[0]
             val3 = unpack("<H", data[8:10])[0]
             self._notify_subscribers(val1, val2, val3)
-        elif self.port_subscription_mode == CDS_MODE_LUMINOSITY:
+        elif self._port_subscription_mode == CDS_MODE_LUMINOSITY:
             luminosity = unpack("<H", data[4:6])[0]
             self._notify_subscribers(luminosity)
         else:  # TODO: support whatever we forgot
-            log.debug("Unhandled data in mode %s: %s", self.port_subscription_mode, str2hex(data))
+            log.debug("Unhandled data in mode %s: %s", self._port_subscription_mode, str2hex(data))
 
 
 class Button(Peripheral):

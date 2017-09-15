@@ -86,12 +86,12 @@ class GeneralTest(unittest.TestCase):
         hub.connection.notifications.append((HANDLE, "1b0e000500453a05"))
         hub.connection.notifications.append((HANDLE, "1b0e000a00473a010100000001"))
         time.sleep(1)
-        hub.tilt_sensor.subscribe(callback, TILT_SENSOR_MODE_2AXIS_SIMPLE)
+        hub.tilt_sensor.subscribe(callback, TILT_MODE_2AXIS_SIMPLE)
 
         hub.connection.notifications.append((HANDLE, "1b0e000500453a09"))
         time.sleep(1)
 
-        hub.tilt_sensor.subscribe(callback, TILT_SENSOR_MODE_2AXIS_FULL)
+        hub.tilt_sensor.subscribe(callback, TILT_MODE_2AXIS_FULL)
         hub.connection.notifications.append((HANDLE, "1b0e000600453a04fe"))
         time.sleep(1)
 
