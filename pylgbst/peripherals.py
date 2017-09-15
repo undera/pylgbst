@@ -77,6 +77,9 @@ class LED(Peripheral):
     SOMETHING = b'\x51\x00'
 
     def set_color(self, color, do_notify=True):
+        if color == COLOR_NONE:
+            color = COLOR_BLACK
+
         if color not in COLORS:
             raise ValueError("Color %s is not in list of available colors" % color)
 
