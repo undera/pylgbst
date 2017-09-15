@@ -43,6 +43,10 @@ class Vernie(MoveHub):
 
     def program(self):
         time.sleep(1)
+        self.head_to(LEFT, angle=90)
+        self.head_to(RIGHT, angle=50)
+        time.sleep(1)
+
         while True:
             self.head_to(LEFT)
             time.sleep(1)
@@ -59,6 +63,7 @@ class Vernie(MoveHub):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
+    comms.log.setLevel(logging.INFO)
 
     try:
         connection = DebugServerConnection()
