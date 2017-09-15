@@ -283,3 +283,10 @@ class DebugServerConnection(Connection):
 
     def set_notify_handler(self, handler):
         self.notify_handler = handler
+
+
+def start_debug_server(iface="hci0", port=9090):
+    ble = BLEConnection()
+    ble.connect(iface)
+    server = DebugServer(ble)
+    server.start(port)
