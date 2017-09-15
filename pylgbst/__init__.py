@@ -13,7 +13,7 @@ class MoveHub(object):
     :type tilt_sensor: TiltSensor
     :type button: Button
     :type color_distance_sensor: pylgbst.peripherals.ColorDistanceSensor
-    :type external_motor: EncodedMotor
+    :type motor_external: EncodedMotor
     :type port_C: Peripheral
     :type port_D: Peripheral
     :type motor_A: EncodedMotor
@@ -36,7 +36,7 @@ class MoveHub(object):
         self.motor_AB = None
         self.tilt_sensor = None
         self.color_distance_sensor = None
-        self.external_motor = None
+        self.motor_external = None
         self.port_C = None
         self.port_D = None
 
@@ -126,8 +126,8 @@ class MoveHub(object):
         if dev_type == DEV_MOTOR:
             self.devices[port] = EncodedMotor(self, port)
         elif dev_type == DEV_IMOTOR:
-            self.external_motor = EncodedMotor(self, port)
-            self.devices[port] = self.external_motor
+            self.motor_external = EncodedMotor(self, port)
+            self.devices[port] = self.motor_external
         elif dev_type == DEV_DCS:
             self.color_distance_sensor = ColorDistanceSensor(self, port)
             self.devices[port] = self.color_distance_sensor

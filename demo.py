@@ -129,27 +129,36 @@ def demo_color_sensor(movehub):
 
 def demo_motor_sensors(movehub):
     log.info("Motor rotation sensors test. Rotate all available motors once")
-    demo_motor_sensors.states = {
-        movehub.motor_A: [None, None],  # callback and last value
-        movehub.motor_B: [None, None],  # callback and last value
-    }
+    demo_motor_sensors.states = {movehub.motor_A: None, movehub.motor_B: None}
 
-    if movehub.external_motor is not None:
-        demo_motor_sensors.states[movehub.external_motor] = [None, None]
+    def callback_a(param1):
+        demo_motor_sensors.states[movehub.motor_A] = param1
+        log.info("%s", demo_motor_sensors.states)
 
-    def callback(mtr, param1):
-        demo_motor_sensors.states[mtr][1] = param1
-        log.info("%s", {x: demo_motor_sensors.states[x][1] for x in demo_motor_sensors.states})
+    def callback_b(param1):
+        demo_motor_sensors.states[movehub.motor_B] = param1
+        log.info("%s", demo_motor_sensors.states)
 
-    for motor in demo_motor_sensors.states:
-        demo_motor_sensors.states[motor][0] = lambda x: callback(motor, x)
-        motor.subscribe(demo_motor_sensors.states[motor][0])
+    def callback_e(param1):
+        demo_motor_sensors.states[movehub.motor_external] = param1
+        log.info("%s", demo_motor_sensors.states)
 
-    while None in [x[1] for x in demo_motor_sensors.states.values()]:  # demo_motor_sensors.states < limit:
+    movehub.motor_A.subscribe(callback_a)
+    movehub.motor_B.subscribe(callback_b)
+
+    if movehub.motor_external is not None:
+        demo_motor_sensors.states[movehub.motor_external] = None
+        movehub.motor_external.subscribe(callback_e)
+
+    while None in demo_motor_sensors.states.values():  # demo_motor_sensors.states < limit:
         time.sleep(1)
 
-    for motor in demo_motor_sensors.states:
-        motor.unsubscribe(demo_motor_sensors.states[motor][0])
+    movehub.motor_A.unsubscribe(callback_a)
+    movehub.motor_B.unsubscribe(callback_b)
+
+    if movehub.motor_external is not None:
+        demo_motor_sensors.states[movehub.motor_external] = None
+        movehub.motor_external.unsubscribe(callback_e)
 
 
 def demo_all(movehub):
@@ -174,15 +183,7 @@ if __name__ == '__main__':
 
     hub = MoveHub(connection)
 
-    demo_motor_sensors(hub)
-
-    # demo_all(hub)
+    demo_all(hub)
 
     log.info("Sleeping 60s")
     sleep(60)
-
-    # sleep(1)
-    # hub.get_name()
-    # demo_port_cd_motor(hub)
-    # demo_led_colors(hub)
-    # sleep(1)
