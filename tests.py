@@ -1,4 +1,5 @@
 import unittest
+from binascii import unhexlify
 
 from pylgbst import *
 
@@ -33,7 +34,7 @@ class ConnectionMock(Connection):
             if self.notification_handler:
                 while self.notifications:
                     handle, data = self.notifications.pop(0)
-                    self.notification_handler(handle, hex2str(data.replace(' ', '')))
+                    self.notification_handler(handle, unhexlify(data.replace(' ', '')))
             time.sleep(0.1)
 
         self.finished = True
@@ -69,7 +70,7 @@ class GeneralTest(unittest.TestCase):
         hub = HubMock()
         led = LED(hub, PORT_LED)
         led.set_color(COLOR_RED)
-        self.assertEqual("0801813211510009", hub.connection.writes[0][1])
+        self.assertEqual("0801813201510009", hub.connection.writes[0][1])
 
     def test_tilt_sensor(self):
         hub = HubMock()
@@ -103,10 +104,14 @@ class GeneralTest(unittest.TestCase):
         conn = ConnectionMock()
         conn.notifications.append((14, '1b0e00 0900 04 39 0227003738'))
         hub = HubMock(conn)
-        motor = EncodedMotor(hub, PORT_AB)
-        motor.timed(1.5)
+        time.sleep(0.1)
+
+        conn.notifications.append((14, '1b0e00050082390a'))
+        hub.motor_AB.timed(1.5)
         self.assertEqual("0d018139110adc056464647f03", conn.writes[0][1])
-        motor.angled(90)
+
+        conn.notifications.append((14, '1b0e00050082390a'))
+        hub.motor_AB.angled(90)
         self.assertEqual("0f018139110c5a0000006464647f03", conn.writes[1][1])
 
     def test_capabilities(self):
@@ -133,7 +138,7 @@ class GeneralTest(unittest.TestCase):
         hub.connection.notifications.append((HANDLE, '1b0e000f0004010125000000001000000010'))
         time.sleep(1)
 
-        def callback(color, unk1, unk2):
+        def callback(color, unk1, unk2=None):
             name = COLORS[color] if color is not None else 'NONE'
             log.info("Color: %s %s %s", name, unk1, unk2)
 

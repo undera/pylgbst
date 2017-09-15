@@ -22,6 +22,7 @@ class Vernie(MoveHub):
         self._color_detected = COLOR_NONE
         self._sensor_distance = 10
         self.color_distance_sensor.subscribe(self._color_distance_data)
+        log.info("Vernie is ready.")
 
     def _external_motor_data(self, data):
         log.debug("External motor position: %s", data)
@@ -43,6 +44,10 @@ class Vernie(MoveHub):
 
     def program(self):
         time.sleep(1)
+        self.head_to(LEFT, angle=90)
+        self.head_to(RIGHT, angle=50)
+        time.sleep(1)
+
         while True:
             self.head_to(LEFT)
             time.sleep(1)
@@ -59,6 +64,7 @@ class Vernie(MoveHub):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
+    comms.log.setLevel(logging.INFO)
 
     try:
         connection = DebugServerConnection()

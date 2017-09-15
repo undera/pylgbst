@@ -126,7 +126,6 @@ class EncodedMotor(Peripheral):
 
         command += self.TRAILER
 
-        self._working = -1
         self._write_to_hub(MSG_SET_PORT_VAL, command)
 
     def timed(self, seconds, speed_primary=1, speed_secondary=None, async=False):
@@ -141,6 +140,7 @@ class EncodedMotor(Peripheral):
             raise ValueError("Too large value for seconds: %s", seconds)
         command += pack('<H', msec)
 
+        self._working = -1
         self._wrap_and_write(command, speed_primary, speed_secondary)
         self.__wait_sync(async)
 
@@ -158,6 +158,7 @@ class EncodedMotor(Peripheral):
         # angle
         command += pack('<I', angle)
 
+        self._working = -1
         self._wrap_and_write(command, speed_primary, speed_secondary)
         self.__wait_sync(async)
 
@@ -165,7 +166,9 @@ class EncodedMotor(Peripheral):
         if not async:
             log.debug("Waiting for sync command work to finish...")
             while self.is_working():
-                time.sleep(0.05)
+                log.debug("Waiting")
+                time.sleep(0.1)
+            log.debug("Command has finished.")
 
     # TODO: how to tell when motor has stopped?
 
