@@ -158,11 +158,12 @@ def demo_all(movehub):
 
 
 def cb_log(val1, val2=None, val3=None):
-    log.info("V1:%s\tV2:%s\tV3:%s", unpack("<H", val1), val2, val3)
+    pass
+    # log.info("V1:%s\tV2:%s\tV3:%s", unpack("<H", val1), val2, val3)
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
 
     try:
         connection = DebugServerConnection()
@@ -172,9 +173,10 @@ if __name__ == '__main__':
 
     hub = MoveHub(connection)
 
-    #hub.devices[PORT_SOMETHING1].subscribe(cb_log, 0x00, granularity=1)
+    hub.button.subscribe(cb_log, 0x00, granularity=1)
     sleep(10)
-    demo_port_cd_motor(hub)
+    # demo_port_cd_motor(hub)
     sleep(10)
-    #hub.devices[PORT_SOMETHING1].unsubscribe(cb_log)
+    hub.button.unsubscribe(cb_log)
+    sleep(10)
     # demo_all(hub)

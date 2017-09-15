@@ -1,5 +1,4 @@
 import unittest
-from binascii import unhexlify
 
 from pylgbst import *
 
@@ -149,3 +148,19 @@ class GeneralTest(unittest.TestCase):
         # TODO: assert
         self._wait_notifications_handled(hub)
         hub.color_distance_sensor.unsubscribe(callback)
+
+    def test_button(self):
+        hub = HubMock()
+        time.sleep(1)
+
+        def callback(pressed):
+            log.info("Pressed: %s", pressed)
+
+        hub.button.subscribe(callback)
+
+        hub.connection.notifications.append((HANDLE, "1b0e00060001020601"))
+        hub.connection.notifications.append((HANDLE, "1b0e00060001020600"))
+        time.sleep(1)
+        # TODO: assert
+        self._wait_notifications_handled(hub)
+        hub.button.unsubscribe(callback)

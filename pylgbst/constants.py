@@ -16,7 +16,7 @@ PORT_LED = 0x32
 PORT_A = 0x37
 PORT_B = 0x38
 PORT_AB = 0x39
-PORT_TILT_SENSOR = 0x3a
+PORT_TILT_SENSOR = 0x3A
 PORT_SOMETHING1 = 0x3B
 PORT_BATTERY = 0x3C  # subscribing on this port showed correlation with power voltage
 
@@ -46,7 +46,7 @@ MSG_SENSOR_DATA = 0x45
 MSG_SENSOR_SUBSCRIBE_ACK = 0x47
 
 # DEVICE TYPES
-DEV_UNKNOWN1 = 0x15  # one of them is button?
+DEV_UNKNOWN1 = 0x15  # one of them is button? onboard temperature? maybe another kind of voltage, they have same params
 DEV_BATTERY = 0x14
 DEV_DCS = 0x25
 DEV_IMOTOR = 0x26
@@ -61,7 +61,7 @@ DEVICE_TYPES = {
     DEV_TILT_SENSOR: "TILT_SENSOR",
     DEV_LED: "LED",
     DEV_UNKNOWN1: "UNKNOWN #1",
-    DEV_BATTERY: "UNKNOWN #2",
+    DEV_BATTERY: "BATTERY",
 }
 
 # NOTIFICATIONS

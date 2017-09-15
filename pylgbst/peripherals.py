@@ -26,7 +26,7 @@ class Peripheral(object):
         self._port_subscription_mode = None
 
     def __repr__(self):
-        return "%s on port %s" % (self.__class__.__name__, PORTS[self.port] if self.port in PORTS else 'N/A')
+        return "%s on port %s" % (self.__class__.__name__, PORTS[self.port] if self.port in PORTS else self.port)
 
     def _write_to_hub(self, msg_type, params):
         cmd = pack("<B", PACKET_VER) + pack("<B", msg_type) + pack("<B", self.port)
@@ -275,11 +275,38 @@ class ColorDistanceSensor(Peripheral):
 
 
 class Battery(Peripheral):
+    def __init__(self, parent, port):
+        super(Battery, self).__init__(parent, port)
+        self.last_value = None
+
     # we know only voltage subscription from it. is it really battery or just onboard voltage?
+    # device has turned off on 1b0e000600453ba800
     def handle_port_data(self, data):
-        self._notify_subscribers(unpack("<H", data[4:6]))
+        self.last_value = unpack("<H", data[4:6])[0]
+        self._notify_subscribers(self.last_value)
 
 
 class Button(Peripheral):
+    """
+    It's not really a peripheral, we use MSG_DEVICE_INFO commands to interact with it
+    """
+
     def __init__(self, parent):
         super(Button, self).__init__(parent, 0)
+
+    def subscribe(self, callback, mode=None, granularity=1):
+        cmd = pack("<B", PACKET_VER) + pack("<B", MSG_DEVICE_INFO) + b'\x02\x02'
+        self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE, pack("<B", len(cmd) + 1) + cmd)
+        if callback:
+            self._subscribers.add(callback)
+
+    def unsubscribe(self, callback=None):
+        if callback in self._subscribers:
+            self._subscribers.remove(callback)
+
+        if not self._subscribers:
+            cmd = pack("<B", PACKET_VER) + pack("<B", MSG_DEVICE_INFO) + b'\x02\x03'
+            self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE, pack("<B", len(cmd) + 1) + cmd)
+
+    def handle_port_data(self, data):
+        self._notify_subscribers(bool(unpack("<B", data[5:6])[0]))

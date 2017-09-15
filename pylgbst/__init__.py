@@ -88,8 +88,16 @@ class MoveHub(object):
         elif msg_type == MSG_DEVICE_SHUTDOWN:
             log.warning("Device reported shutdown: %s", str2hex(data))
             raise KeyboardInterrupt("Device shutdown")
+        elif msg_type == MSG_DEVICE_INFO:
+            self._handle_device_info(data)
         else:
             log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
+
+    def _handle_device_info(self, data):
+        if get_byte(data, 3) == 2:
+            self.button.handle_port_data(data)
+        else:
+            log.warning("Unhandled device info: %s", str2hex(data))
 
     def _handle_sensor_data(self, data):
         port = get_byte(data, 3)
@@ -159,3 +167,7 @@ class MoveHub(object):
             self.battery = self.devices[port]
         else:
             log.warning("Unhandled port: %s", PORTS[port])
+
+    def shutdown(self):
+        cmd = pack("<B", PACKET_VER) + pack("<B", MSG_DEVICE_SHUTDOWN)
+        self.connection.write(MOVE_HUB_HARDWARE_HANDLE, pack("<B", len(cmd) + 1) + cmd)
