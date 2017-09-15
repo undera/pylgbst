@@ -8,7 +8,7 @@ import socket
 import sys
 import time
 import traceback
-from Queue import Queue
+from six.moves import queue
 from abc import abstractmethod
 from binascii import unhexlify
 from gattlib import DiscoveryService, GATTRequester
@@ -42,7 +42,8 @@ class Requester(GATTRequester):
         super(Requester, self).__init__(p_object, *args, **kwargs)
         self.notification_sink = None
 
-        self._notify_queue = Queue()
+        # noinspection PyUnresolvedReferences
+        self._notify_queue = queue.Queue()
         self._notifier_thread = Thread(target=self._dispatch_notifications)
         self._notifier_thread.setDaemon(True)
         self._notifier_thread.setName("Notify queue dispatcher")
@@ -170,7 +171,7 @@ class DebugServer(object):
         self.sock.close()
 
     def _notify_dummy(self, handle, data):
-        log.debug("Notification from handle %s: %s", handle, hexlify(data.strip()))
+        log.debug("Notification from handle %s: %s", handle, binascii.hexlify(data.strip()))
         self._check_shutdown(data)
 
     def _notify(self, conn, handle, data):

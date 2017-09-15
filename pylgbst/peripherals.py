@@ -21,7 +21,7 @@ class Peripheral(object):
         super(Peripheral, self).__init__()
         self.parent = parent
         self.port = port
-        self._working = 0  # 3-state, -1 means command sent, 1 means notified on command, 0 means notified on finish
+        self._working = False
         self._subscribers = set()
         self._port_subscription_mode = None
 
@@ -41,10 +41,12 @@ class Peripheral(object):
         self._write_to_hub(MSG_SENSOR_SUBSCRIBE, params)
 
     def started(self):
-        self._working = 1
+        log.debug("Started: %s", self)
+        self._working = True
 
     def finished(self):
-        self._working = 0
+        log.debug("Finished: %s", self)
+        self._working = False
 
     def is_working(self):
         return bool(self._working)
@@ -79,7 +81,7 @@ class LED(Peripheral):
             raise ValueError("Color %s is not in list of available colors" % color)
 
         cmd = pack("<?", do_notify) + self.SOMETHING + pack("<B", color)
-        self._working = -1
+        self.started()
         self._write_to_hub(MSG_SET_PORT_VAL, cmd)
 
     def finished(self):
@@ -140,7 +142,7 @@ class EncodedMotor(Peripheral):
             raise ValueError("Too large value for seconds: %s", seconds)
         command += pack('<H', msec)
 
-        self._working = -1
+        self.started()
         self._wrap_and_write(command, speed_primary, speed_secondary)
         self.__wait_sync(async)
 
@@ -158,7 +160,7 @@ class EncodedMotor(Peripheral):
         # angle
         command += pack('<I', angle)
 
-        self._working = -1
+        self.started()
         self._wrap_and_write(command, speed_primary, speed_secondary)
         self.__wait_sync(async)
 
@@ -166,8 +168,7 @@ class EncodedMotor(Peripheral):
         if not async:
             log.debug("Waiting for sync command work to finish...")
             while self.is_working():
-                log.debug("Waiting")
-                time.sleep(0.1)
+                time.sleep(0.5)
             log.debug("Command has finished.")
 
     # TODO: how to tell when motor has stopped?
