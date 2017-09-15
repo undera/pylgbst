@@ -8,36 +8,25 @@ import sys
 import time
 import traceback
 from abc import abstractmethod
+from binascii import unhexlify
 from gattlib import DiscoveryService, GATTRequester
 from threading import Thread
+
+import binascii
 
 from pylgbst.constants import LEGO_MOVE_HUB, MSG_DEVICE_SHUTDOWN
 
 log = logging.getLogger('transport')
 
+
+def str2hex(data):  # TODO: eliminate it
+    return binascii.hexlify(data).decode("utf8")
+
+
 if sys.version_info[0] == 2:
-    def str2hex(data):
-        return data.encode("hex")
-
-
-    def hex2str(data):
-        return data.decode("hex")
-
-
     def get_byte(seq, index):
         return ord(seq[index])
 else:
-    import binascii
-
-
-    def str2hex(data):
-        return binascii.hexlify(data).decode("utf8")
-
-
-    def hex2str(data):
-        return binascii.unhexlify(data)
-
-
     def get_byte(seq, index):
         return seq[index]
 
@@ -167,7 +156,7 @@ class DebugServer(object):
         self.sock.close()
 
     def _notify_dummy(self, handle, data):
-        log.debug("Notification from handle %s: %s", handle, hex2str(data))
+        log.debug("Notification from handle %s: %s", handle, unhexlify(data))
         self._check_shutdown(data)
 
     def _notify(self, conn, handle, data):
@@ -215,7 +204,7 @@ class DebugServer(object):
 
     def _handle_cmd(self, cmd):
         if cmd['type'] == 'write':
-            self.ble.write(cmd['handle'], hex2str(cmd['data']))
+            self.ble.write(cmd['handle'], unhexlify(cmd['data']))
         elif cmd['type'] == 'read':
             data = self.ble.read(cmd['handle'])
             payload = {"type": "response", "data": str2hex(data)}
@@ -264,7 +253,7 @@ class DebugServerConnection(Connection):
             for item in self.incoming:
                 if item['type'] == 'response':
                     self.incoming.remove(item)
-                    return hex2str(item['data'])
+                    return unhexlify(item['data'])
             time.sleep(0.1)
 
     def _send(self, payload):
@@ -286,7 +275,7 @@ class DebugServerConnection(Connection):
                 if line:
                     item = json.loads(line)
                     if item['type'] == 'notification' and self.notify_handler:
-                        self.notify_handler(item['handle'], hex2str(item['data']))
+                        self.notify_handler(item['handle'], unhexlify(item['data']))
                     elif item['type'] == 'response':
                         self.incoming.append(item)
                     else:

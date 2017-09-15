@@ -22,6 +22,7 @@ class Vernie(MoveHub):
         self._color_detected = COLOR_NONE
         self._sensor_distance = 10
         self.color_distance_sensor.subscribe(self._color_distance_data)
+        log.info("Vernie is ready.")
 
     def _external_motor_data(self, data):
         log.debug("External motor position: %s", data)

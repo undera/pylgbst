@@ -1,4 +1,5 @@
 import unittest
+from binascii import unhexlify
 
 from pylgbst import *
 
@@ -33,7 +34,7 @@ class ConnectionMock(Connection):
             if self.notification_handler:
                 while self.notifications:
                     handle, data = self.notifications.pop(0)
-                    self.notification_handler(handle, hex2str(data.replace(' ', '')))
+                    self.notification_handler(handle, unhexlify(data.replace(' ', '')))
             time.sleep(0.1)
 
         self.finished = True
