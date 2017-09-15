@@ -5,38 +5,6 @@ from pylgbst import *
 log = logging.getLogger("demo")
 
 
-def demo_tilt_sensor_simple(movehub):
-    log.info("Tilt sensor simple test. Turn device in different ways.")
-    demo_tilt_sensor_simple.cnt = 0
-    limit = 10
-
-    def callback(param1):
-        demo_tilt_sensor_simple.cnt += 1
-        log.info("Tilt #%s of %s: %s", demo_tilt_sensor_simple.cnt, limit, TILT_STATES[param1])
-
-    movehub.tilt_sensor.subscribe(callback)
-    while demo_tilt_sensor_simple.cnt < limit:
-        time.sleep(1)
-
-    movehub.tilt_sensor.unsubscribe(callback)
-
-
-def demo_tilt_sensor_precise(movehub):
-    log.info("Tilt sensor precise test. Turn device in different ways.")
-    demo_tilt_sensor_simple.cnt = 0
-    limit = 50
-
-    def callback(pitch, roll, yaw):
-        demo_tilt_sensor_simple.cnt += 1
-        log.info("Tilt #%s of %s: roll:%s pitch:%s yaw:%s", demo_tilt_sensor_simple.cnt, limit, pitch, roll, yaw)
-
-    movehub.tilt_sensor.subscribe(callback, mode=TILT_MODE_FULL)
-    while demo_tilt_sensor_simple.cnt < limit:
-        time.sleep(1)
-
-    movehub.tilt_sensor.unsubscribe(callback)
-
-
 def demo_led_colors(movehub):
     # LED colors demo
     log.info("LED colors demo")
@@ -96,18 +64,36 @@ def demo_port_cd_motor(movehub):
         sleep(1)
 
 
-def vernie_head(movehub):
-    portd = EncodedMotor(movehub, PORT_D)
-    while True:
-        angle = 20
-        portd.angled(angle, 0.2)
-        sleep(2)
-        portd.angled(angle, -0.2)
-        sleep(2)
-        portd.angled(angle, -0.2)
-        sleep(2)
-        portd.angled(angle, 0.2)
-        sleep(2)
+def demo_tilt_sensor_simple(movehub):
+    log.info("Tilt sensor simple test. Turn device in different ways.")
+    demo_tilt_sensor_simple.cnt = 0
+    limit = 10
+
+    def callback(param1):
+        demo_tilt_sensor_simple.cnt += 1
+        log.info("Tilt #%s of %s: %s", demo_tilt_sensor_simple.cnt, limit, TILT_STATES[param1])
+
+    movehub.tilt_sensor.subscribe(callback)
+    while demo_tilt_sensor_simple.cnt < limit:
+        time.sleep(1)
+
+    movehub.tilt_sensor.unsubscribe(callback)
+
+
+def demo_tilt_sensor_precise(movehub):
+    log.info("Tilt sensor precise test. Turn device in different ways.")
+    demo_tilt_sensor_simple.cnt = 0
+    limit = 50
+
+    def callback(pitch, roll, yaw):
+        demo_tilt_sensor_simple.cnt += 1
+        log.info("Tilt #%s of %s: roll:%s pitch:%s yaw:%s", demo_tilt_sensor_simple.cnt, limit, pitch, roll, yaw)
+
+    movehub.tilt_sensor.subscribe(callback, mode=TILT_MODE_FULL)
+    while demo_tilt_sensor_simple.cnt < limit:
+        time.sleep(1)
+
+    movehub.tilt_sensor.unsubscribe(callback)
 
 
 def demo_color_sensor(movehub):
@@ -117,8 +103,7 @@ def demo_color_sensor(movehub):
 
     def callback(color, distance=None):
         demo_color_sensor.cnt += 1
-        color = COLORS[color] if color in COLORS else color
-        log.info("#%s/%s: Color %s, distance %s", demo_color_sensor.cnt, limit, color, distance)
+        log.info("#%s/%s: Color %s, distance %s", demo_color_sensor.cnt, limit, COLORS[color], distance)
 
     movehub.color_distance_sensor.subscribe(callback)
     while demo_color_sensor.cnt < limit:
@@ -183,7 +168,8 @@ if __name__ == '__main__':
 
     hub = MoveHub(connection)
 
-    demo_all(hub)
+    demo_motor_sensors(hub)
+    # demo_all(hub)
 
     log.info("Sleeping 60s")
     sleep(60)

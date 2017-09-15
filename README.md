@@ -25,12 +25,15 @@ for device in hub.devices:
     print(device)
 ```
 
+## Debug Server
+
+`sudo python -c "from pylgbst.comms import *; import logging; logging.basicConfig(level=logging.DEBUG); DebugServer(BLEConnection().connect()).start()"`
+
 ## Roadmap
 
-- Make it 2/3 compatible
-- Add travis unit tests and coverage
 - Give nice documentation examples, don't forget to mention logging
-- make angled motors to be synchronous by default
+- make angled motors to be synchronous by default => 3-state status
+- make sure unit tests cover all important code
 
 ## Links
 

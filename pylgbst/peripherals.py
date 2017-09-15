@@ -21,7 +21,7 @@ class Peripheral(object):
         super(Peripheral, self).__init__()
         self.parent = parent
         self.port = port
-        self.working = False
+        self._working = 0  # 3-state, -1 means command sent, 1 means notified on command, 0 means notified on finish
         self._subscribers = set()
         self._port_subscription_mode = None
 
@@ -41,10 +41,13 @@ class Peripheral(object):
         self._write_to_hub(MSG_SENSOR_SUBSCRIBE, params)
 
     def started(self):
-        self.working = True
+        self._working = 1
 
     def finished(self):
-        self.working = False
+        self._working = 0
+
+    def is_working(self):
+        return bool(self._working)
 
     def subscribe(self, callback, mode, granularity=1):
         self._port_subscription_mode = mode
@@ -76,6 +79,7 @@ class LED(Peripheral):
             raise ValueError("Color %s is not in list of available colors" % color)
 
         cmd = pack("<?", do_notify) + self.SOMETHING + pack("<B", color)
+        self._working = -1
         self._write_to_hub(MSG_SET_PORT_VAL, cmd)
 
     def finished(self):
@@ -98,14 +102,14 @@ class EncodedMotor(Peripheral):
     ANGLED_SINGLE = b'\x0B'
     ANGLED_GROUP = b'\x0C'
 
-    def __init__(self, parent, port):
-        super(EncodedMotor, self).__init__(parent, port)
-        if port not in [PORT_A, PORT_B, PORT_AB, PORT_C, PORT_D]:
-            raise ValueError("Invalid port for motor: %s" % port)
-
     def _speed_abs(self, relative):
-        if relative < -1 or relative > 1:
-            raise ValueError("Invalid speed value: %s", relative)
+        if relative < -1:
+            log.warning("Speed cannot be less than -1")
+            relative = -1
+
+        if relative > 1:
+            log.warning("Speed cannot be more than 1")
+            relative = 1
 
         absolute = round(relative * 100)
         if absolute < 0:
@@ -122,6 +126,7 @@ class EncodedMotor(Peripheral):
 
         command += self.TRAILER
 
+        self._working = -1
         self._write_to_hub(MSG_SET_PORT_VAL, command)
 
     def timed(self, seconds, speed_primary=1, speed_secondary=None, async=False):
@@ -137,13 +142,16 @@ class EncodedMotor(Peripheral):
         command += pack('<H', msec)
 
         self._wrap_and_write(command, speed_primary, speed_secondary)
+        self.__wait_sync(async)
 
-        if not async:
-            time.sleep(seconds)
-
-    def angled(self, angle, speed_primary=1, speed_secondary=None):
+    def angled(self, angle, speed_primary=1, speed_secondary=None, async=False):
         if speed_secondary is None:
             speed_secondary = speed_primary
+
+        if angle < 0:
+            angle = -angle
+            speed_primary = -speed_primary
+            speed_secondary = -speed_secondary
 
         # movement type
         command = self.ANGLED_GROUP if self.port == PORT_AB else self.ANGLED_SINGLE
@@ -151,7 +159,15 @@ class EncodedMotor(Peripheral):
         command += pack('<I', angle)
 
         self._wrap_and_write(command, speed_primary, speed_secondary)
-        # TODO: how to tell when motor has stopped?
+        self.__wait_sync(async)
+
+    def __wait_sync(self, async):
+        if not async:
+            log.debug("Waiting for sync command work to finish...")
+            while self.is_working():
+                time.sleep(0.05)
+
+    # TODO: how to tell when motor has stopped?
 
     def handle_port_data(self, data):
         if self._port_subscription_mode == MOTOR_MODE_ANGLE:
@@ -172,9 +188,6 @@ class EncodedMotor(Peripheral):
 
 
 class TiltSensor(Peripheral):
-    def __init__(self, parent, port):
-        super(TiltSensor, self).__init__(parent, port)
-
     def subscribe(self, callback, mode=TILT_MODE_BASIC, granularity=1):
         super(TiltSensor, self).subscribe(callback, mode, granularity)
 
@@ -222,10 +235,10 @@ class ColorDistanceSensor(Peripheral):
             partial = get_byte(data, 7)
             if partial:
                 distance += 1.0 / partial
-            self._notify_subscribers(color if color != 0xFF else None, float(distance))
+            self._notify_subscribers(color, float(distance))
         elif self._port_subscription_mode == CDS_MODE_COLOR_ONLY:
             color = get_byte(data, 4)
-            self._notify_subscribers(color if color != 0xFF else None)
+            self._notify_subscribers(color)
         elif self._port_subscription_mode == CDS_MODE_DISTANCE_INCHES:
             distance = get_byte(data, 4)
             self._notify_subscribers(distance)
