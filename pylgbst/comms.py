@@ -16,7 +16,7 @@ from threading import Thread
 
 from pylgbst.constants import LEGO_MOVE_HUB, MSG_DEVICE_SHUTDOWN
 
-log = logging.getLogger('transport')
+log = logging.getLogger('comms')
 
 
 def str2hex(data):  # TODO: eliminate it
@@ -171,7 +171,7 @@ class DebugServer(object):
         self.sock.close()
 
     def _notify_dummy(self, handle, data):
-        log.debug("Notification from handle %s: %s", handle, binascii.hexlify(data.strip()))
+        log.debug("Dropped notification from handle %s: %s", handle, binascii.hexlify(data.strip()))
         self._check_shutdown(data)
 
     def _notify(self, conn, handle, data):
@@ -291,7 +291,10 @@ class DebugServerConnection(Connection):
                 if line:
                     item = json.loads(line)
                     if item['type'] == 'notification' and self.notify_handler:
-                        self.notify_handler(item['handle'], unhexlify(item['data']))
+                        try:
+                            self.notify_handler(item['handle'], unhexlify(item['data']))
+                        except BaseException:
+                            log.error("Failed to notify handler: %s", traceback.format_exc())
                     elif item['type'] == 'response':
                         self.incoming.append(item)
                     else:

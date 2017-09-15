@@ -61,7 +61,9 @@ class Peripheral(object):
         if callback in self._subscribers:
             self._subscribers.remove(callback)
 
-        if not self._subscribers:
+        if not self._port_subscription_mode:
+            log.warning("Attempt to unsubscribe while never subscribed: %s", self)
+        elif not self._subscribers:
             self._port_subscribe(self._port_subscription_mode, 0, False)
             self._port_subscription_mode = None
 
@@ -273,8 +275,9 @@ class ColorDistanceSensor(Peripheral):
 
 
 class Battery(Peripheral):
+    # we know only voltage subscription from it. is it really battery or just onboard voltage?
     def handle_port_data(self, data):
-        self._notify_subscribers(unpack("<H", data))
+        self._notify_subscribers(unpack("<H", data[4:6]))
 
 
 class Button(Peripheral):

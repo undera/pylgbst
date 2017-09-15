@@ -172,9 +172,9 @@ if __name__ == '__main__':
 
     hub = MoveHub(connection)
 
-    hub.devices[PORT_BATTERY].subscribe(cb_log, 0x00, granularity=2)
+    #hub.devices[PORT_SOMETHING1].subscribe(cb_log, 0x00, granularity=1)
     sleep(10)
     demo_port_cd_motor(hub)
-    sleep(60)
-    hub.devices[PORT_BATTERY].unsubscribe(cb_log)
+    sleep(10)
+    #hub.devices[PORT_SOMETHING1].unsubscribe(cb_log)
     # demo_all(hub)

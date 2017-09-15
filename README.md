@@ -12,6 +12,7 @@ Best way to start is to look at [demo.py](demo.py) file, and run it.
 - angled and timed movement for motors
 - LED color change
 - sensor data subscribe/unsubscribe
+- battery voltage available
 
 ## Usage
 
