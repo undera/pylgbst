@@ -11,11 +11,10 @@ from abc import abstractmethod
 from gattlib import DiscoveryService, GATTRequester
 from threading import Thread
 
-from pylgbst.constants import LEGO_MOVE_HUB
+from pylgbst.constants import LEGO_MOVE_HUB, MSG_DEVICE_SHUTDOWN
 
 log = logging.getLogger('transport')
 
-# could use `six` here, but just for 1 function
 if sys.version_info[0] == 2:
     def str2hex(data):
         return data.encode("hex")
@@ -27,10 +26,6 @@ if sys.version_info[0] == 2:
 
     def get_byte(seq, index):
         return ord(seq[index])
-
-
-    def int2byte(val):
-        return chr(val)
 else:
     import binascii
 
@@ -45,10 +40,6 @@ else:
 
     def get_byte(seq, index):
         return seq[index]
-
-
-    def int2byte(val):
-        return bytes((val,))
 
 
 # noinspection PyMethodOverriding
@@ -147,6 +138,7 @@ class DebugServer(object):
     """
 
     def __init__(self, ble_trans):
+        self._running = False
         self.sock = socket.socket()
         self.ble = ble_trans
 
@@ -154,9 +146,12 @@ class DebugServer(object):
         self.sock.bind(('', port))
         self.sock.listen(1)
 
-        while True:
+        self._running = True
+        while self._running:
             log.info("Accepting connections at %s", port)
             conn, addr = self.sock.accept()
+            if not self._running:
+                raise KeyboardInterrupt("Shutdown")
             self.ble.requester.notification_sink = lambda x, y: self._notify(conn, x, y)
             try:
                 self._handle_conn(conn)
@@ -165,11 +160,15 @@ class DebugServer(object):
             except BaseException:
                 log.error("Problem handling incoming connection: %s", traceback.format_exc())
             finally:
-                self.ble.requester.notification_sink = None
+                self.ble.requester.notification_sink = self._notify_dummy
                 conn.close()
 
     def __del__(self):
         self.sock.close()
+
+    def _notify_dummy(self, handle, data):
+        log.debug("Notification from handle %s: %s", handle, data)
+        self._check_shutdown(data)
 
     def _notify(self, conn, handle, data):
         payload = {"type": "notification", "handle": handle, "data": str2hex(data)}
@@ -180,6 +179,13 @@ class DebugServer(object):
             raise
         except BaseException:
             log.error("Problem sending notification: %s", traceback.format_exc())
+
+        self._check_shutdown(data)
+
+    def _check_shutdown(self, data):
+        if get_byte(data, 5) == MSG_DEVICE_SHUTDOWN:
+            log.warning("Device shutdown")
+            self._running = False
 
     def _handle_conn(self, conn):
         """

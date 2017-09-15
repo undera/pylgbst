@@ -113,14 +113,31 @@ def vernie_head(movehub):
 def demo_color_sensor(movehub):
     log.info("Color sensor test: wave your hand in front of it")
     demo_color_sensor.cnt = 0
-    limit = 2000
+    limit = 20
 
-    def callback(color, distance=None, param=None):
+    def callback(color, distance=None):
         demo_color_sensor.cnt += 1
-        #color = COLORS[color] if color in COLORS else color
-        log.info("#%s/%s: Color %s, distance %s, param %s", demo_color_sensor.cnt, limit, color, distance, param)
+        color = COLORS[color] if color in COLORS else color
+        log.info("#%s/%s: Color %s, distance %s", demo_color_sensor.cnt, limit, color, distance)
 
-    movehub.color_distance_sensor.subscribe(callback, CDS_MODE_STREAM_3_VALUES, granularity=3)
+    movehub.color_distance_sensor.subscribe(callback)
+    while demo_color_sensor.cnt < limit:
+        time.sleep(1)
+
+    movehub.color_distance_sensor.unsubscribe(callback)
+
+
+def demo_motor_sensors(movehub):
+    log.info("Motor rotation sensors test")
+    demo_color_sensor.cnt = 0
+    limit = 20
+
+    def callback(color, distance=None):
+        demo_color_sensor.cnt += 1
+        color = COLORS[color] if color in COLORS else color
+        log.info("#%s/%s: Color %s, distance %s", demo_color_sensor.cnt, limit, color, distance)
+
+    movehub.color_distance_sensor.subscribe(callback)
     while demo_color_sensor.cnt < limit:
         time.sleep(1)
 
@@ -135,6 +152,7 @@ def demo_all(movehub):
     demo_tilt_sensor_simple(movehub)
     demo_tilt_sensor_precise(movehub)
     demo_color_sensor(movehub)
+    demo_motor_sensors(movehub)
 
 
 if __name__ == '__main__':
@@ -147,7 +165,8 @@ if __name__ == '__main__':
         connection = BLEConnection().connect()
 
     hub = MoveHub(connection)
-    demo_color_sensor(hub)
+
+    demo_motor_sensors(hub)
 
     # demo_all(hub)
 

@@ -86,6 +86,9 @@ class MoveHub(object):
             log.debug("Sensor subscribe ack on port %s", PORTS[get_byte(data, 3)])
         elif msg_type == MSG_PORT_CMD_ERROR:
             log.warning("Command error: %s", str2hex(data[3:]))
+        elif msg_type == MSG_DEVICE_SHUTDOWN:
+            log.warning("Device reported shutdown: %s", str2hex(data))
+            raise KeyboardInterrupt("Device shutdown")
         else:
             log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
 
@@ -96,7 +99,7 @@ class MoveHub(object):
             return
 
         device = self.devices[port]
-        device.handle_sensor_data(data)
+        device.handle_port_data(data)
 
     def _handle_port_status(self, data):
         port = get_byte(data, 3)
@@ -120,17 +123,17 @@ class MoveHub(object):
         else:
             log.warning("Device 0x%x at port 0x%x", dev_type, port)
 
-        if dev_type == TYPE_MOTOR:
+        if dev_type == DEV_MOTOR:
             self.devices[port] = EncodedMotor(self, port)
-        elif dev_type == TYPE_IMOTOR:
+        elif dev_type == DEV_IMOTOR:
             self.external_motor = EncodedMotor(self, port)
             self.devices[port] = self.external_motor
-        elif dev_type == TYPE_DISTANCE_COLOR_SENSOR:
+        elif dev_type == DEV_DCS:
             self.color_distance_sensor = ColorDistanceSensor(self, port)
             self.devices[port] = self.color_distance_sensor
-        elif dev_type == TYPE_LED:
+        elif dev_type == DEV_LED:
             self.devices[port] = LED(self, port)
-        elif dev_type == TYPE_TILT_SENSOR:
+        elif dev_type == DEV_TILT_SENSOR:
             self.devices[port] = TiltSensor(self, port)
         else:
             log.warning("Unhandled peripheral type 0x%x on port 0x%x", dev_type, port)
