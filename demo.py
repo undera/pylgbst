@@ -157,6 +157,10 @@ def demo_all(movehub):
     demo_motor_sensors(movehub)
 
 
+def cb_log(val1, val2=None, val3=None):
+    log.info("V1:%s\tV2:%s\tV3:%s", unpack("<H", val1), val2, val3)
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
@@ -168,8 +172,9 @@ if __name__ == '__main__':
 
     hub = MoveHub(connection)
 
-    demo_motors_timed(hub)
-    # demo_all(hub)
-
-    log.info("Sleeping 60s")
+    hub.devices[PORT_BATTERY].subscribe(cb_log, 0x00, granularity=2)
+    sleep(10)
+    demo_port_cd_motor(hub)
     sleep(60)
+    hub.devices[PORT_BATTERY].unsubscribe(cb_log)
+    # demo_all(hub)

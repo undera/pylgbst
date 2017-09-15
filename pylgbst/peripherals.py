@@ -70,7 +70,8 @@ class Peripheral(object):
             subscriber(*args, **kwargs)
 
     def handle_port_data(self, data):
-        log.warning("Unhandled device notification for %s: %s", self, str2hex(data))
+        log.warning("Unhandled device notification for %s: %s", self, str2hex(data[4:]))
+        self._notify_subscribers(data[4:])
 
 
 class LED(Peripheral):
@@ -174,8 +175,6 @@ class EncodedMotor(Peripheral):
                 time.sleep(0.5)
             log.debug("Command has finished.")
 
-    # TODO: how to tell when motor has stopped?
-
     def handle_port_data(self, data):
         if self._port_subscription_mode == MOTOR_MODE_ANGLE:
             rotation = unpack("<l", data[4:8])[0]
@@ -273,12 +272,11 @@ class ColorDistanceSensor(Peripheral):
             log.debug("Unhandled data in mode %s: %s", self._port_subscription_mode, str2hex(data))
 
 
+class Battery(Peripheral):
+    def handle_port_data(self, data):
+        self._notify_subscribers(unpack("<H", data))
+
+
 class Button(Peripheral):
     def __init__(self, parent):
         super(Button, self).__init__(parent, 0)
-
-
-LISTEN_ENCODER_ON_A = b'        \x0a\x00 \x41\x37 \x02\x01\x00\x00\x00\x01'
-LISTEN_ENCODER_ON_B = b'        \x0a\x00 \x41\x38 \x02\x01\x00\x00\x00\x01'
-LISTEN_ENCODER_ON_C = b'        \x0a\x00 \x41\x01 \x02\x01\x00\x00\x00\x01'
-LISTEN_ENCODER_ON_D = b'        \x0a\x00 \x41\x02 \x02\x01\x00\x00\x00\x01'

@@ -47,9 +47,9 @@ class Vernie(MoveHub):
 
     def _reset_head(self):
         self.motor_external.timed(1, -0.2)
-        self.head_to(RIGHT, speed=45)
+        self.head(RIGHT, speed=45)
 
-    def head_to(self, direction=RIGHT, angle=25, speed=0.1):
+    def head(self, direction=RIGHT, angle=25, speed=0.1):
         if direction == STRAIGHT:
             angle = -self._head_position
             direction = 1
@@ -57,13 +57,13 @@ class Vernie(MoveHub):
         self.motor_external.angled(direction * angle, speed)
 
     def turn(self, direction, degrees=90, speed=0.3):
-        self.head_to(STRAIGHT, speed=1)
-        self.head_to(direction, 35, 1)
+        self.head(STRAIGHT, speed=1)
+        self.head(direction, 35, 1)
         self.motor_AB.angled(225 * degrees / 90, speed * direction, -speed * direction)
-        self.head_to(STRAIGHT, speed=1)
+        self.head(STRAIGHT, speed=1)
 
     def move(self, direction, distance=1, speed=0.3):
-        self.head_to(STRAIGHT, speed=0.5)
+        self.head(STRAIGHT, speed=0.5)
         self.motor_AB.angled(distance * 450, speed * direction, speed * direction)
 
     def program(self):

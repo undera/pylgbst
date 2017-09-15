@@ -18,7 +18,7 @@ PORT_B = 0x38
 PORT_AB = 0x39
 PORT_TILT_SENSOR = 0x3a
 PORT_SOMETHING1 = 0x3B
-PORT_SOMETHING2 = 0x3C
+PORT_BATTERY = 0x3C  # subscribing on this port showed correlation with power voltage
 
 PORTS = {
     PORT_A: "A",
@@ -29,7 +29,7 @@ PORTS = {
     PORT_LED: "LED",
     PORT_TILT_SENSOR: "TILT_SENSOR",
     PORT_SOMETHING1: "UNK1",
-    PORT_SOMETHING2: "UNK2",
+    PORT_BATTERY: "BATTERY",
 }
 
 # PACKET TYPES
@@ -47,8 +47,7 @@ MSG_SENSOR_SUBSCRIBE_ACK = 0x47
 
 # DEVICE TYPES
 DEV_UNKNOWN1 = 0x15  # one of them is button?
-DEV_UNKNOWN2 = 0x14  # another is battery?
-
+DEV_BATTERY = 0x14
 DEV_DCS = 0x25
 DEV_IMOTOR = 0x26
 DEV_MOTOR = 0x27
@@ -62,7 +61,7 @@ DEVICE_TYPES = {
     DEV_TILT_SENSOR: "TILT_SENSOR",
     DEV_LED: "LED",
     DEV_UNKNOWN1: "UNKNOWN #1",
-    DEV_UNKNOWN2: "UNKNOWN #2",
+    DEV_BATTERY: "UNKNOWN #2",
 }
 
 # NOTIFICATIONS

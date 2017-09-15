@@ -12,6 +12,7 @@ class MoveHub(object):
     :type led: LED
     :type tilt_sensor: TiltSensor
     :type button: Button
+    :type battery: Battery
     :type color_distance_sensor: pylgbst.peripherals.ColorDistanceSensor
     :type motor_external: EncodedMotor
     :type port_C: Peripheral
@@ -31,6 +32,7 @@ class MoveHub(object):
         # shorthand fields
         self.button = Button(self)
         self.led = None
+        self.battery = None
         self.motor_A = None
         self.motor_B = None
         self.motor_AB = None
@@ -133,6 +135,8 @@ class MoveHub(object):
             self.devices[port] = LED(self, port)
         elif dev_type == DEV_TILT_SENSOR:
             self.devices[port] = TiltSensor(self, port)
+        elif dev_type == DEV_BATTERY:
+            self.devices[port] = Battery(self, port)
         else:
             log.warning("Unhandled peripheral type 0x%x on port 0x%x", dev_type, port)
             self.devices[port] = Peripheral(self, port)
@@ -151,5 +155,7 @@ class MoveHub(object):
             self.led = self.devices[port]
         elif port == PORT_TILT_SENSOR:
             self.tilt_sensor = self.devices[port]
+        elif port == PORT_BATTERY:
+            self.battery = self.devices[port]
         else:
             log.warning("Unhandled port: %s", PORTS[port])
