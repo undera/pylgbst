@@ -96,7 +96,7 @@ class MoveHub(object):
             return
 
         device = self.devices[port]
-        device.handle_notification(data)
+        device.handle_sensor_data(data)
 
     def _handle_port_status(self, data):
         port = get_byte(data, 3)

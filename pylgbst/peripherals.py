@@ -43,7 +43,7 @@ class Peripheral(object):
         for subscriber in self._subscribers:
             subscriber(*args, **kwargs)
 
-    def handle_notification(self, data):
+    def handle_sensor_data(self, data):
         log.warning("Unhandled device notification for %s: %s", self, str2hex(data))
 
 
@@ -52,7 +52,7 @@ class LED(Peripheral):
         if color not in COLORS:
             raise ValueError("Color %s is not in list of available colors" % color)
 
-        cmd = b'\xFF\x51\x00' + int2byte(color)
+        cmd = b'\x01\x51\x00' + int2byte(color)
         self._write_to_hub(MSG_SET_PORT_VAL, cmd)
 
     def finished(self):
@@ -149,7 +149,7 @@ class TiltSensor(Peripheral):
             self._write_to_hub(MSG_SENSOR_SUBSCRIBE, int2byte(self.mode) + b'\x00\x00\x00' + int2byte(0))
             self.mode = None
 
-    def handle_notification(self, data):
+    def handle_sensor_data(self, data):
         if self.mode == TILT_SENSOR_MODE_BASIC:
             state = get_byte(data, 4)
             self._notify_subscribers(state)
@@ -184,7 +184,7 @@ class ColorDistanceSensor(Peripheral):
         super(ColorDistanceSensor, self).__init__(parent, port)
         self.mode = None
 
-    def subscribe(self, callback, mode=CLR_DIST_MODE_COLOR_DISTANCE_INCHES_SUBINCHES, granularity=1):
+    def subscribe(self, callback, mode=CDS_MODE_COLOR_DISTANCE_INCHES_SUBINCHES, granularity=1):
         self.mode = mode
         params = int2byte(mode)
         params += int2byte(granularity)
@@ -201,41 +201,41 @@ class ColorDistanceSensor(Peripheral):
             self._write_to_hub(MSG_SENSOR_SUBSCRIBE, int2byte(self.mode) + b'\x01\x00\x00\x00' + int2byte(0))
             self.mode = None
 
-    def handle_notification(self, data):
-        if self.mode == CLR_DIST_MODE_COLOR_DISTANCE_INCHES_SUBINCHES:
+    def handle_sensor_data(self, data):
+        if self.mode == CDS_MODE_COLOR_DISTANCE_INCHES_SUBINCHES:
             color = get_byte(data, 4)
             distance = get_byte(data, 5)
             partial = get_byte(data, 7)
             if partial:
                 distance += 1.0 / partial
             self._notify_subscribers(color if color != 0xFF else None, float(distance))
-        elif self.mode == CLR_DIST_MODE_COLOR_ONLY:
+        elif self.mode == CDS_MODE_COLOR_ONLY:
             color = get_byte(data, 4)
             self._notify_subscribers(color if color != 0xFF else None)
-        elif self.mode == CLR_DIST_MODE_DISTANCE_INCHES:
+        elif self.mode == CDS_MODE_DISTANCE_INCHES:
             distance = get_byte(data, 4)
             self._notify_subscribers(float(distance))
-        elif self.mode == CLR_DIST_MODE_DISTANCE_HOW_CLOSE:
+        elif self.mode == CDS_MODE_DISTANCE_HOW_CLOSE:
             distance = get_byte(data, 4)
             self._notify_subscribers(float(distance))
-        elif self.mode == CLR_DIST_MODE_DISTANCE_SUBINCH_HOW_CLOSE:
+        elif self.mode == CDS_MODE_DISTANCE_SUBINCH_HOW_CLOSE:
             distance = get_byte(data, 4)
             self._notify_subscribers(float(distance))
-        elif self.mode == CLR_DIST_MODE_OFF1 or self.mode == CLR_DIST_MODE_OFF2:
+        elif self.mode == CDS_MODE_OFF1 or self.mode == CDS_MODE_OFF2:
             log.info("Turned off led on %s", self)
-        elif self.mode == CLR_DIST_MODE_COUNT_2INCH:
+        elif self.mode == CDS_MODE_COUNT_2INCH:
             count = struct.unpack("<L", data[4:8])[0]  # is it all 4 bytes or just 2?
             self._notify_subscribers(count)
-        elif self.mode == CLR_DIST_MODE_STREAM_3_VALUES:
+        elif self.mode == CDS_MODE_STREAM_3_VALUES:
             # TODO: understand better meaning of these 3 values
             val1 = struct.unpack("<H", data[4:6])[0]
             val2 = struct.unpack("<H", data[6:8])[0]
             val3 = struct.unpack("<H", data[8:10])[0]
             self._notify_subscribers(val1, val2, val3)
-        elif self.mode == CLR_DIST_MODE_LUMINOSITY:
+        elif self.mode == CDS_MODE_LUMINOSITY:
             luminosity = struct.unpack("<H", data[4:6])[0]
             self._notify_subscribers(luminosity)
-        else:
+        else:  # TODO: support whatever we forgot
             log.warning("Unhandled data in mode %s: %s", self.mode, str2hex(data))
 
 

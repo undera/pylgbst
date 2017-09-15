@@ -117,10 +117,10 @@ def demo_color_sensor(movehub):
 
     def callback(color, distance=None, param=None):
         demo_color_sensor.cnt += 1
-        clr = COLORS[color] if color in COLORS else color
-        log.info("#%s/%s: Color %s, distance %s, param %s", demo_color_sensor.cnt, limit, clr, distance, param)
+        #color = COLORS[color] if color in COLORS else color
+        log.info("#%s/%s: Color %s, distance %s, param %s", demo_color_sensor.cnt, limit, color, distance, param)
 
-    movehub.color_distance_sensor.subscribe(callback, 0x08)
+    movehub.color_distance_sensor.subscribe(callback, CDS_MODE_STREAM_3_VALUES, granularity=3)
     while demo_color_sensor.cnt < limit:
         time.sleep(1)
 
