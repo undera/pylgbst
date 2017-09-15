@@ -30,8 +30,9 @@ class Vernie(MoveHub):
     def _color_distance_data(self, color, distance):
         log.debug("Color & Distance data: %s %s", COLORS[color], distance)
         self._sensor_distance = distance
-        self._color_detected = color
-        self.led.set_color(self._color_detected if self._color_detected != COLOR_NONE else COLOR_BLACK)
+        if self._color_detected != color:
+            self._color_detected = color
+            self.led.set_color(self._color_detected if self._color_detected != COLOR_NONE else COLOR_BLACK)
 
     def head_to(self, direction=RIGHT, speed=0.25, angle=25):
         if direction == STRAIGHT:

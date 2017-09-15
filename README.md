@@ -27,10 +27,14 @@ for device in hub.devices:
 
 ## Debug Server
 
-`sudo python -c "from pylgbst.comms import *; import logging; logging.basicConfig(level=logging.DEBUG); DebugServer(BLEConnection().connect()).start()"`
+```
+sudo python -c "from pylgbst.comms import *; import logging; logging.basicConfig(level=logging.DEBUG); DebugServer(BLEConnection().connect()).start()"
+```
 
 ## Roadmap
 
+- make notifications from pygattlib to quickly get into parallel thread, to avoid segfaults
+- support working with push button
 - Give nice documentation examples, don't forget to mention logging
 - make angled motors to be synchronous by default => 3-state status
 - make sure unit tests cover all important code

@@ -168,7 +168,7 @@ if __name__ == '__main__':
 
     hub = MoveHub(connection)
 
-    demo_motor_sensors(hub)
+    demo_motors_timed(hub)
     # demo_all(hub)
 
     log.info("Sleeping 60s")

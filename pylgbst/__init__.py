@@ -62,9 +62,6 @@ class MoveHub(object):
         return self.connection.read(DEVICE_NAME)
 
     def _notify(self, handle, data):
-        """
-        Using https://github.com/JorgePe/BOOSTreveng/blob/master/Notifications.md
-        """
         orig = data
 
         if handle != MOVE_HUB_HARDWARE_HANDLE:
