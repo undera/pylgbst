@@ -143,10 +143,7 @@ class EncodedMotor(Peripheral):
         # movement type
         command = self.TIMED_GROUP if self.port == PORT_AB else self.TIMED_SINGLE
         # time
-        msec = int(seconds * 1000)
-        if msec >= pow(2, 16):
-            raise ValueError("Too large value for seconds: %s", seconds)
-        command += pack('<H', msec)
+        command += pack('<H', int(seconds * 1000))
 
         self.started()
         self._wrap_and_write(command, speed_primary, speed_secondary)
@@ -279,10 +276,16 @@ class Battery(Peripheral):
         super(Battery, self).__init__(parent, port)
         self.last_value = None
 
+    def subscribe(self, callback, mode=0, granularity=1):
+        super(Battery, self).subscribe(callback, mode, granularity)
+
     # we know only voltage subscription from it. is it really battery or just onboard voltage?
-    # device has turned off on 1b0e000600453ba800
+    # device has turned off on 1b0e000600453ba800 - 168d
+    # moderate 9v ~= 3840
+    # good 7.5v ~= 3892
+    # liion 5v ~= 2100
     def handle_port_data(self, data):
-        self.last_value = unpack("<H", data[4:6])[0]
+        self.last_value = unpack("<h", data[4:6])[0]
         self._notify_subscribers(self.last_value)
 
 

@@ -1,6 +1,8 @@
+# coding=utf-8
 from time import sleep
 
 from pylgbst import *
+from vernie import say
 
 log = logging.getLogger("demo")
 
@@ -157,11 +159,6 @@ def demo_all(movehub):
     demo_motor_sensors(movehub)
 
 
-def cb_log(val1, val2=None, val3=None):
-    pass
-    # log.info("V1:%s\tV2:%s\tV3:%s", unpack("<H", val1), val2, val3)
-
-
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
 
@@ -171,12 +168,15 @@ if __name__ == '__main__':
         logging.warning("Failed to use debug server: %s", traceback.format_exc())
         connection = BLEConnection().connect()
 
-    hub = MoveHub(connection)
 
-    hub.button.subscribe(cb_log, 0x00, granularity=1)
-    sleep(10)
-    # demo_port_cd_motor(hub)
-    sleep(10)
-    #hub.button.unsubscribe(cb_log)
-    sleep(10)
+    def cb_log(val1, val2=None, val3=None):
+        log.info("V1:%s\tV2:%s\tV3:%s", val1, val2, val3)
+
+
+    hub = MoveHub(connection)
+    hub.color_distance_sensor.subscribe(cb_log, CDS_MODE_STREAM_3_VALUES, granularity=3)
+    sleep(60)
+    # hub.motor_AB.timed(10, 0.1, async=True)
+    # sleep(1)
+    # hub.motor_AB.timed(0, 0)
     # demo_all(hub)

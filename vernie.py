@@ -1,8 +1,33 @@
+# coding=utf-8
+import hashlib
+import os
+import re
+import subprocess
+
+import gtts
+
 from pylgbst import *
 
 forward = FORWARD = right = RIGHT = 1
 backward = BACKWARD = left = LEFT = -1
 straight = STRAIGHT = 0
+
+
+def say(text):
+    if isinstance(text, str):
+        text = text.decode("utf-8")
+    md5 = hashlib.md5(text.encode('utf-8')).hexdigest()
+    fname = "/tmp/%s.mp3" % md5
+    if not os.path.exists(fname):
+        myre = re.compile('[[A-Za-z]', re.UNICODE)
+        lang = 'en' if myre.match(text) else 'ru'
+
+        logging.getLogger('requests').setLevel(logging.getLogger('').getEffectiveLevel())
+        tts = gtts.gTTS(text=text, lang=lang, slow=False)
+        tts.save(fname)
+
+    with open(os.devnull, 'w') as fnull:
+        subprocess.call("mplayer %s" % fname, shell=True, stderr=fnull, stdout=fnull)
 
 
 class Vernie(MoveHub):
@@ -11,7 +36,7 @@ class Vernie(MoveHub):
             conn = DebugServerConnection()
         except BaseException:
             logging.debug("Failed to use debug server: %s", traceback.format_exc())
-        conn = BLEConnection().connect()
+            conn = BLEConnection().connect()
 
         super(Vernie, self).__init__(conn)
 
@@ -42,8 +67,7 @@ class Vernie(MoveHub):
         log.debug("Color & Distance data: %s %s", COLORS[color], distance)
         self._sensor_distance = distance
         self._color_detected = color
-        if self._color_detected != COLOR_NONE:
-            self.led.set_color(self._color_detected)
+        say(COLORS[self._color_detected])
 
     def _reset_head(self):
         self.motor_external.timed(1, -0.2)
@@ -66,8 +90,7 @@ class Vernie(MoveHub):
         self.head(STRAIGHT, speed=0.5)
         self.motor_AB.angled(distance * 450, speed * direction, speed * direction)
 
-    def program(self):
-        # while True:
+    def program_carton_board(self):
         self.move(FORWARD)
         self.move(FORWARD)
         self.turn(RIGHT)
@@ -89,9 +112,14 @@ class Vernie(MoveHub):
         self.move(BACKWARD, 2)
 
 
+# TODO: distance sensor game
+# TODO: find and follow the lightest direction game
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     comms.log.setLevel(logging.INFO)
 
     vernie = Vernie()
-    vernie.program()
+    say("Робот Веернии 01 готов к работе")
+    say("Вправо-влево, назад-вперед")
+    # vernie.program()

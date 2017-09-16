@@ -114,7 +114,6 @@ class MoveHub(object):
             self.devices[port].finished()
         elif status == STATUS_CONFLICT:
             log.warning("Command conflict on port %s", PORTS[port])
-            self.devices[port].finished()
         else:
             log.warning("Unhandled status value: 0x%x", status)
 
@@ -142,7 +141,7 @@ class MoveHub(object):
         elif dev_type == DEV_BATTERY:
             self.devices[port] = Battery(self, port)
         else:
-            log.warning("Unhandled peripheral type 0x%x on port 0x%x", dev_type, port)
+            log.debug("Unhandled peripheral type 0x%x on port 0x%x", dev_type, port)
             self.devices[port] = Peripheral(self, port)
 
         if port == PORT_A:
