@@ -32,7 +32,27 @@ def say(text):
 
 
 class Vernie(MoveHub):
-    def __init__(self):
+    SPEECH_LANG_MAP = {
+        'en': {
+            'ready': "Vernie the Robot is ready.",
+            "commands help": "Available commands are: "
+                             "forward, backward, turn left, turn right, "
+                             "head left, head right, head straight and say",
+            "finished": "Thank you! Robot is now turning off"
+        },
+        "ru": {
+            "ready": "Робот Веернии 01 готов к работе",
+            "type commands": "печатайте команды",
+            "ok": "хорошо",
+            "commands help": "Доступные команды это: вперёд, назад, поворот влево, поворот вправо, "
+                             "голову влево, голову вправо, голову прямо, скажи",
+            "Finished": "Робот завершает работу. Спасибо!",
+            "commands from file": "Исполняю команды из файла",
+        }
+    }
+
+    def __init__(self, language='en'):
+        self.language = language
         try:
             conn = DebugServerConnection()
         except BaseException:
@@ -58,7 +78,12 @@ class Vernie(MoveHub):
         time.sleep(1)
         self._reset_head()
         time.sleep(1)
-        log.info("Vernie is ready.")
+        self.say("ready")
+
+    def say(self, phrase):
+        if phrase in self.SPEECH_LANG_MAP[self.language]:
+            phrase = self.SPEECH_LANG_MAP[self.language][phrase]
+        say(phrase)
 
     def _external_motor_data(self, data):
         log.debug("External motor position: %s", data)
@@ -112,51 +137,71 @@ class Vernie(MoveHub):
         self.move(BACKWARD, 2)
 
     def read_typed_commands(self):
-        say("Печатайте команды")
+        self.say('type commands')
+
+        def confirmation(cmd):
+            self.say("ok")
+
         while True:
+            # noinspection PyUnresolvedReferences
             cmd = six.moves.input("COMMAND >")
-            cmd = cmd.split(' ')
-            if cmd[0].lower() in ("head", "голова", "голова"):
-                if cmd[-1] in ("right", "вправо", "направо"):
-                    say("ok")
-                    self.head(RIGHT)
-                elif cmd[-1] in ("left", "влево", "налево"):
-                    say("ok")
-                    self.head(LEFT)
-                else:
-                    say("ok")
-                    self.head(STRAIGHT)
-            elif cmd[0].lower() in ("say", "скажи", "сказать"):
-                say(' '.join(cmd[1:]))
-            elif cmd[0].lower() in ("forward", "вперёд", "вперед"):
-                try:
-                    dist = int(cmd[-1])
-                except:
-                    dist = 1
-                say("ok")
-                self.move(FORWARD, distance=dist)
-            elif cmd[0].lower() in ("backward", "назад"):
-                try:
-                    dist = int(cmd[-1])
-                except:
-                    dist = 1
-                say("ok")
-                self.move(BACKWARD, distance=dist)
-            elif cmd[0].lower() in ("turn", "поворот", 'повернуть'):
-                if cmd[-1] in ("right", "вправо", "направо"):
-                    say("ok")
-                    self.turn(RIGHT)
-                elif cmd[-1] in ("left", "влево", "налево"):
-                    say("ok")
-                    self.turn(LEFT)
-                else:
-                    say("ok")
-                    self.turn(RIGHT, degrees=360)
+            self._interpret_written_command(cmd, confirmation)
+
+    def run_commands_file(self, filename):
+        self.say("commands from file")
+
+        def confirmation(cmd):
+            self.say(cmd[0])
+
+        with open(filename) as fhd:
+            for cmd in fhd.readlines():
+                sys.stdout.write("%s" % cmd)
+                self._interpret_written_command(cmd, confirmation)
+
+    def _interpret_written_command(self, cmd, confirm):
+        cmd = cmd.strip().lower().split(' ')
+        if cmd[0] in ("head", "голова", "голова"):
+            if cmd[-1] in ("right", "вправо", "направо"):
+                confirm(cmd)
+                self.head(RIGHT)
+            elif cmd[-1] in ("left", "влево", "налево"):
+                confirm(cmd)
+                self.head(LEFT)
             else:
-                say("Неизвестная команда")
-                say("Доступные команды это:")
-                say("вперёд, назад, поворот влево, поворот вправо, голову влево, голову вправо, голову прямо, скажи")
-                say("Печатайте команды")
+                confirm(cmd)
+                self.head(STRAIGHT)
+        elif cmd[0] in ("say", "скажи", "сказать"):
+            say(' '.join(cmd[1:]))
+        elif cmd[0] in ("end", "конец"):
+            self.say("finished")
+            raise KeyboardInterrupt()
+        elif cmd[0] in ("forward", "вперёд", "вперед"):
+            try:
+                dist = int(cmd[-1])
+            except:
+                dist = 1
+            confirm(cmd)
+            self.move(FORWARD, distance=dist)
+        elif cmd[0] in ("backward", "назад"):
+            try:
+                dist = int(cmd[-1])
+            except:
+                dist = 1
+            confirm(cmd)
+            self.move(BACKWARD, distance=dist)
+        elif cmd[0] in ("turn", "поворот", 'повернуть'):
+            if cmd[-1] in ("right", "вправо", "направо"):
+                confirm(cmd)
+                self.turn(RIGHT)
+            elif cmd[-1] in ("left", "влево", "налево"):
+                confirm(cmd)
+                self.turn(LEFT)
+            else:
+                confirm(cmd)
+                self.turn(RIGHT, degrees=180)
+        else:
+            self.say("Unknown command")
+            self.say("commands help")
 
 
 # TODO: distance sensor game
@@ -166,6 +211,6 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     comms.log.setLevel(logging.INFO)
 
-    vernie = Vernie()
-    say("Робот Веернии 01 готов к работе")
+    vernie = Vernie(language="ru")
+    # vernie.run_commands_file("./vernie.commands")
     vernie.read_typed_commands()
