@@ -4,31 +4,34 @@ import os
 import re
 import subprocess
 
-import gtts
-import six
+try:
+    import gtts
+
+
+    def say(text):
+        if isinstance(text, str):
+            text = text.decode("utf-8")
+        md5 = hashlib.md5(text.encode('utf-8')).hexdigest()
+        fname = "/tmp/%s.mp3" % md5
+        if not os.path.exists(fname):
+            myre = re.compile('[[A-Za-z]', re.UNICODE)
+            lang = 'en' if myre.match(text) else 'ru'
+
+            logging.getLogger('requests').setLevel(logging.getLogger('').getEffectiveLevel())
+            tts = gtts.gTTS(text=text, lang=lang, slow=False)
+            tts.save(fname)
+
+        with open(os.devnull, 'w') as fnull:
+            subprocess.call("mplayer %s" % fname, shell=True, stderr=fnull, stdout=fnull)
+except:
+    def say(text):
+        sys.stdout.write("%s\n", text)
 
 from pylgbst import *
 
 forward = FORWARD = right = RIGHT = 1
 backward = BACKWARD = left = LEFT = -1
 straight = STRAIGHT = 0
-
-
-def say(text):
-    if isinstance(text, str):
-        text = text.decode("utf-8")
-    md5 = hashlib.md5(text.encode('utf-8')).hexdigest()
-    fname = "/tmp/%s.mp3" % md5
-    if not os.path.exists(fname):
-        myre = re.compile('[[A-Za-z]', re.UNICODE)
-        lang = 'en' if myre.match(text) else 'ru'
-
-        logging.getLogger('requests').setLevel(logging.getLogger('').getEffectiveLevel())
-        tts = gtts.gTTS(text=text, lang=lang, slow=False)
-        tts.save(fname)
-
-    with open(os.devnull, 'w') as fnull:
-        subprocess.call("mplayer %s" % fname, shell=True, stderr=fnull, stdout=fnull)
 
 
 class Vernie(MoveHub):
@@ -71,13 +74,7 @@ class Vernie(MoveHub):
         self._head_position = 0
         self.motor_external.subscribe(self._external_motor_data)
 
-        self._color_detected = COLOR_NONE
-        self._sensor_distance = 10
-        self.color_distance_sensor.subscribe(self._color_distance_data)
-
-        time.sleep(1)
         self._reset_head()
-        time.sleep(1)
         self.say("ready")
 
     def say(self, phrase):
@@ -88,11 +85,6 @@ class Vernie(MoveHub):
     def _external_motor_data(self, data):
         log.debug("External motor position: %s", data)
         self._head_position = data
-
-    def _color_distance_data(self, color, distance):
-        log.debug("Color & Distance data: %s %s", COLORS[color], distance)
-        self._sensor_distance = distance
-        self._color_detected = color
 
     def _reset_head(self):
         self.motor_external.timed(1, -0.2)
@@ -115,50 +107,7 @@ class Vernie(MoveHub):
         self.head(STRAIGHT, speed=0.5)
         self.motor_AB.angled(distance * 450, speed * direction, speed * direction)
 
-    def program_carton_board(self):
-        self.move(FORWARD)
-        self.move(FORWARD)
-        self.turn(RIGHT)
-        self.move(FORWARD)
-        self.turn(LEFT)
-        self.move(FORWARD)
-        self.turn(RIGHT)
-        self.move(BACKWARD)
-        self.move(BACKWARD)
-        self.turn(LEFT)
-        self.move(FORWARD)
-        self.move(FORWARD)
-        self.turn(RIGHT)
-        self.move(FORWARD)
-        self.turn(RIGHT)
-        self.move(FORWARD, 3)
-        self.turn(LEFT)
-        self.turn(LEFT)
-        self.move(BACKWARD, 2)
-
-    def read_typed_commands(self):
-        self.say('type commands')
-
-        def confirmation(cmd):
-            self.say("ok")
-
-        while True:
-            # noinspection PyUnresolvedReferences
-            cmd = six.moves.input("COMMAND >")
-            self._interpret_written_command(cmd, confirmation)
-
-    def run_commands_file(self, filename):
-        self.say("commands from file")
-
-        def confirmation(cmd):
-            self.say(cmd[0])
-
-        with open(filename) as fhd:
-            for cmd in fhd.readlines():
-                sys.stdout.write("%s" % cmd)
-                self._interpret_written_command(cmd, confirmation)
-
-    def _interpret_written_command(self, cmd, confirm):
+    def interpret_command(self, cmd, confirm):
         cmd = cmd.strip().lower().split(' ')
         if cmd[0] in ("head", "голова", "голова"):
             if cmd[-1] in ("right", "вправо", "направо"):
@@ -203,14 +152,5 @@ class Vernie(MoveHub):
             self.say("Unknown command")
             self.say("commands help")
 
-
-# TODO: distance sensor game
 # TODO: find and follow the lightest direction game
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    comms.log.setLevel(logging.INFO)
-
-    vernie = Vernie(language="ru")
-    # vernie.run_commands_file("./vernie.commands")
-    vernie.read_typed_commands()
+# TODO: disable motors if state is not up

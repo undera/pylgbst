@@ -2,7 +2,6 @@
 from time import sleep
 
 from pylgbst import *
-from vernie import say
 
 log = logging.getLogger("demo")
 

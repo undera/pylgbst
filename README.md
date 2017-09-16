@@ -3,6 +3,7 @@
 Requires `gattlib` to be installed, currently Python 2.7 only
 
 Best way to start is to look into [demo.py](demo.py) file, and run it.
+If you have Vernie assembled, you might look into and run [vernie.py](vernie/vernie.py) file.
 
 ## Features
 
