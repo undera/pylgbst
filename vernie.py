@@ -5,6 +5,7 @@ import re
 import subprocess
 
 import gtts
+import six
 
 from pylgbst import *
 
@@ -67,11 +68,10 @@ class Vernie(MoveHub):
         log.debug("Color & Distance data: %s %s", COLORS[color], distance)
         self._sensor_distance = distance
         self._color_detected = color
-        say(COLORS[self._color_detected])
 
     def _reset_head(self):
         self.motor_external.timed(1, -0.2)
-        self.head(RIGHT, speed=45)
+        self.head(RIGHT, angle=45)
 
     def head(self, direction=RIGHT, angle=25, speed=0.1):
         if direction == STRAIGHT:
@@ -111,15 +111,61 @@ class Vernie(MoveHub):
         self.turn(LEFT)
         self.move(BACKWARD, 2)
 
+    def read_typed_commands(self):
+        say("Печатайте команды")
+        while True:
+            cmd = six.moves.input("COMMAND >")
+            cmd = cmd.split(' ')
+            if cmd[0].lower() in ("head", "голова", "голова"):
+                if cmd[-1] in ("right", "вправо", "направо"):
+                    say("ok")
+                    self.head(RIGHT)
+                elif cmd[-1] in ("left", "влево", "налево"):
+                    say("ok")
+                    self.head(LEFT)
+                else:
+                    say("ok")
+                    self.head(STRAIGHT)
+            elif cmd[0].lower() in ("say", "скажи", "сказать"):
+                say(' '.join(cmd[1:]))
+            elif cmd[0].lower() in ("forward", "вперёд", "вперед"):
+                try:
+                    dist = int(cmd[-1])
+                except:
+                    dist = 1
+                say("ok")
+                self.move(FORWARD, distance=dist)
+            elif cmd[0].lower() in ("backward", "назад"):
+                try:
+                    dist = int(cmd[-1])
+                except:
+                    dist = 1
+                say("ok")
+                self.move(BACKWARD, distance=dist)
+            elif cmd[0].lower() in ("turn", "поворот", 'повернуть'):
+                if cmd[-1] in ("right", "вправо", "направо"):
+                    say("ok")
+                    self.turn(RIGHT)
+                elif cmd[-1] in ("left", "влево", "налево"):
+                    say("ok")
+                    self.turn(LEFT)
+                else:
+                    say("ok")
+                    self.turn(RIGHT, degrees=360)
+            else:
+                say("Неизвестная команда")
+                say("Доступные команды это:")
+                say("вперёд, назад, поворот влево, поворот вправо, голову влево, голову вправо, голову прямо, скажи")
+                say("Печатайте команды")
+
 
 # TODO: distance sensor game
 # TODO: find and follow the lightest direction game
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     comms.log.setLevel(logging.INFO)
 
     vernie = Vernie()
     say("Робот Веернии 01 готов к работе")
-    say("Вправо-влево, назад-вперед")
-    # vernie.program()
+    vernie.read_typed_commands()

@@ -161,7 +161,7 @@ class MoveHub(object):
         elif port == PORT_BATTERY:
             self.battery = self.devices[port]
         else:
-            log.warning("Unhandled port: %s", PORTS[port])
+            log.debug("Unhandled port: %s", PORTS[port])
 
     def shutdown(self):
         cmd = pack("<B", PACKET_VER) + pack("<B", MSG_DEVICE_SHUTDOWN)
