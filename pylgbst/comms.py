@@ -43,11 +43,11 @@ class Requester(GATTRequester):
         self.notification_sink = None
 
         # noinspection PyUnresolvedReferences
-        self._notify_queue = queue.Queue()
-        self._notifier_thread = Thread(target=self._dispatch_notifications)
-        self._notifier_thread.setDaemon(True)
-        self._notifier_thread.setName("Notify queue dispatcher")
-        self._notifier_thread.start()
+        self._notify_queue = queue.Queue()  # this queue is to minimize time spent in gattlib C code
+        thr = Thread(target=self._dispatch_notifications)
+        thr.setDaemon(True)
+        thr.setName("Notify queue dispatcher")
+        thr.start()
 
     def on_notification(self, handle, data):
         # log.debug("requester notified, sink: %s", self.notification_sink)
@@ -63,7 +63,7 @@ class Requester(GATTRequester):
                 try:
                     self.notification_sink(handle, data)
                 except BaseException:
-                    log.warning("Failed to dispatch notification: %s", str2hex(data))
+                    log.warning("Data was: %s", str2hex(data))
                     log.warning("Failed to dispatch notification: %s", traceback.format_exc())
             else:
                 log.warning("Dropped notification %s: %s", handle, str2hex(data))

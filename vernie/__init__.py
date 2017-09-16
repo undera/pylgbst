@@ -74,8 +74,9 @@ class Vernie(MoveHub):
         self._head_position = 0
         self.motor_external.subscribe(self._external_motor_data)
 
-        self._reset_head()
-        self.say("ready")
+        # self._reset_head() FIXME: restore it
+        # self.say("ready")
+        time.sleep(1)
 
     def say(self, phrase):
         if phrase in self.SPEECH_LANG_MAP[self.language]:

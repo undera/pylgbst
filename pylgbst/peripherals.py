@@ -1,6 +1,9 @@
 import logging
 import time
 from struct import pack, unpack
+from threading import Thread
+
+from six.moves import queue
 
 from pylgbst import get_byte, str2hex
 from pylgbst.constants import *
@@ -11,6 +14,7 @@ log = logging.getLogger('peripherals')
 class Peripheral(object):
     """
     :type parent: MoveHub
+    :type _incoming_port_data: queue.Queue
     """
 
     def __init__(self, parent, port):
@@ -24,6 +28,11 @@ class Peripheral(object):
         self._working = False
         self._subscribers = set()
         self._port_subscription_mode = None
+        self._incoming_port_data = queue.Queue()
+        thr = Thread(target=self._queue_reader)
+        thr.setDaemon(True)
+        thr.setName("Port data queue: %s" % self)
+        thr.start()
 
     def __repr__(self):
         return "%s on port %s" % (self.__class__.__name__, PORTS[self.port] if self.port in PORTS else self.port)
@@ -71,9 +80,20 @@ class Peripheral(object):
         for subscriber in self._subscribers:
             subscriber(*args, **kwargs)
 
+    def queue_port_data(self, data):
+        self._incoming_port_data.put(data)
+
     def handle_port_data(self, data):
         log.warning("Unhandled device notification for %s: %s", self, str2hex(data[4:]))
         self._notify_subscribers(data[4:])
+
+    def _queue_reader(self):
+        while True:
+            data = self._incoming_port_data.get()
+            try:
+                self.handle_port_data(data)
+            except BaseException:
+                log.warning("Failed to handle port data by %s: %s", self, str2hex(data))
 
 
 class LED(Peripheral):

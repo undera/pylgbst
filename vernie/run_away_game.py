@@ -1,6 +1,6 @@
 from vernie import *
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 robot = Vernie()
 running = True

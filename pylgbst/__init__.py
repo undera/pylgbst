@@ -102,7 +102,7 @@ class MoveHub(object):
             return
 
         device = self.devices[port]
-        device.handle_port_data(data)
+        device.queue_port_data(data)
 
     def _handle_port_status(self, data):
         port = get_byte(data, 3)
