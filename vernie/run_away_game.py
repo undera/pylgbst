@@ -7,16 +7,11 @@ robot.say("Place your hand in front of sensor")
 
 
 def callback(color, distance):
-    if color == COLOR_WHITE:
-        robot.motor_AB.timed(0.1, 0.2, async=True)
-    elif color != COLOR_NONE:
-        print(color)
-    else:
-        speed = (10 - distance + 1) / 10.0
-        secs = (10 - distance + 1) / 10.0
-        print("Distance is %.1f inches, I'm running back with %s%% speed!" % (distance, int(speed * 100)))
-        if speed <= 1:
-            robot.motor_AB.timed(secs / 1, -speed, async=True)
+    speed = (10 - distance + 1) / 10.0
+    secs = (10 - distance + 1) / 10.0
+    print("Distance is %.1f inches, I'm running back with %s%% speed!" % (distance, int(speed * 100)))
+    if speed <= 1:
+        robot.motor_AB.timed(secs / 1, -speed, async=True)
 
 
 def on_btn(pressed):
