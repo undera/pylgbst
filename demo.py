@@ -167,15 +167,5 @@ if __name__ == '__main__':
         logging.warning("Failed to use debug server: %s", traceback.format_exc())
         connection = BLEConnection().connect()
 
-
-    def cb_log(val1, val2=None, val3=None):
-        log.info("V1:%s\tV2:%s\tV3:%s", val1, val2, val3)
-
-
     hub = MoveHub(connection)
-    hub.color_distance_sensor.subscribe(cb_log, CDS_MODE_STREAM_3_VALUES, granularity=3)
-    sleep(60)
-    # hub.motor_AB.timed(10, 0.1, async=True)
-    # sleep(1)
-    # hub.motor_AB.timed(0, 0)
-    # demo_all(hub)
+    demo_all(hub)

@@ -285,7 +285,7 @@ class ColorDistanceSensor(Peripheral):
             val3 = unpack("<H", data[8:10])[0]
             self._notify_subscribers(val1, val2, val3)
         elif self._port_subscription_mode == CDS_MODE_LUMINOSITY:
-            luminosity = unpack("<H", data[4:6])[0]
+            luminosity = unpack("<H", data[4:6])[0] / 1023.0
             self._notify_subscribers(luminosity)
         else:  # TODO: support whatever we forgot
             log.debug("Unhandled data in mode %s: %s", self._port_subscription_mode, str2hex(data))

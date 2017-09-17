@@ -153,5 +153,5 @@ class Vernie(MoveHub):
             self.say("Unknown command")
             self.say("commands help")
 
-# TODO: find and follow the lightest direction game
 # TODO: disable motors if state is not up
+# TODO: stop motors on bump?
