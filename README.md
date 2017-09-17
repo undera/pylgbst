@@ -38,6 +38,7 @@ for device in hub.devices:
 TODO: more usage instructions
 
 ### General Information
+connection params
 hub's devices detect process & fields to access them
 general subscription modes & granularity info
 
@@ -45,6 +46,7 @@ general subscription modes & granularity info
 ### Motor Rotation Sensors
 ### Tilt Sensor
 ### Color & Distance Sensor
+Tip: laser pointer pointing to sensor makes it trigger distance sensor
 ### LED
 ### Push Button
 ### Power Voltage & Battery
@@ -53,7 +55,9 @@ general subscription modes & granularity info
 ## Debug Server
 
 ```
-sudo python -c "from pylgbst.comms import *; import logging; logging.basicConfig(level=logging.DEBUG); DebugServer(BLEConnection().connect()).start()"
+sudo python -c "from pylgbst.comms import *; \
+    import logging; logging.basicConfig(level=logging.DEBUG); \
+    DebugServer(BLEConnection().connect()).start()"
 ```
 
 ## Roadmap
@@ -64,6 +68,8 @@ sudo python -c "from pylgbst.comms import *; import logging; logging.basicConfig
 - document all API methods
 - make sure unit tests cover all important code
 - generalize getting device info + give constants (low priority)
+- subscribing to color sensor disables LED operating in `run_away_game.py`. Why?
+- can we subscribe to LED?
 
 ## Links
 

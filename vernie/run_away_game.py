@@ -3,7 +3,6 @@ from vernie import *
 robot = Vernie()
 running = True
 
-robot.say("Place your hand in front of sensor")
 
 
 def callback(color, distance):
@@ -12,7 +11,7 @@ def callback(color, distance):
     print("Distance is %.1f inches, I'm running back with %s%% speed!" % (distance, int(speed * 100)))
     if speed <= 1:
         robot.motor_AB.timed(secs / 1, -speed, async=True)
-        robot.say("Place your hand in front of sensor")
+        robot.say("Ouch")
 
 
 def on_btn(pressed):
@@ -21,9 +20,10 @@ def on_btn(pressed):
         running = False
 
 
-robot.button.subscribe(on_btn)
-robot.color_distance_sensor.subscribe(callback)
 robot.led.set_color(COLOR_GREEN)
+robot.button.subscribe(on_btn)
+robot.say("Place your hand in front of sensor")
+robot.color_distance_sensor.subscribe(callback)
 
 while running:
     time.sleep(1)
@@ -31,4 +31,5 @@ while running:
 robot.color_distance_sensor.unsubscribe(callback)
 robot.button.unsubscribe(on_btn)
 robot.led.set_color(COLOR_NONE)
-time.sleep(10)  # let color change
+while robot.led.in_progress():
+    time.sleep(1)

@@ -57,7 +57,7 @@ class Peripheral(object):
         log.debug("Finished: %s", self)
         self._working = False
 
-    def is_working(self):
+    def in_progress(self):
         return bool(self._working)
 
     def subscribe(self, callback, mode, granularity=1):
@@ -99,6 +99,10 @@ class Peripheral(object):
 class LED(Peripheral):
     SOMETHING = b'\x51\x00'
 
+    def __init__(self, parent, port):
+        super(LED, self).__init__(parent, port)
+        self._last_color_set = COLOR_NONE
+
     def set_color(self, color, do_notify=True):
         if color == COLOR_NONE:
             color = COLOR_BLACK
@@ -106,20 +110,22 @@ class LED(Peripheral):
         if color not in COLORS:
             raise ValueError("Color %s is not in list of available colors" % color)
 
-        cmd = pack("<?", do_notify) + self.SOMETHING + pack("<B", color)
+        self._last_color_set = color
+        cmd = pack("<B", do_notify) + self.SOMETHING + pack("<B", color)
         self.started()
         self._write_to_hub(MSG_SET_PORT_VAL, cmd)
 
     def finished(self):
         super(LED, self).finished()
-        log.debug("LED has changed color")
-        self._notify_subscribers()
+        log.debug("LED has changed color to %s", COLORS[self._last_color_set])
+        self._notify_subscribers(self._last_color_set)
 
     def subscribe(self, callback, mode=None, granularity=None):
         self._subscribers.add(callback)
 
     def unsubscribe(self, callback=None):
-        self._subscribers.add(callback)
+        if callback in self._subscribers:
+            self._subscribers.remove(callback)
 
 
 class EncodedMotor(Peripheral):
@@ -190,7 +196,7 @@ class EncodedMotor(Peripheral):
     def __wait_sync(self, async):
         if not async:
             log.debug("Waiting for sync command work to finish...")
-            while self.is_working():
+            while self.in_progress():
                 time.sleep(0.5)
             log.debug("Command has finished.")
 

@@ -9,6 +9,7 @@ log = logging.getLogger("demo")
 def demo_led_colors(movehub):
     # LED colors demo
     log.info("LED colors demo")
+    movehub.color_distance_sensor.subscribe(lambda x, y: None)
     for color in COLORS.keys()[1:] + [COLOR_BLACK]:
         log.info("Setting LED color to: %s", COLORS[color])
         movehub.led.set_color(color)
@@ -168,4 +169,4 @@ if __name__ == '__main__':
         connection = BLEConnection().connect()
 
     hub = MoveHub(connection)
-    demo_all(hub)
+    demo_led_colors(hub)
