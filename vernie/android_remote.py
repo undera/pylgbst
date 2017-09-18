@@ -1,5 +1,10 @@
-# use android remote to control vernie
-# https://play.google.com/store/apps/details?id=com.mscino.sensornode
+"""
+To use it, install this android app:
+   https://play.google.com/store/apps/details?id=com.mscino.sensornode
+Then open app on phone and choose "Stream" => "Stream live data (XML)".
+Check the "Accelerometer" option and put your IP address into corresponding filed.
+Specify port there as 8999, and enable streaming. Then run this script on computer.
+"""
 import logging
 import socket
 import time
