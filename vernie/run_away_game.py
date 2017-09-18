@@ -4,8 +4,8 @@ robot = Vernie()
 running = True
 
 
-
 def callback(color, distance):
+    robot.led.set_color(color)
     speed = (10 - distance + 1) / 10.0
     secs = (10 - distance + 1) / 10.0
     print("Distance is %.1f inches, I'm running back with %s%% speed!" % (distance, int(speed * 100)))

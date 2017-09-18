@@ -68,8 +68,9 @@ sudo python -c "from pylgbst.comms import *; \
 - document all API methods
 - make sure unit tests cover all important code
 - generalize getting device info + give constants (low priority)
-- subscribing to color sensor disables LED operating in `run_away_game.py`. Why?
+- subscribing to 2 sensors at once causes port status to not arrive => sync mode stuck. Why?
 - can we subscribe to LED?
+- organize requesting and printing device info on startup - firmware version at least
 
 ## Links
 

@@ -74,7 +74,7 @@ class Vernie(MoveHub):
         self._head_position = 0
         self.motor_external.subscribe(self._external_motor_data)
 
-        # self._reset_head() FIXME: restore it
+        self._reset_head()
         # self.say("ready")
         time.sleep(1)
 
@@ -101,7 +101,7 @@ class Vernie(MoveHub):
     def turn(self, direction, degrees=90, speed=0.3):
         self.head(STRAIGHT, speed=1)
         self.head(direction, 35, 1)
-        self.motor_AB.angled(225 * degrees / 90, speed * direction, -speed * direction)
+        self.motor_AB.angled(int(2.7 * degrees), speed * direction, -speed * direction)
         self.head(STRAIGHT, speed=1)
 
     def move(self, direction, distance=1, speed=0.3):
