@@ -158,7 +158,7 @@ class DebugServer(object):
         self.sock.close()
 
     def _notify_dummy(self, handle, data):
-        log.debug("Dropped notification from handle %s: %s", handle, binascii.hexlify(data.strip()))
+        log.debug("Dropped notification from handle %s: %s", handle, binascii.hexlify(data))
         self._check_shutdown(data)
 
     def _notify(self, conn, handle, data):

@@ -134,6 +134,8 @@ class EncodedMotor(Peripheral):
 
     CONSTANT_SINGLE = b'\x01'
     CONSTANT_GROUP = b'\x02'
+    SOME_SINGLE = b'\x07'
+    SOME_GROUP = b'\x08'
     TIMED_SINGLE = b'\x09'
     TIMED_GROUP = b'\x0A'
     ANGLED_SINGLE = b'\x0B'
@@ -207,8 +209,19 @@ class EncodedMotor(Peripheral):
         self._wrap_and_write(command, speed_primary, speed_secondary)
         self.__wait_sync(async)
 
+    def some(self, speed_primary=1, speed_secondary=None, async=False):
+        if speed_secondary is None:
+            speed_secondary = speed_primary
+
+        # movement type
+        command = self.SOME_GROUP if self.port == PORT_AB else self.SOME_SINGLE
+
+        self.started()
+        self._wrap_and_write(command, speed_primary, speed_secondary)
+        self.__wait_sync(async)
+
     def stop(self):
-        self.constant(0)
+        self.constant(0, async=True)
 
     def test(self, speed_primary=1, speed_secondary=None):
         if speed_secondary is None:
@@ -219,10 +232,12 @@ class EncodedMotor(Peripheral):
         # self._wrap_and_write(command, 0.2, 0.2)
 
         # set for port
-        command = self.MOVEMENT_TYPE + b"\x02"
+        command = self.MOVEMENT_TYPE + b"\x07"
+        command += pack('<H', self._speed_abs(0.2))
+        command += pack('<H', 1000)
 
-        command += pack('<B', self._speed_abs(speed_primary))  # time or angle - first param
-        command += pack('<B', self._speed_abs(speed_secondary))  # time or angle - first param
+        #command += pack('<B', self._speed_abs(speed_primary))  # time or angle - first param
+        #command += pack('<B', self._speed_abs(speed_secondary))  # time or angle - first param
 
         speed_primary = 0.5
         speed_secondary = -0.5

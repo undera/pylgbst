@@ -176,7 +176,7 @@ if __name__ == '__main__':
     # time.sleep(1)
     # mtr.stop()
 
-
-    mtr.constant(0.3, -0.5)
+    mtr.test()
     time.sleep(3)
     mtr.stop()
+    time.sleep(1)
