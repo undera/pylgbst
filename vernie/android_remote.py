@@ -60,13 +60,14 @@ try:
                 break
 
         if not message:
-            time.sleep(0.05)
+            time.sleep(0.1)
             continue
 
         messageString = message.decode("utf-8")
         a, b, c = decode_xml(messageString)
-        sa = int(10 * (c + b / 2.0)) / 10.0
-        sb = int(10 * (c - b / 2.0)) / 10.0
+        divider = 2.0 if c > 0 else -2.0
+        sa = int(10 * (c + b / divider)) / 10.0
+        sb = int(10 * (c - b / divider)) / 10.0
         logging.info("SpeedA=%s, SpeedB=%s", sa, sb)
         robot.motor_AB.constant(sa, sb, async=True)
         time.sleep(0.5)
