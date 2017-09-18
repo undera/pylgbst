@@ -60,7 +60,7 @@ sudo python -c "from pylgbst.comms import *; \
     DebugServer(BLEConnection().connect()).start()"
 ```
 
-## Roadmap
+## TODO
 
 - handle device detach and device attach events on ports C/D
 - experiment with motor commands, find what is hidden there
@@ -71,6 +71,7 @@ sudo python -c "from pylgbst.comms import *; \
 - subscribing to 2 sensors at once causes port status to not arrive => sync mode stuck. Why?
 - can we subscribe to LED?
 - organize requesting and printing device info on startup - firmware version at least
+- make debug server to re-establish BLE connection on loss
 
 ## Links
 

@@ -160,7 +160,7 @@ def demo_all(movehub):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
 
     try:
         connection = DebugServerConnection()
@@ -169,4 +169,14 @@ if __name__ == '__main__':
         connection = BLEConnection().connect()
 
     hub = MoveHub(connection)
-    demo_led_colors(hub)
+
+    mtr = hub.motor_A
+
+    # mtr.timed(5, async=True)
+    # time.sleep(1)
+    # mtr.stop()
+
+
+    mtr.constant(0.3, -0.5)
+    time.sleep(3)
+    mtr.stop()

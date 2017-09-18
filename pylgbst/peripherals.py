@@ -131,6 +131,9 @@ class LED(Peripheral):
 class EncodedMotor(Peripheral):
     TRAILER = b'\x64\x7f\x03'  # NOTE: \x64 is 100, might mean something
     MOVEMENT_TYPE = b'\x11'
+
+    CONSTANT_SINGLE = b'\x01'
+    CONSTANT_GROUP = b'\x02'
     TIMED_SINGLE = b'\x09'
     TIMED_GROUP = b'\x0A'
     ANGLED_SINGLE = b'\x0B'
@@ -192,6 +195,44 @@ class EncodedMotor(Peripheral):
         self.started()
         self._wrap_and_write(command, speed_primary, speed_secondary)
         self.__wait_sync(async)
+
+    def constant(self, speed_primary=1, speed_secondary=None, async=False):
+        if speed_secondary is None:
+            speed_secondary = speed_primary
+
+        # movement type
+        command = self.CONSTANT_GROUP if self.port == PORT_AB else self.CONSTANT_SINGLE
+
+        self.started()
+        self._wrap_and_write(command, speed_primary, speed_secondary)
+        self.__wait_sync(async)
+
+    def stop(self):
+        self.constant(0)
+
+    def test(self, speed_primary=1, speed_secondary=None):
+        if speed_secondary is None:
+            speed_secondary = speed_primary
+
+        self.started()
+
+        # self._wrap_and_write(command, 0.2, 0.2)
+
+        # set for port
+        command = self.MOVEMENT_TYPE + b"\x02"
+
+        command += pack('<B', self._speed_abs(speed_primary))  # time or angle - first param
+        command += pack('<B', self._speed_abs(speed_secondary))  # time or angle - first param
+
+        speed_primary = 0.5
+        speed_secondary = -0.5
+        # command += pack("<B", self._speed_abs(speed_primary))
+        # if self.port == PORT_AB:
+        #    command += pack("<B", self._speed_abs(speed_secondary))
+
+        # command += self.TRAILER
+
+        self._write_to_hub(MSG_SET_PORT_VAL, command)
 
     def __wait_sync(self, async):
         if not async:
