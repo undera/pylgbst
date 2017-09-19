@@ -23,7 +23,7 @@ try:
 
         with open(os.devnull, 'w') as fnull:
             subprocess.call("mplayer %s" % fname, shell=True, stderr=fnull, stdout=fnull)
-except:
+except BaseException:
     def say(text):
         sys.stdout.write("%s\n", text)
 
@@ -33,27 +33,29 @@ forward = FORWARD = right = RIGHT = 1
 backward = BACKWARD = left = LEFT = -1
 straight = STRAIGHT = 0
 
+SPEECH_LANG_MAP = {
+    'en': {
+        'ready': "Vernie the Robot is ready.",
+        "commands help": "Available commands are: "
+                         "forward, backward, turn left, turn right, "
+                         "head left, head right, head straight and say",
+        "finished": "Thank you! Robot is now turning off"
+    },
+    "ru": {
+        "ready": "Робот Веернии 01 готов к работе",
+        "type commands": "печатайте команды",
+        "ok": "хорошо",
+        "commands help": "Доступные команды это: вперёд, назад, поворот влево, поворот вправо, "
+                         "голову влево, голову вправо, голову прямо, скажи",
+        "Finished": "Робот завершает работу. Спасибо!",
+        "commands from file": "Исполняю команды из файла",
+    }
+}
+
+VERNIE_TO_MOTOR_DEGREES = 2.7
+
 
 class Vernie(MoveHub):
-    SPEECH_LANG_MAP = {
-        'en': {
-            'ready': "Vernie the Robot is ready.",
-            "commands help": "Available commands are: "
-                             "forward, backward, turn left, turn right, "
-                             "head left, head right, head straight and say",
-            "finished": "Thank you! Robot is now turning off"
-        },
-        "ru": {
-            "ready": "Робот Веернии 01 готов к работе",
-            "type commands": "печатайте команды",
-            "ok": "хорошо",
-            "commands help": "Доступные команды это: вперёд, назад, поворот влево, поворот вправо, "
-                             "голову влево, голову вправо, голову прямо, скажи",
-            "Finished": "Робот завершает работу. Спасибо!",
-            "commands from file": "Исполняю команды из файла",
-        }
-    }
-
     def __init__(self, language='en'):
         self.language = language
         try:
@@ -79,8 +81,8 @@ class Vernie(MoveHub):
         time.sleep(1)
 
     def say(self, phrase):
-        if phrase in self.SPEECH_LANG_MAP[self.language]:
-            phrase = self.SPEECH_LANG_MAP[self.language][phrase]
+        if phrase in SPEECH_LANG_MAP[self.language]:
+            phrase = SPEECH_LANG_MAP[self.language][phrase]
         say(phrase)
 
     def _external_motor_data(self, data):
@@ -101,7 +103,7 @@ class Vernie(MoveHub):
     def turn(self, direction, degrees=90, speed=0.3):
         self.head(STRAIGHT, speed=1)
         self.head(direction, 35, 1)
-        self.motor_AB.angled(int(2.7 * degrees), speed * direction, -speed * direction)
+        self.motor_AB.angled(int(VERNIE_TO_MOTOR_DEGREES * degrees), speed * direction, -speed * direction)
         self.head(STRAIGHT, speed=1)
 
     def move(self, direction, distance=1, speed=0.3):
@@ -128,14 +130,14 @@ class Vernie(MoveHub):
         elif cmd[0] in ("forward", "вперёд", "вперед"):
             try:
                 dist = int(cmd[-1])
-            except:
+            except BaseException:
                 dist = 1
             confirm(cmd)
             self.move(FORWARD, distance=dist)
         elif cmd[0] in ("backward", "назад"):
             try:
                 dist = int(cmd[-1])
-            except:
+            except BaseException:
                 dist = 1
             confirm(cmd)
             self.move(BACKWARD, distance=dist)
