@@ -5,7 +5,7 @@ robot = Vernie()
 robot.say('type commands')
 
 
-def confirmation(cmd):
+def confirmation(_):
     robot.say("ok")
 
 

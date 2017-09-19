@@ -5,8 +5,8 @@ robot = Vernie()
 robot.say("commands from file")
 
 
-def confirmation(cmd):
-    robot.say(cmd[0])
+def confirmation(command):
+    robot.say(command[0])
 
 
 with open("vernie.commands") as fhd:

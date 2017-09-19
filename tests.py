@@ -1,6 +1,9 @@
 import unittest
+from binascii import unhexlify
 
 from pylgbst import *
+from pylgbst.comms import Connection
+from pylgbst.movehub import MoveHub
 
 HANDLE = MOVE_HUB_HARDWARE_HANDLE
 
@@ -44,8 +47,14 @@ class ConnectionMock(Connection):
 
 
 class HubMock(MoveHub):
+    # noinspection PyUnresolvedReferences
     def __init__(self, connection=None):
+        """
+        :type connection: ConnectionMock
+        """
         super(HubMock, self).__init__(connection if connection else ConnectionMock())
+        self.notify_mock = self.connection.notifications
+        self.writes = self.connection.writes
 
     def _wait_for_devices(self):
         pass
@@ -65,33 +74,33 @@ class GeneralTest(unittest.TestCase):
         hub = HubMock()
         led = LED(hub, PORT_LED)
         led.set_color(COLOR_RED)
-        self.assertEqual("0801813201510009", hub.connection.writes[0][1])
+        self.assertEqual("0801813201510009", hub.writes[0][1])
 
     def test_tilt_sensor(self):
         hub = HubMock()
-        hub.connection.notifications.append((HANDLE, '1b0e00 0f00 04 3a 0128000000000100000001'))
+        hub.notify_mock.append((HANDLE, '1b0e00 0f00 04 3a 0128000000000100000001'))
         time.sleep(1)
 
         def callback(param1, param2=None, param3=None):
             if param2 is None:
-                log.debug("Tilt: %s", TILT_STATES[param1])
+                log.debug("Tilt: %s", TiltSensor.TILT_STATES[param1])
             else:
                 log.debug("Tilt: %s %s %s", param1, param2, param3)
 
         self._inject_notification(hub, '1b0e000a00 47 3a 090100000001', 1)
         hub.tilt_sensor.subscribe(callback)
-        hub.connection.notifications.append((HANDLE, "1b0e000500453a05"))
-        hub.connection.notifications.append((HANDLE, "1b0e000a00473a010100000001"))
+        hub.notify_mock.append((HANDLE, "1b0e000500453a05"))
+        hub.notify_mock.append((HANDLE, "1b0e000a00473a010100000001"))
         time.sleep(1)
         self._inject_notification(hub, '1b0e000a00 47 3a 090100000001', 1)
-        hub.tilt_sensor.subscribe(callback, TILT_MODE_2AXIS_SIMPLE)
+        hub.tilt_sensor.subscribe(callback, TiltSensor.MODE_2AXIS_SIMPLE)
 
-        hub.connection.notifications.append((HANDLE, "1b0e000500453a09"))
+        hub.notify_mock.append((HANDLE, "1b0e000500453a09"))
         time.sleep(1)
 
         self._inject_notification(hub, '1b0e000a00 47 3a 090100000001', 1)
-        hub.tilt_sensor.subscribe(callback, TILT_MODE_2AXIS_FULL)
-        hub.connection.notifications.append((HANDLE, "1b0e000600453a04fe"))
+        hub.tilt_sensor.subscribe(callback, TiltSensor.MODE_2AXIS_FULL)
+        hub.notify_mock.append((HANDLE, "1b0e000600453a04fe"))
         time.sleep(1)
 
         self._wait_notifications_handled(hub)
@@ -133,7 +142,7 @@ class GeneralTest(unittest.TestCase):
     def test_color_sensor(self):
         #
         hub = HubMock()
-        hub.connection.notifications.append((HANDLE, '1b0e000f00 04010125000000001000000010'))
+        hub.notify_mock.append((HANDLE, '1b0e000f00 04010125000000001000000010'))
         time.sleep(1)
 
         def callback(color, unk1, unk2=None):
@@ -143,7 +152,7 @@ class GeneralTest(unittest.TestCase):
         self._inject_notification(hub, '1b0e000a00 4701090100000001', 1)
         hub.color_distance_sensor.subscribe(callback)
 
-        hub.connection.notifications.append((HANDLE, "1b0e0008004501ff0aff00"))
+        hub.notify_mock.append((HANDLE, "1b0e0008004501ff0aff00"))
         time.sleep(1)
         # TODO: assert
         self._wait_notifications_handled(hub)
@@ -158,8 +167,8 @@ class GeneralTest(unittest.TestCase):
 
         hub.button.subscribe(callback)
 
-        hub.connection.notifications.append((HANDLE, "1b0e00060001020601"))
-        hub.connection.notifications.append((HANDLE, "1b0e00060001020600"))
+        hub.notify_mock.append((HANDLE, "1b0e00060001020601"))
+        hub.notify_mock.append((HANDLE, "1b0e00060001020600"))
         time.sleep(1)
         # TODO: assert
         self._wait_notifications_handled(hub)
@@ -168,6 +177,6 @@ class GeneralTest(unittest.TestCase):
     def _inject_notification(self, hub, notify, pause):
         def inject():
             time.sleep(pause)
-            hub.connection.notifications.append((HANDLE, notify))
+            hub.notify_mock.append((HANDLE, notify))
 
         Thread(target=inject).start()

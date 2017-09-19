@@ -1,7 +1,10 @@
 # coding=utf-8
+import traceback
 from time import sleep
 
 from pylgbst import *
+from pylgbst.comms import DebugServerConnection
+from pylgbst.movehub import MoveHub
 
 log = logging.getLogger("demo")
 
@@ -73,7 +76,7 @@ def demo_tilt_sensor_simple(movehub):
 
     def callback(param1):
         demo_tilt_sensor_simple.cnt += 1
-        log.info("Tilt #%s of %s: %s", demo_tilt_sensor_simple.cnt, limit, TILT_STATES[param1])
+        log.info("Tilt #%s of %s: %s", demo_tilt_sensor_simple.cnt, limit, TiltSensor.TILT_STATES[param1])
 
     movehub.tilt_sensor.subscribe(callback)
     while demo_tilt_sensor_simple.cnt < limit:
@@ -91,7 +94,7 @@ def demo_tilt_sensor_precise(movehub):
         demo_tilt_sensor_simple.cnt += 1
         log.info("Tilt #%s of %s: roll:%s pitch:%s yaw:%s", demo_tilt_sensor_simple.cnt, limit, pitch, roll, yaw)
 
-    movehub.tilt_sensor.subscribe(callback, mode=TILT_MODE_FULL)
+    movehub.tilt_sensor.subscribe(callback, mode=TiltSensor.MODE_FULL)
     while demo_tilt_sensor_simple.cnt < limit:
         time.sleep(1)
 
@@ -169,14 +172,4 @@ if __name__ == '__main__':
         connection = BLEConnection().connect()
 
     hub = MoveHub(connection)
-
-    mtr = hub.motor_A
-
-    # mtr.timed(5, async=True)
-    # time.sleep(1)
-    # mtr.stop()
-
-    mtr.test()
-    time.sleep(3)
-    mtr.stop()
-    time.sleep(1)
+    demo_all(hub)

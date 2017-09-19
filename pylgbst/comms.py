@@ -9,12 +9,12 @@ import sys
 import traceback
 from abc import abstractmethod
 from binascii import unhexlify
-from gattlib import DiscoveryService, GATTRequester
 from threading import Thread
 
+from gattlib import DiscoveryService, GATTRequester
 from six.moves import queue
 
-from pylgbst.constants import LEGO_MOVE_HUB, MSG_DEVICE_SHUTDOWN
+from pylgbst.constants import MSG_DEVICE_SHUTDOWN
 
 log = logging.getLogger('comms')
 
@@ -29,6 +29,8 @@ if sys.version_info[0] == 2:
 else:
     def get_byte(seq, index):
         return seq[index]
+
+LEGO_MOVE_HUB = "LEGO Move Hub"
 
 
 # noinspection PyMethodOverriding
@@ -174,7 +176,7 @@ class DebugServer(object):
         self._check_shutdown(data)
 
     def _check_shutdown(self, data):
-        if get_byte(data, 5) == MSG_DEVICE_SHUTDOWN:
+        if data[5] == MSG_DEVICE_SHUTDOWN:
             log.warning("Device shutdown")
             self._running = False
 

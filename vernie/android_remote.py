@@ -22,8 +22,8 @@ def on_btn(pressed):
         running = False
 
 
-def decode_xml(messageString):
-    parts = messageString.split("</")
+def decode_xml(msg):
+    parts = msg.split("</")
     xxx = float(parts[1][parts[1].rfind('>') + 1:])
     yyy = float(parts[2][parts[2].rfind('>') + 1:])
     zzz = float(parts[3][parts[3].rfind('>') + 1:])
@@ -58,7 +58,7 @@ try:
                 message = data
             except KeyboardInterrupt:
                 raise
-            except:
+            except BaseException:
                 break
 
         if not message:

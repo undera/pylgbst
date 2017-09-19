@@ -9,9 +9,9 @@ criterion = min
 cur_luminosity = 0
 
 
-def on_change_lum(lum):
+def on_change_lum(lumn):
     global cur_luminosity
-    cur_luminosity = lum
+    cur_luminosity = lumn
 
 
 lum_values = {}
@@ -23,12 +23,12 @@ def on_btn(pressed):
         running = False
 
 
-def on_turn(angle):
-    lum_values[angle] = cur_luminosity
+def on_turn(angl):
+    lum_values[angl] = cur_luminosity
 
 
 robot.button.subscribe(on_btn)
-robot.color_distance_sensor.subscribe(on_change_lum, CDS_MODE_LUMINOSITY, granularity=1)
+robot.color_distance_sensor.subscribe(on_change_lum, ColorDistanceSensor.LUMINOSITY, granularity=1)
 robot.motor_A.subscribe(on_turn, granularity=30)
 # TODO: add bump detect to go back?
 while running:

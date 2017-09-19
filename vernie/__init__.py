@@ -3,6 +3,11 @@ import hashlib
 import os
 import re
 import subprocess
+import sys
+import traceback
+
+from pylgbst import *
+from pylgbst.comms import DebugServerConnection
 
 try:
     import gtts
@@ -26,8 +31,6 @@ try:
 except BaseException:
     def say(text):
         sys.stdout.write("%s\n", text)
-
-from pylgbst import *
 
 forward = FORWARD = right = RIGHT = 1
 backward = BACKWARD = left = LEFT = -1
