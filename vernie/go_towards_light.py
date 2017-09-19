@@ -4,20 +4,17 @@ logging.basicConfig(level=logging.INFO)
 
 robot = Vernie()
 running = True
-criterion = max
+criterion = min
+
+cur_luminosity = 0
 
 
 def on_change_lum(lum):
-    global mode_rotation
-    if mode_rotation:
-        global lum_values
-        lum_values.append(lum)
-    else:
-        global cur_luminosity
-        if cur_luminosity < 0:
-            cur_luminosity = lum  # initial value
-        elif cur_luminosity != lum:
-            cur_luminosity = 2  # value above 1 signals end of movement, 'cause lum value is float below 1.0
+    global cur_luminosity
+    cur_luminosity = lum
+
+
+lum_values = {}
 
 
 def on_btn(pressed):
@@ -26,19 +23,28 @@ def on_btn(pressed):
         running = False
 
 
+def on_turn(angle):
+    lum_values[angle] = cur_luminosity
+
+
 robot.button.subscribe(on_btn)
-
-robot.color_distance_sensor.subscribe(on_change_lum, CDS_MODE_LUMINOSITY, granularity=0)
+robot.color_distance_sensor.subscribe(on_change_lum, CDS_MODE_LUMINOSITY, granularity=1)
+robot.motor_A.subscribe(on_turn, granularity=30)
 while running:
-    mode_rotation = True
-
     # turn around, measuring luminosity
-    lum_values = []
-    robot.turn(RIGHT, degrees=360, speed=0.2)
+    lum_values = {}
+    robot.turn(RIGHT, degrees=360, speed=0.1)
 
     # get max luminosity angle
-    idx = lum_values.index(criterion(lum_values))
-    angle = int(360.0 * idx / len(lum_values))
+    amin = min(lum_values.keys())
+    lmax = max(lum_values.values())
+    almax = amin
+    for almax in lum_values:
+        if lum_values[almax] == lmax:
+            break
+
+    angle = int((almax - amin) / VERNIE_TO_MOTOR_DEGREES)
+    logging.info("Angle to brightest %.3f is %s", lmax, angle)
 
     # turn towards light
     if angle > 180:
@@ -47,11 +53,10 @@ while running:
         robot.turn(RIGHT, degrees=angle)
 
     # Now let's move until luminosity changes
-    # robot.color_distance_sensor.subscribe(get_changed_luminosity, CDS_MODE_LUMINOSITY, granularity=10)
-
-    mode_rotation = False
-    cur_luminosity = -1
-    while cur_luminosity < 1:
-        robot.move(FORWARD, 2)
+    lum = cur_luminosity
+    while cur_luminosity >= lum:
+        logging.info("Luminosity is %.3f, moving towards it", cur_luminosity)
+        robot.move(FORWARD, 1)
 
 robot.color_distance_sensor.unsubscribe(on_change_lum)
+robot.button.unsubscribe(on_btn)
