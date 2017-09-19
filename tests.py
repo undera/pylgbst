@@ -78,15 +78,18 @@ class GeneralTest(unittest.TestCase):
             else:
                 log.debug("Tilt: %s %s %s", param1, param2, param3)
 
+        self._inject_notification(hub, '1b0e000a00 47 3a 090100000001', 1)
         hub.tilt_sensor.subscribe(callback)
         hub.connection.notifications.append((HANDLE, "1b0e000500453a05"))
         hub.connection.notifications.append((HANDLE, "1b0e000a00473a010100000001"))
         time.sleep(1)
+        self._inject_notification(hub, '1b0e000a00 47 3a 090100000001', 1)
         hub.tilt_sensor.subscribe(callback, TILT_MODE_2AXIS_SIMPLE)
 
         hub.connection.notifications.append((HANDLE, "1b0e000500453a09"))
         time.sleep(1)
 
+        self._inject_notification(hub, '1b0e000a00 47 3a 090100000001', 1)
         hub.tilt_sensor.subscribe(callback, TILT_MODE_2AXIS_FULL)
         hub.connection.notifications.append((HANDLE, "1b0e000600453a04fe"))
         time.sleep(1)
@@ -130,13 +133,14 @@ class GeneralTest(unittest.TestCase):
     def test_color_sensor(self):
         #
         hub = HubMock()
-        hub.connection.notifications.append((HANDLE, '1b0e000f0004010125000000001000000010'))
+        hub.connection.notifications.append((HANDLE, '1b0e000f00 04010125000000001000000010'))
         time.sleep(1)
 
         def callback(color, unk1, unk2=None):
             name = COLORS[color] if color is not None else 'NONE'
             log.info("Color: %s %s %s", name, unk1, unk2)
 
+        self._inject_notification(hub, '1b0e000a00 4701090100000001', 1)
         hub.color_distance_sensor.subscribe(callback)
 
         hub.connection.notifications.append((HANDLE, "1b0e0008004501ff0aff00"))
@@ -160,3 +164,10 @@ class GeneralTest(unittest.TestCase):
         # TODO: assert
         self._wait_notifications_handled(hub)
         hub.button.unsubscribe(callback)
+
+    def _inject_notification(self, hub, notify, pause):
+        def inject():
+            time.sleep(pause)
+            hub.connection.notifications.append((HANDLE, notify))
+
+        Thread(target=inject).start()

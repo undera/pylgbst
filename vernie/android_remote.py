@@ -44,6 +44,8 @@ robot = Vernie()
 robot.button.subscribe(on_btn)
 robot.motor_AB.stop()
 
+# TODO: use distance sensor to stop movement forward
+
 try:
     udp_sock.bind((host, port))
     time.sleep(1)
