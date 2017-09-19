@@ -78,7 +78,9 @@ class MoveHub(object):
         elif msg_type == MSG_SENSOR_DATA:
             self._handle_sensor_data(data)
         elif msg_type == MSG_SENSOR_SUBSCRIBE_ACK:
-            log.debug("Sensor subscribe ack on port %s", PORTS[get_byte(data, 3)])
+            port = get_byte(data, 3)
+            log.debug("Sensor subscribe ack on port %s", PORTS[port])
+            self.devices[port].finished()
         elif msg_type == MSG_PORT_CMD_ERROR:
             log.warning("Command error: %s", str2hex(data[3:]))
         elif msg_type == MSG_DEVICE_SHUTDOWN:

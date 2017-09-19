@@ -60,11 +60,14 @@ class Peripheral(object):
     def in_progress(self):
         return bool(self._working)
 
-    def subscribe(self, callback, mode, granularity=1):
+    def subscribe(self, callback, mode, granularity=1, async=False):
         self._port_subscription_mode = mode
+        self.started()
         self._port_subscribe(self._port_subscription_mode, granularity, True)
         if callback:
             self._subscribers.add(callback)
+
+        self._wait_sync(async)  # having async=True leads to stuck notifications
 
     def unsubscribe(self, callback=None):
         if callback in self._subscribers:
@@ -94,6 +97,13 @@ class Peripheral(object):
                 self.handle_port_data(data)
             except BaseException:
                 log.warning("Failed to handle port data by %s: %s", self, str2hex(data))
+
+    def _wait_sync(self, async):
+        if not async:
+            log.debug("Waiting for sync command work to finish...")
+            while self.in_progress():
+                time.sleep(0.5)
+            log.debug("Command has finished.")
 
 
 class LED(Peripheral):
@@ -178,7 +188,7 @@ class EncodedMotor(Peripheral):
 
         self.started()
         self._wrap_and_write(command, speed_primary, speed_secondary)
-        self.__wait_sync(async)
+        self._wait_sync(async)
 
     def angled(self, angle, speed_primary=1, speed_secondary=None, async=False):
         if speed_secondary is None:
@@ -196,7 +206,7 @@ class EncodedMotor(Peripheral):
 
         self.started()
         self._wrap_and_write(command, speed_primary, speed_secondary)
-        self.__wait_sync(async)
+        self._wait_sync(async)
 
     def constant(self, speed_primary=1, speed_secondary=None, async=False):
         if speed_secondary is None:
@@ -207,9 +217,9 @@ class EncodedMotor(Peripheral):
 
         self.started()
         self._wrap_and_write(command, speed_primary, speed_secondary)
-        self.__wait_sync(async)
+        self._wait_sync(async)
 
-    def some(self, speed_primary=1, speed_secondary=None, async=False):
+    def __some(self, speed_primary=1, speed_secondary=None, async=False):
         if speed_secondary is None:
             speed_secondary = speed_primary
 
@@ -218,12 +228,12 @@ class EncodedMotor(Peripheral):
 
         self.started()
         self._wrap_and_write(command, speed_primary, speed_secondary)
-        self.__wait_sync(async)
+        self._wait_sync(async)
 
     def stop(self):
         self.constant(0, async=True)
 
-    def test(self, speed_primary=1, speed_secondary=None):
+    def __test(self, speed_primary=1, speed_secondary=None):
         if speed_secondary is None:
             speed_secondary = speed_primary
 
@@ -236,8 +246,8 @@ class EncodedMotor(Peripheral):
         command += pack('<H', self._speed_abs(0.2))
         command += pack('<H', 1000)
 
-        #command += pack('<B', self._speed_abs(speed_primary))  # time or angle - first param
-        #command += pack('<B', self._speed_abs(speed_secondary))  # time or angle - first param
+        # command += pack('<B', self._speed_abs(speed_primary))  # time or angle - first param
+        # command += pack('<B', self._speed_abs(speed_secondary))  # time or angle - first param
 
         speed_primary = 0.5
         speed_secondary = -0.5
@@ -248,13 +258,6 @@ class EncodedMotor(Peripheral):
         # command += self.TRAILER
 
         self._write_to_hub(MSG_SET_PORT_VAL, command)
-
-    def __wait_sync(self, async):
-        if not async:
-            log.debug("Waiting for sync command work to finish...")
-            while self.in_progress():
-                time.sleep(0.5)
-            log.debug("Command has finished.")
 
     def handle_port_data(self, data):
         if self._port_subscription_mode == MOTOR_MODE_ANGLE:
@@ -368,6 +371,7 @@ class Battery(Peripheral):
     # liion 5v ~= 2100
     def handle_port_data(self, data):
         self.last_value = unpack("<h", data[4:6])[0]
+        log.warning("Battery: %s"), self.last_value
         self._notify_subscribers(self.last_value)
 
 
