@@ -231,10 +231,10 @@ If you want to specify name for Bluetooth interface to use on local computer, cr
 ```python
 from pylgbst import BLEConnection, MoveHub
 
-conn=BLEConnection()
+conn = BLEConnection()
 conn.connect("hci1")
 
-hub=MoveHub(conn)
+hub = MoveHub(conn)
 ```
 
 #### Devices Detecting
