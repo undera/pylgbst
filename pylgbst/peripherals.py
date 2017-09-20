@@ -380,7 +380,7 @@ class Battery(Peripheral):
     # good 7.5v ~= 3892
     # liion 5v ~= 2100
     def handle_port_data(self, data):
-        self.last_value = unpack("<h", data[4:6])[0]
+        self.last_value = unpack("<H", data[4:6])[0]
         log.warning("Battery: %s"), self.last_value
         self._notify_subscribers(self.last_value)
 
@@ -391,7 +391,7 @@ class Button(Peripheral):
     """
 
     def __init__(self, parent):
-        super(Button, self).__init__(parent, 0)
+        super(Button, self).__init__(parent, 0)  # fake port 0
 
     def subscribe(self, callback, mode=None, granularity=1, async=False):
         cmd = pack("<B", PACKET_VER) + pack("<B", MSG_DEVICE_INFO) + b'\x02\x02'
