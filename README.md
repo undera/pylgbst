@@ -117,11 +117,11 @@ hub.tilt_sensor.unsubscribe(callback)
 ```
 
 `TiltSensor` sensor mode constants:
-- MODE_2AXIS_SIMPLE - use `callback(state)` for 2-axis simple state detect
-- MODE_2AXIS_FULL - use `callback(roll, pitch)` for 2-axis roll&pitch degree values
-- MODE_3AXIS_SIMPLE - use `callback(state)` for 3-axis simple state detect
-- MODE_3AXIS_FULL - use `callback(roll, pitch)` for 2-axis roll&pitch degree values
-- MODE_BUMP_COUNT - use `callback(count)` to detect bumps
+- `MODE_2AXIS_SIMPLE` - use `callback(state)` for 2-axis simple state detect
+- `MODE_2AXIS_FULL` - use `callback(roll, pitch)` for 2-axis roll&pitch degree values
+- `MODE_3AXIS_SIMPLE` - use `callback(state)` for 3-axis simple state detect
+- `MODE_3AXIS_FULL` - use `callback(roll, pitch)` for 2-axis roll&pitch degree values
+- `MODE_BUMP_COUNT` - use `callback(count)` to detect bumps
 
 ### Color & Distance Sensor
 
