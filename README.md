@@ -1,6 +1,8 @@
-# Python library to interact with LEGO Move Hub
+# Python library to interact with Move Hub
 
-Best way to start is to look into [`demo.py`](demo.py) file, and run it.
+_Move Hub is central robotic controller block of [LEGO Boost](https://www.lego.com/en-us/boost) Set._
+
+Best way to start with this library is to look into [`demo.py`](demo.py) file, and run it.
 
 If you have Vernie assembled, you might look into and run scripts from [`vernie`](vernie/) directory.
 
@@ -43,17 +45,42 @@ hub's devices detect process & fields to access them
 general subscription modes & granularity info
 good practice is to unsubscribe, especially when used with `DebugServer`
 
+Only one, very last subscribe mode is in effect, with many subscriber callbacks allowed. 
+
 ### Motors
 
 ### Motor Rotation Sensors
 
 ### Tilt Sensor
 
-MoveHub's internal tilt sensor is available through filed `tilt_sensor`
+MoveHub's internal tilt sensor is available through `tilt_sensor` field. There are several modes to subscribe to sensor, providing 2-axis, 3-axis and bump detect data.
+
+An example:
+
+```python
+from pylgbst import MoveHub, TiltSensor
+import time
+
+def callback(pitch, roll, yaw):
+    print("Pitch: %s / Roll: %s / Yaw: %s" % (pitch, roll, yaw))
+
+hub = MoveHub()
+
+hub.tilt_sensor.subscribe(callback, mode=TiltSensor.MODE_3AXIS_FULL)
+time.sleep(60) # turn MoveHub block in different ways
+hub.tilt_sensor.unsubscribe(callback)
+```
+
+`TiltSensor` sensor mode constants:
+- MODE_2AXIS_SIMPLE - use `callback(state)` for 2-axis simple state detect
+- MODE_2AXIS_FULL - use `callback(roll, pitch)` for 2-axis roll&pitch degree values
+- MODE_3AXIS_SIMPLE - use `callback(state)` for 3-axis simple state detect
+- MODE_3AXIS_FULL - use `callback(roll, pitch)` for 2-axis roll&pitch degree values
+- MODE_BUMP_COUNT - use `callback(count)` to detect bumps
 
 ### Color & Distance Sensor
 
-Field named `color_distance_sensor` holds instance of `ColorDistanceSensor`, if one is attached to MoveHub. Sensor has number of different modes to subscribe. Only one, very last subscribe mode is in effect, with many subscriber callbacks allowed. 
+Field named `color_distance_sensor` holds instance of `ColorDistanceSensor`, if one is attached to MoveHub. Sensor has number of different modes to subscribe. 
 
 Colors that are detected are part of `COLORS` map (see [LED](#LED) section). Only several colors are possible to detect: `BLACK`, `BLUE`, `CYAN`, `YELLOW`, `RED`, `WHITE`. Sensor does its best to detect best color, but only works when sample is very close to sensor.
 

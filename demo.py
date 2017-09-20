@@ -78,7 +78,7 @@ def demo_tilt_sensor_simple(movehub):
         demo_tilt_sensor_simple.cnt += 1
         log.info("Tilt #%s of %s: %s", demo_tilt_sensor_simple.cnt, limit, TiltSensor.TILT_STATES[param1])
 
-    movehub.tilt_sensor.subscribe(callback)
+    movehub.tilt_sensor.subscribe(callback, mode=TiltSensor.MODE_2AXIS_SIMPLE)
     while demo_tilt_sensor_simple.cnt < limit:
         time.sleep(1)
 
@@ -94,7 +94,7 @@ def demo_tilt_sensor_precise(movehub):
         demo_tilt_sensor_simple.cnt += 1
         log.info("Tilt #%s of %s: roll:%s pitch:%s yaw:%s", demo_tilt_sensor_simple.cnt, limit, pitch, roll, yaw)
 
-    movehub.tilt_sensor.subscribe(callback, mode=TiltSensor.MODE_FULL)
+    movehub.tilt_sensor.subscribe(callback, mode=TiltSensor.MODE_3AXIS_FULL)
     while demo_tilt_sensor_simple.cnt < limit:
         time.sleep(1)
 
@@ -140,7 +140,7 @@ def demo_motor_sensors(movehub):
         demo_motor_sensors.states[movehub.motor_external] = None
         movehub.motor_external.subscribe(callback_e)
 
-    while None in demo_motor_sensors.states.values():  # demo_motor_sensors.states < limit:
+    while None in demo_motor_sensors.states.values():
         time.sleep(1)
 
     movehub.motor_A.unsubscribe(callback_a)
@@ -172,4 +172,8 @@ if __name__ == '__main__':
         connection = BLEConnection().connect()
 
     hub = MoveHub(connection)
-    demo_all(hub)
+    #demo_all(hub)
+    def callback(clr):
+        log.info("HERE %s", clr)
+    hub.led.subscribe(callback)
+    demo_led_colors(hub)

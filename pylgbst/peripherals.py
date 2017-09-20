@@ -252,9 +252,9 @@ class EncodedMotor(Peripheral):
 class TiltSensor(Peripheral):
     MODE_2AXIS_FULL = 0x00
     MODE_2AXIS_SIMPLE = 0x01
-    MODE_BASIC = 0x02
-    MODE_BUMP = 0x03
-    MODE_FULL = 0x04
+    MODE_3AXIS_SIMPLE = 0x02
+    MODE_BUMP_COUNT = 0x03
+    MODE_3AXIS_FULL = 0x04
 
     HORIZONTAL = 0x00
     UP = 0x01
@@ -276,24 +276,24 @@ class TiltSensor(Peripheral):
         SOME2: "RIGHT1",
     }
 
-    def subscribe(self, callback, mode=MODE_BASIC, granularity=1, async=False):
+    def subscribe(self, callback, mode=MODE_3AXIS_SIMPLE, granularity=1, async=False):
         super(TiltSensor, self).subscribe(callback, mode, granularity)
 
     def handle_port_data(self, data):
-        if self._port_subscription_mode == self.MODE_BASIC:
+        if self._port_subscription_mode == self.MODE_3AXIS_SIMPLE:
             state = data[4]
             self._notify_subscribers(state)
         elif self._port_subscription_mode == self.MODE_2AXIS_SIMPLE:
             state = data[4]
             self._notify_subscribers(state)
-        elif self._port_subscription_mode == self.MODE_BUMP:
+        elif self._port_subscription_mode == self.MODE_BUMP_COUNT:
             bump_count = data[4]
             self._notify_subscribers(bump_count)
         elif self._port_subscription_mode == self.MODE_2AXIS_FULL:
             roll = self._byte2deg(data[4])
             pitch = self._byte2deg(data[5])
             self._notify_subscribers(roll, pitch)
-        elif self._port_subscription_mode == self.MODE_FULL:
+        elif self._port_subscription_mode == self.MODE_3AXIS_FULL:
             roll = self._byte2deg(data[4])
             pitch = self._byte2deg(data[5])
             yaw = self._byte2deg(data[6])  # did I get the order right?
