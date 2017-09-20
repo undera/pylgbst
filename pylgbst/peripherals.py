@@ -320,7 +320,7 @@ class ColorDistanceSensor(Peripheral):
     OFF2 = 0x07
     COLOR_DISTANCE_FLOAT = 0x08
     LUMINOSITY = 0x09
-    SOME_20BYTES = 0x0a
+    SOME_20BYTES = 0x0a # TODO: understand it
 
     def __init__(self, parent, port):
         super(ColorDistanceSensor, self).__init__(parent, port)
@@ -372,6 +372,7 @@ class Battery(Peripheral):
         self.last_value = None
 
     def subscribe(self, callback, mode=0, granularity=1, async=False):
+        # TODO: investigate `mode` parameter for battery
         super(Battery, self).subscribe(callback, mode, granularity)
 
     # we know only voltage subscription from it. is it really battery or just onboard voltage?

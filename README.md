@@ -1,4 +1,4 @@
-# Python library to interact with LEGO Move Hub
+from pylgbst.peripherals import ColorDistanceSensor# Python library to interact with LEGO Move Hub
 
 Best way to start is to look into [`demo.py`](demo.py) file, and run it.
 
@@ -42,17 +42,53 @@ connection params
 hub's devices detect process & fields to access them
 general subscription modes & granularity info
 good practice is to unsubscribe, especially when used with `DebugServer`
+
 ### Motors
 ### Motor Rotation Sensors
 ### Tilt Sensor
+
 ### Color & Distance Sensor
-Tip: laser pointer pointing to sensor makes it trigger distance sensor
+
+Field named `color_distance_sensor` holds instance of `ColorDistanceSensor`, if one is attached to MoveHub. Sensor has number of different modes to subscribe. Only one, very last subscribe mode is in effect, with many subscriber callbacks allowed. 
+
+Colors that are detected are part of `COLORS` map (see [LED](#LED) section). Only several colors are possible to detect: `BLACK`, `BLUE`, `CYAN`, `YELLOW`, `RED`, `WHITE`. Sensor does its best to detect best color, but only works when sample is very close to sensor.
+
+Distance works in range of 0-10 inches, with ability to measure last inch in higher detail.
+
+Simple example of subscribing to sensor:
+
+```python
+from pylgbst import MoveHub, ColorDistanceSensor
+import time
+
+def callback(clr, distance):
+    print("Color: %s / Distance: %s" % (clr, distance))
+
+hub = MoveHub()
+
+hub.color_distance_sensor.subscribe(callback, mode=ColorDistanceSensor.COLOR_DISTANCE_FLOAT)
+time.sleep(60) # play with sensor while it waits   
+hub.color_distance_sensor.unsubscribe(callback)
+```
+
+Subscription mode constants in class `ColorDistanceSensor` are:
+- `COLOR_DISTANCE_FLOAT` - default mode, use `callback(color, distance)` where `distance` is float value in inches
+- `COLOR_ONLY` - use `callback(color)`
+- `DISTANCE_INCHES` - use `callback(color)` measures distance in integer inches count
+- `COUNT_2INCH` - use `callback(count)` - it counts crossing distance ~2 inches in front of sensor
+- `DISTANCE_HOW_CLOSE` - use `callback(value)` - value of 0 to 255 for 30 inches, larger with closer distance
+- `DISTANCE_SUBINCH_HOW_CLOSE` - use `callback(value)` - value of 0 to 255 for 1 inch, larger with closer distance
+- `LUMINOSITY` - use `callback(luminosity)` where `luminosity` is float value from 0 to 1
+- `OFF1` and `OFF2` - seems to turn sensor LED and notifications off
+- `STREAM_3_VALUES` - use `callback(val1, val2, val3)`, sends some values correlating to distance, not well understood at the moment
+
+Tip: laser pointer pointing to sensor makes it to trigger distance sensor
 
 ### LED
 
 `MoveHub` class has field `led` to access color LED near push button. To change its color, use `set_color(color)` method. 
 
-You can obtain colors are present as constants `COLOR_*` and also a map of available color-to-name as `COLORS`.
+You can obtain colors are present as constants `COLOR_*` and also a map of available color-to-name as `COLORS`. There are 12 color values, including `COLOR_BLACK` and `COLOR_NONE` which turn LED off.
 
 Additionally, you can subscribe to LED color change events, using callback function as shown in example below.
 
@@ -76,7 +112,7 @@ hub.led.set_color(COLOR_NONE)
 hub.led.unsubscribe(callback)
 ```
 
-Note: blinking orange color of LED means battery is low.
+Tip: blinking orange color of LED means battery is low.
 
 ### Push Button
 
@@ -111,8 +147,6 @@ time.sleep(1)
 print ("Value: " % hub.battery.last_value)
 ```
 
-TODO: investigate `mode` parameter for battery
-
 ## Debug Server
 Running debug server opens permanent BLE connection to Hub and listening on TCP port for communications. This avoids the need to re-start Hub all the time. 
 
@@ -124,6 +158,8 @@ sudo python -c "from pylgbst.comms import *; \
     import logging; logging.basicConfig(level=logging.DEBUG); \
     DebugServer(BLEConnection().connect()).start()"
 ```
+
+Then push green button on MoveHub, so permanent BLE connection will be established.
 
 ## TODO
 
@@ -138,7 +174,7 @@ sudo python -c "from pylgbst.comms import *; \
 ## Links
 
 - https://github.com/JorgePe/BOOSTreveng - source of protocol knowledge
-- https://github.com/spezifisch/sphero-python/blob/master/BB8joyDrive.py - example with +-another approach to bluetooth libs
+- https://github.com/spezifisch/sphero-python/blob/master/BB8joyDrive.py - example with another approach to bluetooth libs
 
 Some things around visual programming:
 - https://github.com/RealTimeWeb/blockpy
