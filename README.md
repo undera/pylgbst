@@ -1,21 +1,22 @@
 # Python library to interact with Move Hub
 
-_Move Hub is central robotic controller block of [LEGO Boost](https://www.lego.com/en-us/boost) Set._
+_Move Hub is central controller block of [LEGO Boost Robotics Set](https://www.lego.com/en-us/boost)._
 
-Best way to start with this library is to look into [`demo.py`](demo.py) file, and run it.
+In fact, Move Hub is just Bluetooth hardware, all manipulations are done with commands passed through Bluetooth Low Energy (BLE) wireless protocol. One of ways to issue these commands is to write Python program using this library.
+
+Best way to start is to look into [`demo.py`](demo.py) file, and run it (assuming you have installed library).
 
 If you have Vernie assembled, you might look into and run scripts from [`vernie`](vernie/) directory.
 
 ## Features
 
-- auto-detect and connect for Bluetooth device
-- auto-detects devices connected to Hub
-- angled and timed movement for motors
-- LED color change
-- motors: angled and timed movement, rotation sensor subscription
-- push button status subscription
-- tilt sensor subscription: 2 axis, 3 axis, bump detect modes
+- auto-detect and connect to Move Hub device
+- auto-detects peripheral devices connected to Hub
+- constant, angled and timed movement for motors, rotation sensor subscription
 - color & distance sensor: several modes to measure distance, color and luminosity
+- tilt sensor subscription: 2 axis, 3 axis, bump detect modes
+- LED color change
+- push button status subscription
 - battery voltage subscription available
 - permanent Bluetooth connection server for faster debugging
 
@@ -23,7 +24,7 @@ If you have Vernie assembled, you might look into and run scripts from [`vernie`
 
 Install library like this: 
 ```bash
-pip install https://github.com/undera/pylgbst/archive/0.2.tar.gz
+pip install https://github.com/undera/pylgbst/archive/0.3.tar.gz
 ```
 
 Then instantiate MoveHub object and start invoking its methods. Following is example to just print peripherals detected on Hub:  
@@ -37,29 +38,21 @@ for device in hub.devices:
     print(device)
 ```
 
-TODO: more usage instructions
-
-### General Information
-connection params
-hub's devices detect process & fields to access them
-general subscription modes & granularity info
-good practice is to unsubscribe, especially when used with `DebugServer`
-
-Only one, very last subscribe mode is in effect, with many subscriber callbacks allowed. 
-
 ### Controlling Motors
 
 MoveHub provides motors via following fields:
-- `motor_A`
-- `motor_B`
-- `motor_AB`
-- `motor_external` - if external motor is attached to port C or D
+- `motor_A` - port A
+- `motor_B` - port B
+- `motor_AB` - motor group of A+B manipulated together
+- `motor_external` - external motor attached to port C or D
 
 Methods to activate motors are:
-- `constant(speed_primary, speed_secondary)`
-- `timed(time, speed_primary, speed_secondary)`
-- `angled(angle, speed_primary, speed_secondary)`
-- `stop()`
+- `constant(speed_primary, speed_secondary)` - enables motor with specified speed forever 
+- `timed(time, speed_primary, speed_secondary)` - enables motor with specified speed for `time` seconds, float values accepted
+- `angled(angle, speed_primary, speed_secondary)` - makes motor to rotate to specified angle, `angle` value is integer degrees, can be negative and can be more than 360 for several rounds
+- `stop()` - stops motor at once, it is equivalent for `constant(0, async=True)`
+
+Parameter `speed_secondary` is used when it is motor group of `motor_AB` running together. By default, `speed_secondary` equals `speed_primary`.
 
 All these methods are synchronous by default, except `stop()`. You can pass `async` parameter to any of them to switch into asynchronous, which means command will return immediately, without waiting for rotation to complete.
 
@@ -229,6 +222,34 @@ time.sleep(1)
 print ("Value: " % hub.battery.last_value)
 ```
 
+### General Notes
+
+#### Bluetooth Connection
+There is optional parameter for `MoveHub` class constructor, accepting instance of `Connection` object. By default, it uses instance of `BLEConnection` to connect directly to Move Hub. You can specify instance of `DebugServerConnection` if you are using Debug Server (more details below).
+
+If you want to specify name for Bluetooth interface to use on local computer, create instance of `BLEConnection` and call `connect(if_name)` method of connection. Then pass it to `MoveHub` constructor. Like this:
+```python
+from pylgbst import BLEConnection, MoveHub
+
+conn=BLEConnection()
+conn.connect("hci1")
+
+hub=MoveHub(conn)
+```
+
+#### Devices Detecting
+As part of instantiating process, `MoveHub` waits up to 1 minute for all builtin devices to appear, such as motors on ports A and B, tilt sensor, button and battery. This not guarantees that external motor and/or color sensor will be present right after `MoveHub` instantiated. Usually, sleeping for couple of seconds gives it enough time to detect everything.
+
+#### Subscribing to Sensors
+Each sensor usually has several different "subscription modes", differing with callback parameters and value semantics. 
+
+There is optional `granularity` parameter for each subscription call, by default it is `1`. This parameter tells Hub when to issue sensor data notification. Value of notification has to change greater or equals to `granularity` to issue notification. This means that specifying `0` will cause it to constantly send notifications, and specifying `5` will cause less frequent notifications, only when values change for more than `5` (inclusive).
+
+It is possible to subscribe with multiple times for the same sensor. Only one, very last subscribe mode is in effect, with many subscriber callbacks allowed to receive notifications. 
+
+Good practice for any program is to unsubscribe from all sensor subscriptions before ending, especially when used with `DebugServer`.
+
+
 ## Debug Server
 Running debug server opens permanent BLE connection to Hub and listening on TCP port for communications. This avoids the need to re-start Hub all the time. 
 
@@ -243,7 +264,7 @@ sudo python -c "from pylgbst.comms import *; \
 
 Then push green button on MoveHub, so permanent BLE connection will be established.
 
-## TODO
+## Roadmap & TODO
 
 - Give nice documentation examples, don't forget to mention logging
 - document all API methods
