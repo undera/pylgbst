@@ -1,4 +1,4 @@
-from pylgbst.peripherals import ColorDistanceSensor# Python library to interact with LEGO Move Hub
+# Python library to interact with LEGO Move Hub
 
 Best way to start is to look into [`demo.py`](demo.py) file, and run it.
 
@@ -44,8 +44,12 @@ general subscription modes & granularity info
 good practice is to unsubscribe, especially when used with `DebugServer`
 
 ### Motors
+
 ### Motor Rotation Sensors
+
 ### Tilt Sensor
+
+MoveHub's internal tilt sensor is available through filed `tilt_sensor`
 
 ### Color & Distance Sensor
 

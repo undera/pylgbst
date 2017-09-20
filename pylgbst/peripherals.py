@@ -284,7 +284,6 @@ class TiltSensor(Peripheral):
             state = data[4]
             self._notify_subscribers(state)
         elif self._port_subscription_mode == self.MODE_2AXIS_SIMPLE:
-            # TODO: figure out right interpreting of this
             state = data[4]
             self._notify_subscribers(state)
         elif self._port_subscription_mode == self.MODE_BUMP:
