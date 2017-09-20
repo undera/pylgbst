@@ -47,13 +47,42 @@ good practice is to unsubscribe, especially when used with `DebugServer`
 ### Tilt Sensor
 ### Color & Distance Sensor
 Tip: laser pointer pointing to sensor makes it trigger distance sensor
+
 ### LED
+
+`MoveHub` class has field `led` to access color LED near push button. To change its color, use `set_color(color)` method. 
+
+You can obtain colors are present as constants `COLOR_*` and also a map of available color-to-name as `COLORS`.
+
+Additionally, you can subscribe to LED color change events, using callback function as shown in example below.
+
+
+```python
+from pylgbst import MoveHub, COLORS, COLOR_NONE, COLOR_RED
+import time
+
+def callback(clr):
+    print("Color has changed: %s" % clr)
+
+hub = MoveHub()
+hub.led.subscribe(callback)
+
+hub.led.set_color(COLOR_RED)
+for color in COLORS:
+    hub.led.set_color(color)
+    time.sleep(0.5)
+    
+hub.led.set_color(COLOR_NONE)
+hub.led.unsubscribe(callback)
+```
+
+Note: blinking orange color of LED means battery is low.
 
 ### Push Button
 
-Hub object has field `button` to subscribe to button press and release events. Note that `Button` class is not real `Peripheral`, we just mimic it. Subscribing to button uses internal mechanics which is slightly different from other peripherals.
+`MoveHub` class has field `button` to subscribe to button press and release events.
 
-Still, subscribing to button is done usual way: 
+Note that `Button` class is not real `Peripheral`, as it has no port and not listed in `devices` field of Hub. Still, subscribing to button is done usual way: 
 
 ```python
 from pylgbst import MoveHub
@@ -67,7 +96,7 @@ hub.button.subscribe(callback)
 
 ### Power Voltage & Battery
 
-Hub object has field `battery` to subscribe to battery voltage status. Callback accepts single parameter with current value. The range of values is unknown, it's 2-byte integer. Every time data is received, value is also written into `last_value` field of Battery object.
+`MoveHub` class has field `battery` to subscribe to battery voltage status. Callback accepts single parameter with current value. The range of values is unknown, it's 2-byte integer. Every time data is received, value is also written into `last_value` field of Battery object.
 
 ```python
 from pylgbst import MoveHub
