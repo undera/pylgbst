@@ -155,9 +155,9 @@ class EncodedMotor(Peripheral):
     ANGLED_GROUP = 0x0C
 
     # MOTORS
-    MOTOR_MODE_SOMETHING1 = 0x00
-    MOTOR_MODE_SPEED = 0x01
-    MOTOR_MODE_ANGLE = 0x02
+    SENSOR_SOMETHING1 = 0x00  # TODO: understand it
+    SENSOR_SPEED = 0x01
+    SENSOR_ANGLE = 0x02
 
     def _speed_abs(self, relative):
         if relative < -1:
@@ -228,24 +228,24 @@ class EncodedMotor(Peripheral):
         self._wrap_and_write(self.SOME_SINGLE, b"", speed_primary, speed_secondary)
         self._wait_sync(async)
 
-    def stop(self):
-        self.constant(0, async=True)
+    def stop(self, async=True):
+        self.constant(0, async=async)
 
     def handle_port_data(self, data):
-        if self._port_subscription_mode == self.MOTOR_MODE_ANGLE:
+        if self._port_subscription_mode == self.SENSOR_ANGLE:
             rotation = unpack("<l", data[4:8])[0]
             self._notify_subscribers(rotation)
-        elif self._port_subscription_mode == self.MOTOR_MODE_SOMETHING1:
+        elif self._port_subscription_mode == self.SENSOR_SOMETHING1:
             # TODO: understand what it means
             rotation = unpack("<B", data[4])[0]
             self._notify_subscribers(rotation)
-        elif self._port_subscription_mode == self.MOTOR_MODE_SPEED:
+        elif self._port_subscription_mode == self.SENSOR_SPEED:
             rotation = unpack("<b", data[4])[0]
             self._notify_subscribers(rotation)
         else:
             log.debug("Got motor sensor data while in unexpected mode: %s", self._port_subscription_mode)
 
-    def subscribe(self, callback, mode=MOTOR_MODE_ANGLE, granularity=1, async=False):
+    def subscribe(self, callback, mode=SENSOR_ANGLE, granularity=1, async=False):
         super(EncodedMotor, self).subscribe(callback, mode, granularity)
 
 
@@ -319,7 +319,7 @@ class ColorDistanceSensor(Peripheral):
     OFF2 = 0x07
     COLOR_DISTANCE_FLOAT = 0x08
     LUMINOSITY = 0x09
-    SOME_20BYTES = 0x0a # TODO: understand it
+    SOME_20BYTES = 0x0a  # TODO: understand it
 
     def __init__(self, parent, port):
         super(ColorDistanceSensor, self).__init__(parent, port)

@@ -43,8 +43,8 @@ class MoveHub(object):
         self.motor_A = None
         self.motor_B = None
         self.motor_AB = None
-        self.tilt_sensor = None
         self.color_distance_sensor = None
+        self.tilt_sensor = None
         self.motor_external = None
         self.port_C = None
         self.port_D = None

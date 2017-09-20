@@ -47,9 +47,61 @@ good practice is to unsubscribe, especially when used with `DebugServer`
 
 Only one, very last subscribe mode is in effect, with many subscriber callbacks allowed. 
 
-### Motors
+### Controlling Motors
+
+MoveHub provides motors via following fields:
+- `motor_A`
+- `motor_B`
+- `motor_AB`
+- `motor_external` - if external motor is attached to port C or D
+
+Methods to activate motors are:
+- `constant(speed_primary, speed_secondary)`
+- `timed(time, speed_primary, speed_secondary)`
+- `angled(angle, speed_primary, speed_secondary)`
+- `stop()`
+
+All these methods are synchronous by default, except `stop()`. You can pass `async` parameter to any of them to switch into asynchronous, which means command will return immediately, without waiting for rotation to complete.
+
+An example:
+```python
+from pylgbst import MoveHub
+import time
+
+hub = MoveHub()
+
+hub.motor_A.timed(0.5, 0.8)
+hub.motor_A.timed(0.5, -0.8)
+
+hub.motor_B.angled(90, 0.8)
+hub.motor_B.angled(-90, 0.8)
+
+hub.motor_AB.timed(1.5, 0.8, -0.8)
+hub.motor_AB.angled(90, 0.8, -0.8)
+
+hub.motor_external.constant(0.2)
+time.sleep(2)
+hub.motor_external.stop()
+```
+
 
 ### Motor Rotation Sensors
+
+Any motor allows to subscribe to its rotation sensor. Two sensor modes are available: rotation angle (`EncodedMotor.SENSOR_ANGLE`) and rotation speed (`EncodedMotor.SENSOR_SPEED`). Example: 
+
+```python
+from pylgbst import MoveHub, EncodedMotor
+import time
+
+def callback(angle):
+    print("Angle: %s" % angle)
+
+hub = MoveHub()
+
+hub.motor_A.subscribe(callback, mode=EncodedMotor.SENSOR_ANGLE)
+time.sleep(60) # rotate motor A
+hub.motor_A.unsubscribe(callback)
+```
 
 ### Tilt Sensor
 
@@ -122,7 +174,6 @@ Tip: laser pointer pointing to sensor makes it to trigger distance sensor
 You can obtain colors are present as constants `COLOR_*` and also a map of available color-to-name as `COLORS`. There are 12 color values, including `COLOR_BLACK` and `COLOR_NONE` which turn LED off.
 
 Additionally, you can subscribe to LED color change events, using callback function as shown in example below.
-
 
 ```python
 from pylgbst import MoveHub, COLORS, COLOR_NONE, COLOR_RED
