@@ -228,7 +228,7 @@ class EncodedMotor(Peripheral):
         self._wrap_and_write(self.SOME_SINGLE, b"", speed_primary, speed_secondary)
         self._wait_sync(async)
 
-    def stop(self, async=True):
+    def stop(self, async=False):
         self.constant(0, async=async)
 
     def handle_port_data(self, data):
@@ -329,23 +329,23 @@ class ColorDistanceSensor(Peripheral):
 
     def handle_port_data(self, data):
         if self._port_subscription_mode == self.COLOR_DISTANCE_FLOAT:
-            color = data[4]
-            distance = data[5]
-            partial = data[7]
+            color = unpack("<B", data[4:5])[0]
+            distance = unpack("<B", data[6:7])[0]
+            partial = unpack("<B", data[7:0])[0]
             if partial:
                 distance += 1.0 / partial
             self._notify_subscribers(color, float(distance))
         elif self._port_subscription_mode == self.COLOR_ONLY:
-            color = data[4]
+            color = unpack("<B", data[4:5])[0]
             self._notify_subscribers(color)
         elif self._port_subscription_mode == self.DISTANCE_INCHES:
-            distance = data[4]
+            distance = unpack("<B", data[4:5])[0]
             self._notify_subscribers(distance)
         elif self._port_subscription_mode == self.DISTANCE_HOW_CLOSE:
-            distance = data[4]
+            distance = unpack("<B", data[4:5])[0]
             self._notify_subscribers(distance)
         elif self._port_subscription_mode == self.DISTANCE_SUBINCH_HOW_CLOSE:
-            distance = data[4]
+            distance = unpack("<B", data[4:5])[0]
             self._notify_subscribers(distance)
         elif self._port_subscription_mode == self.OFF1 or self._port_subscription_mode == self.OFF2:
             log.info("Turned off led on %s", self)

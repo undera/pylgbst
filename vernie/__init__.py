@@ -80,7 +80,7 @@ class Vernie(MoveHub):
         self.motor_external.subscribe(self._external_motor_data)
 
         self._reset_head()
-        # self.say("ready")
+        self.say("ready")
         time.sleep(1)
 
     def say(self, phrase):

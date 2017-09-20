@@ -50,11 +50,11 @@ Methods to activate motors are:
 - `constant(speed_primary, speed_secondary)` - enables motor with specified speed forever 
 - `timed(time, speed_primary, speed_secondary)` - enables motor with specified speed for `time` seconds, float values accepted
 - `angled(angle, speed_primary, speed_secondary)` - makes motor to rotate to specified angle, `angle` value is integer degrees, can be negative and can be more than 360 for several rounds
-- `stop()` - stops motor at once, it is equivalent for `constant(0, async=True)`
+- `stop()` - stops motor at once, it is equivalent for `constant(0)`
 
 Parameter `speed_secondary` is used when it is motor group of `motor_AB` running together. By default, `speed_secondary` equals `speed_primary`.
 
-All these methods are synchronous by default, except `stop()`. You can pass `async` parameter to any of them to switch into asynchronous, which means command will return immediately, without waiting for rotation to complete.
+All these methods are synchronous by default, means method does not return untill it gets confirmation from Hub that command has completed. You can pass `async=True` parameter to any of methods to switch into asynchronous, which means command will return immediately, without waiting for rotation to complete. Be careful with asynchronous calls, as they make Hub to stop reporting synchronizing statuses.
 
 An example:
 ```python

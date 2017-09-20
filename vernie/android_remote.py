@@ -9,6 +9,7 @@ import logging
 import socket
 import time
 
+from pylgbst.peripherals import ColorDistanceSensor
 from vernie import Vernie
 
 host = ''
@@ -34,6 +35,15 @@ def ranged(param):
     return float(param / 10)
 
 
+front_distance = 0
+
+
+def on_distance(distance):
+    logging.info("Distance %s", distance)
+    global front_distance
+    front_distance = distance
+
+
 udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -44,8 +54,7 @@ robot = Vernie()
 robot.button.subscribe(on_btn)
 robot.motor_AB.stop()
 
-# TODO: use distance sensor to stop movement forward
-
+robot.color_distance_sensor.subscribe(on_distance, ColorDistanceSensor.DISTANCE_INCHES)
 try:
     udp_sock.bind((host, port))
     time.sleep(1)
@@ -68,11 +77,16 @@ try:
         messageString = message.decode("utf-8")
         a, b, c = decode_xml(messageString)
         divider = 2.0 if c > 0 else -2.0
-        sa = round(c + b / divider, 2)
-        sb = round(c - b / divider, 2)
+
+        if 0 < front_distance < 9 and c > 0:
+            logging.info("Something in front of Vernie [%s]!", front_distance)
+            c = 0
+
+        sa = round(c + b / divider, 1)
+        sb = round(c - b / divider, 1)
         logging.info("SpeedA=%s, SpeedB=%s", sa, sb)
-        robot.motor_AB.constant(sa, sb, async=True)
-        time.sleep(0.5)
+        robot.motor_AB.constant(sa, sb)
+        # time.sleep(0.5)
 finally:
     robot.motor_AB.stop()
     udp_sock.close()
