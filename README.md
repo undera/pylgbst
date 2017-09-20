@@ -127,7 +127,7 @@ hub.tilt_sensor.unsubscribe(callback)
 
 Field named `color_distance_sensor` holds instance of `ColorDistanceSensor`, if one is attached to MoveHub. Sensor has number of different modes to subscribe. 
 
-Colors that are detected are part of `COLORS` map (see [LED](#LED) section). Only several colors are possible to detect: `BLACK`, `BLUE`, `CYAN`, `YELLOW`, `RED`, `WHITE`. Sensor does its best to detect best color, but only works when sample is very close to sensor.
+Colors that are detected are part of `COLORS` map (see [LED](#led) section). Only several colors are possible to detect: `BLACK`, `BLUE`, `CYAN`, `YELLOW`, `RED`, `WHITE`. Sensor does its best to detect best color, but only works when sample is very close to sensor.
 
 Distance works in range of 0-10 inches, with ability to measure last inch in higher detail.
 
