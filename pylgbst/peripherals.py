@@ -1,9 +1,9 @@
 import logging
 import time
+import traceback
 from struct import pack, unpack
 from threading import Thread
 
-# noinspection PyUnresolvedReferences
 from six.moves import queue
 
 from pylgbst.comms import str2hex
@@ -66,10 +66,11 @@ class Peripheral(object):
         self._port_subscription_mode = mode
         self.started()
         self._port_subscribe(self._port_subscription_mode, granularity, True)
-        if callback:
-            self._subscribers.add(callback)
 
         self._wait_sync(async)  # having async=True leads to stuck notifications
+
+        if callback:
+            self._subscribers.add(callback)
 
     def unsubscribe(self, callback=None):
         if callback in self._subscribers:
@@ -98,6 +99,7 @@ class Peripheral(object):
             try:
                 self.handle_port_data(data)
             except BaseException:
+                log.warning("%s", traceback.format_exc())
                 log.warning("Failed to handle port data by %s: %s", self, str2hex(data))
 
     def _wait_sync(self, async):
@@ -330,8 +332,8 @@ class ColorDistanceSensor(Peripheral):
     def handle_port_data(self, data):
         if self._port_subscription_mode == self.COLOR_DISTANCE_FLOAT:
             color = unpack("<B", data[4:5])[0]
-            distance = unpack("<B", data[6:7])[0]
-            partial = unpack("<B", data[7:0])[0]
+            distance = unpack("<B", data[5:6])[0]
+            partial = unpack("<B", data[7:8])[0]
             if partial:
                 distance += 1.0 / partial
             self._notify_subscribers(color, float(distance))

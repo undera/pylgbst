@@ -14,6 +14,7 @@ try:
 
 
     def say(text):
+        return
         if isinstance(text, str):
             text = text.decode("utf-8")
         md5 = hashlib.md5(text.encode('utf-8')).hexdigest()
@@ -55,12 +56,12 @@ SPEECH_LANG_MAP = {
     }
 }
 
-VERNIE_TO_MOTOR_DEGREES = 2.7
+VERNIE_TO_MOTOR_DEGREES = 2.6
+VERNIE_SINGLE_MOVE = 430
 
 
 class Vernie(MoveHub):
     def __init__(self, language='en'):
-        self.language = language
         try:
             conn = DebugServerConnection()
         except BaseException:
@@ -68,6 +69,7 @@ class Vernie(MoveHub):
             conn = BLEConnection().connect()
 
         super(Vernie, self).__init__(conn)
+        self.language = language
 
         while True:
             required_devices = (self.color_distance_sensor, self.motor_external)
@@ -104,14 +106,14 @@ class Vernie(MoveHub):
         self.motor_external.angled(direction * angle, speed)
 
     def turn(self, direction, degrees=90, speed=0.3):
-        self.head(STRAIGHT, speed=1)
-        self.head(direction, 35, 1)
+        #self.head(STRAIGHT, speed=0.5)
+        #self.head(direction, 35, 1)
         self.motor_AB.angled(int(VERNIE_TO_MOTOR_DEGREES * degrees), speed * direction, -speed * direction)
-        self.head(STRAIGHT, speed=1)
+        #self.head(STRAIGHT, speed=0.5)
 
-    def move(self, direction, distance=1, speed=0.3):
-        self.head(STRAIGHT, speed=0.5)
-        self.motor_AB.angled(distance * 450, speed * direction, speed * direction)
+    def move(self, direction, distance=1, speed=0.2):
+        #self.head(STRAIGHT, speed=0.5)
+        self.motor_AB.angled(distance * VERNIE_SINGLE_MOVE, speed * direction, speed * direction)
 
     def interpret_command(self, cmd, confirm):
         cmd = cmd.strip().lower().split(' ')
@@ -157,6 +159,3 @@ class Vernie(MoveHub):
         else:
             self.say("Unknown command")
             self.say("commands help")
-
-# TODO: disable motors if state is not up
-# TODO: stop motors on bump?
