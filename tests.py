@@ -83,7 +83,7 @@ class GeneralTest(unittest.TestCase):
 
         def callback(param1, param2=None, param3=None):
             if param2 is None:
-                log.debug("Tilt: %s", TiltSensor.TILT_STATES[param1])
+                log.debug("Tilt: %s", TiltSensor.TRI_STATES[param1])
             else:
                 log.debug("Tilt: %s %s %s", param1, param2, param3)
 

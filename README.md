@@ -29,7 +29,7 @@ Demonstrational video:
 
 Install library like this: 
 ```bash
-pip install https://github.com/undera/pylgbst/archive/0.3.tar.gz
+pip install https://github.com/undera/pylgbst/archive/0.4.tar.gz
 ```
 
 Then instantiate MoveHub object and start invoking its methods. Following is example to just print peripherals detected on Hub:  
@@ -127,6 +127,22 @@ hub.tilt_sensor.unsubscribe(callback)
 - `MODE_3AXIS_SIMPLE` - use `callback(state)` for 3-axis simple state detect
 - `MODE_3AXIS_FULL` - use `callback(roll, pitch)` for 2-axis roll&pitch degree values
 - `MODE_BUMP_COUNT` - use `callback(count)` to detect bumps
+
+There are tilt sensor constants for "simple" states, for 2-axis mode their names are also available through `TiltSensor.DUO_STATES`:
+- `DUO_HORIZ` - "HORIZONTAL"
+- `DUO_DOWN` - "DOWN"
+- `DUO_LEFT` - "LEFT"
+- `DUO_RIGHT` - "RIGHT"
+- `DUO_UP` - "UP"
+  
+For 3-axis simple mode map name is `TiltSensor.TRI_STATES` with values:
+- `TRI_BACK` - "BACK"
+- `TRI_UP` - "UP"
+- `TRI_DOWN` - "DOWN"
+- `TRI_LEFT` - "LEFT"
+- `TRI_RIGHT` - "RIGHT"
+- `TRI_FRONT` - "FRONT"
+
 
 ### Color & Distance Sensor
 

@@ -73,11 +73,11 @@ def demo_tilt_sensor_simple(movehub):
     demo_tilt_sensor_simple.cnt = 0
     limit = 10
 
-    def callback(param1):
+    def callback(state):
         demo_tilt_sensor_simple.cnt += 1
-        log.info("Tilt #%s of %s: %s", demo_tilt_sensor_simple.cnt, limit, TiltSensor.TILT_STATES[param1])
+        log.info("Tilt #%s of %s: %s=%s", demo_tilt_sensor_simple.cnt, limit, TiltSensor.TRI_STATES[state], state)
 
-    movehub.tilt_sensor.subscribe(callback, mode=TiltSensor.MODE_2AXIS_SIMPLE)
+    movehub.tilt_sensor.subscribe(callback, mode=TiltSensor.MODE_3AXIS_SIMPLE)
     while demo_tilt_sensor_simple.cnt < limit:
         time.sleep(1)
 
@@ -171,4 +171,5 @@ if __name__ == '__main__':
         connection = BLEConnection().connect()
 
     hub = MoveHub(connection)
+
     demo_all(hub)

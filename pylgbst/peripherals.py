@@ -258,24 +258,34 @@ class TiltSensor(Peripheral):
     MODE_BUMP_COUNT = 0x03
     MODE_3AXIS_FULL = 0x04
 
-    HORIZONTAL = 0x00
-    UP = 0x01
-    DOWN = 0x02
-    RIGHT = 0x03
-    LEFT = 0x04
-    FRONT = 0x05
-    SOME1 = 0x07  # TODO
-    SOME2 = 0x09  # TODO
+    TRI_BACK = 0x00
+    TRI_UP = 0x01
+    TRI_DOWN = 0x02
+    TRI_LEFT = 0x03
+    TRI_RIGHT = 0x04
+    TRI_FRONT = 0x05
 
-    TILT_STATES = {
-        HORIZONTAL: "HORIZONTAL",
-        UP: "UP",
-        DOWN: "DOWN",
-        RIGHT: "RIGHT",
-        LEFT: "LEFT",
-        FRONT: "FRONT",
-        SOME1: "LEFT1",
-        SOME2: "RIGHT1",
+    DUO_HORIZ = 0x00
+    DUO_DOWN = 0x03
+    DUO_LEFT = 0x05
+    DUO_RIGHT = 0x07
+    DUO_UP = 0x09
+
+    DUO_STATES = {
+        DUO_HORIZ: "HORIZONTAL",
+        DUO_DOWN: "DOWN",
+        DUO_LEFT: "LEFT",
+        DUO_RIGHT: "RIGHT",
+        DUO_UP: "UP",
+    }
+
+    TRI_STATES = {
+        TRI_BACK: "BACK",
+        TRI_UP: "UP",
+        TRI_DOWN: "DOWN",
+        TRI_LEFT: "LEFT",
+        TRI_RIGHT: "RIGHT",
+        TRI_FRONT: "FRONT",
     }
 
     def subscribe(self, callback, mode=MODE_3AXIS_SIMPLE, granularity=1, async=False):
