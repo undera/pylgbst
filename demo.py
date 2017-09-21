@@ -1,5 +1,4 @@
 # coding=utf-8
-import traceback
 from time import sleep
 
 from pylgbst import *
@@ -172,8 +171,4 @@ if __name__ == '__main__':
         connection = BLEConnection().connect()
 
     hub = MoveHub(connection)
-    #demo_all(hub)
-    def callback(clr):
-        log.info("HERE %s", clr)
-    hub.led.subscribe(callback)
-    demo_led_colors(hub)
+    demo_all(hub)
