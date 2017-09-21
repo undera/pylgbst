@@ -4,7 +4,6 @@ import os
 import re
 import subprocess
 import sys
-import traceback
 
 from pylgbst import *
 from pylgbst.comms import DebugServerConnection
@@ -14,7 +13,6 @@ try:
 
 
     def say(text):
-        return
         if isinstance(text, str):
             text = text.decode("utf-8")
         md5 = hashlib.md5(text.encode('utf-8')).hexdigest()
@@ -106,13 +104,13 @@ class Vernie(MoveHub):
         self.motor_external.angled(direction * angle, speed)
 
     def turn(self, direction, degrees=90, speed=0.3):
-        #self.head(STRAIGHT, speed=0.5)
-        #self.head(direction, 35, 1)
+        self.head(STRAIGHT, speed=0.5)
+        self.head(direction, 35, 1)
         self.motor_AB.angled(int(VERNIE_TO_MOTOR_DEGREES * degrees), speed * direction, -speed * direction)
-        #self.head(STRAIGHT, speed=0.5)
+        self.head(STRAIGHT, speed=0.5)
 
     def move(self, direction, distance=1, speed=0.2):
-        #self.head(STRAIGHT, speed=0.5)
+        self.head(STRAIGHT, speed=0.5)
         self.motor_AB.angled(distance * VERNIE_SINGLE_MOVE, speed * direction, speed * direction)
 
     def interpret_command(self, cmd, confirm):

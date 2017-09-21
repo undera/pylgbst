@@ -30,7 +30,9 @@ def on_turn(angl):
 robot.button.subscribe(on_btn)
 robot.color_distance_sensor.subscribe(on_change_lum, ColorDistanceSensor.LUMINOSITY, granularity=1)
 robot.motor_A.subscribe(on_turn, granularity=30)
+
 # TODO: add bump detect to go back?
+
 while running:
     # turn around, measuring luminosity
     lum_values = {}
