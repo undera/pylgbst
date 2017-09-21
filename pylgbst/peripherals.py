@@ -76,7 +76,7 @@ class Peripheral(object):
         if callback in self._subscribers:
             self._subscribers.remove(callback)
 
-        if not self._port_subscription_mode:
+        if self._port_subscription_mode is None:
             log.warning("Attempt to unsubscribe while never subscribed: %s", self)
         elif not self._subscribers:
             self._port_subscribe(self._port_subscription_mode, 0, False)
@@ -378,12 +378,14 @@ class ColorDistanceSensor(Peripheral):
 
 
 class Battery(Peripheral):
+    MODE1 = 0x00  # give less frequent notifications
+    MODE2 = 0x01  # give more frequent notifications, maybe different voltage (cpu vs board?)
+
     def __init__(self, parent, port):
         super(Battery, self).__init__(parent, port)
         self.last_value = None
 
-    def subscribe(self, callback, mode=0, granularity=1, async=False):
-        # TODO: investigate `mode` parameter for battery
+    def subscribe(self, callback, mode=MODE1, granularity=1, async=False):
         super(Battery, self).subscribe(callback, mode, granularity)
 
     # we know only voltage subscription from it. is it really battery or just onboard voltage?
@@ -392,8 +394,8 @@ class Battery(Peripheral):
     # good 7.5v ~= 3892
     # liion 5v ~= 2100
     def handle_port_data(self, data):
-        self.last_value = unpack("<H", data[4:6])[0]
-        log.warning("Battery: %s"), self.last_value
+        val = unpack("<H", data[4:6])[0]
+        self.last_value = val
         self._notify_subscribers(self.last_value)
 
 
