@@ -26,8 +26,8 @@ def on_btn(pressed):
 
 robot.led.set_color(COLOR_GREEN)
 robot.button.subscribe(on_btn)
-robot.say("Place your hand in front of sensor")
 robot.color_distance_sensor.subscribe(callback)
+robot.say("Place your hand in front of sensor")
 
 while running:
     time.sleep(1)

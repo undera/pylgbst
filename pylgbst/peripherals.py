@@ -397,7 +397,10 @@ class Button(Peripheral):
 
     def subscribe(self, callback, mode=None, granularity=1, async=False):
         cmd = pack("<B", PACKET_VER) + pack("<B", MSG_DEVICE_INFO) + b'\x02\x02'
+        self.started()
         self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE, pack("<B", len(cmd) + 1) + cmd)
+        self._wait_sync(async)
+
         if callback:
             self._subscribers.add(callback)
 
@@ -410,4 +413,7 @@ class Button(Peripheral):
             self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE, pack("<B", len(cmd) + 1) + cmd)
 
     def handle_port_data(self, data):
-        self._notify_subscribers(bool(unpack("<B", data[5:6])[0]))
+        param = unpack("<B", data[5:6])[0]
+        if self.in_progress():
+            self.finished()
+        self._notify_subscribers(bool(param))
