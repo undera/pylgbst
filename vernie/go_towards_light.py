@@ -34,7 +34,7 @@ robot.motor_A.subscribe(on_turn, granularity=30)
 while running:
     # turn around, measuring luminosity
     lum_values = {}
-    robot.turn(RIGHT, degrees=360, speed=0.1)
+    robot.turn(RIGHT, degrees=360, speed=0.2)
 
     # get max luminosity angle
     amin = min(lum_values.keys())
