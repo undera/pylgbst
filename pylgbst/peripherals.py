@@ -283,22 +283,22 @@ class TiltSensor(Peripheral):
 
     def handle_port_data(self, data):
         if self._port_subscription_mode == self.MODE_3AXIS_SIMPLE:
-            state = data[4]
+            state = unpack("<B", data[4:5])[0]
             self._notify_subscribers(state)
         elif self._port_subscription_mode == self.MODE_2AXIS_SIMPLE:
-            state = data[4]
+            state = unpack("<B", data[4:5])[0]
             self._notify_subscribers(state)
         elif self._port_subscription_mode == self.MODE_BUMP_COUNT:
-            bump_count = data[4]
+            bump_count = unpack("<H", data[4:6])[0]
             self._notify_subscribers(bump_count)
         elif self._port_subscription_mode == self.MODE_2AXIS_FULL:
-            roll = self._byte2deg(data[4])
-            pitch = self._byte2deg(data[5])
+            roll = self._byte2deg(unpack("<B", data[4:5])[0])
+            pitch = self._byte2deg(unpack("<B", data[5:6])[0])
             self._notify_subscribers(roll, pitch)
         elif self._port_subscription_mode == self.MODE_3AXIS_FULL:
-            roll = self._byte2deg(data[4])
-            pitch = self._byte2deg(data[5])
-            yaw = self._byte2deg(data[6])  # did I get the order right?
+            roll = self._byte2deg(unpack("<B", data[4:5])[0])
+            pitch = self._byte2deg(unpack("<B", data[5:6])[0])
+            yaw = self._byte2deg(unpack("<B", data[6:7])[0])  # did I get the order right?
             self._notify_subscribers(roll, pitch, yaw)
         else:
             log.debug("Got tilt sensor data while in unexpected mode: %s", self._port_subscription_mode)

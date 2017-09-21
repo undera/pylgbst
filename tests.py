@@ -165,6 +165,7 @@ class GeneralTest(unittest.TestCase):
         def callback(pressed):
             log.info("Pressed: %s", pressed)
 
+        hub.notify_mock.append((HANDLE, "1b0e00060001020600"))
         hub.button.subscribe(callback)
 
         hub.notify_mock.append((HANDLE, "1b0e00060001020601"))
