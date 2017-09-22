@@ -377,25 +377,44 @@ class ColorDistanceSensor(Peripheral):
             log.debug("Unhandled data in mode %s: %s", self._port_subscription_mode, str2hex(data))
 
 
-class Battery(Peripheral):
+class Voltage(Peripheral):
     MODE1 = 0x00  # give less frequent notifications
     MODE2 = 0x01  # give more frequent notifications, maybe different voltage (cpu vs board?)
 
     def __init__(self, parent, port):
-        super(Battery, self).__init__(parent, port)
+        super(Voltage, self).__init__(parent, port)
         self.last_value = None
 
     def subscribe(self, callback, mode=MODE1, granularity=1, async=False):
-        super(Battery, self).subscribe(callback, mode, granularity)
+        super(Voltage, self).subscribe(callback, mode, granularity)
 
     # we know only voltage subscription from it. is it really battery or just onboard voltage?
-    # device has turned off on 1b0e000600453ba800 - 168d
+    # device has turned off on 1b0e00060045 3b a800 - 168 dec / 1b0e00060045 3c 0803 / 1b0e000600453c 0703
     # moderate 9v ~= 3840
     # good 7.5v ~= 3892
     # liion 5v ~= 2100
     def handle_port_data(self, data):
         val = unpack("<H", data[4:6])[0]
-        self.last_value = val
+        self.last_value = val / 4096.0
+        if self.last_value < 0.2:
+            logging.warning("Battery low! %s%%", int(100 * self.last_value))
+        self._notify_subscribers(self.last_value)
+
+
+class Amperage(Peripheral):
+    MODE1 = 0x00  # give less frequent notifications
+    MODE2 = 0x01  # give more frequent notifications, maybe different voltage (cpu vs board?)
+
+    def __init__(self, parent, port):
+        super(Amperage, self).__init__(parent, port)
+        self.last_value = None
+
+    def subscribe(self, callback, mode=MODE1, granularity=1, async=False):
+        super(Amperage, self).subscribe(callback, mode, granularity)
+
+    def handle_port_data(self, data):
+        val = unpack("<H", data[4:6])[0]
+        self.last_value = val / 4096.0
         self._notify_subscribers(self.last_value)
 
 

@@ -228,7 +228,7 @@ hub.button.subscribe(callback)
 
 ### Power Voltage & Battery
 
-`MoveHub` class has field `battery` to subscribe to battery voltage status. Callback accepts single parameter with current value. The range of values is unknown, it's 2-byte integer. Every time data is received, value is also written into `last_value` field of Battery object.
+`MoveHub` class has field `voltage` to subscribe to battery voltage status. Callback accepts single parameter with current value. The range of values is float between `0` and `1.0`. Every time data is received, value is also written into `last_value` field of `Voltage` object. Values less than `0.2` are known as lowest values, when unit turns off.
 
 ```python
 from pylgbst import MoveHub
@@ -238,9 +238,9 @@ def callback(value):
     print("Voltage: %s" % value)
 
 hub = MoveHub()
-hub.battery.subscribe(callback)
+hub.voltage.subscribe(callback)
 time.sleep(1)
-print ("Value: " % hub.battery.last_value)
+print ("Value: " % hub.voltage.last_value)
 ```
 
 ### General Notes

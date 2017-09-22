@@ -4,7 +4,8 @@ from struct import pack
 
 from pylgbst.comms import BLEConnection, str2hex, get_byte
 from pylgbst.constants import *
-from pylgbst.peripherals import Button, EncodedMotor, ColorDistanceSensor, LED, TiltSensor, Battery, Peripheral
+from pylgbst.peripherals import Button, EncodedMotor, ColorDistanceSensor, LED, TiltSensor, Voltage, Peripheral, \
+    Amperage
 
 log = logging.getLogger('movehub')
 
@@ -19,7 +20,7 @@ class MoveHub(object):
     :type led: LED
     :type tilt_sensor: TiltSensor
     :type button: Button
-    :type battery: Battery
+    :type amperage: Voltage
     :type color_distance_sensor: pylgbst.peripherals.ColorDistanceSensor
     :type motor_external: EncodedMotor
     :type port_C: Peripheral
@@ -39,7 +40,8 @@ class MoveHub(object):
         # shorthand fields
         self.button = Button(self)
         self.led = None
-        self.battery = None
+        self.amperage = None
+        self.voltage = None
         self.motor_A = None
         self.motor_B = None
         self.motor_AB = None
@@ -59,7 +61,7 @@ class MoveHub(object):
         builtin_devices = ()
         for num in range(0, 60):
             builtin_devices = (self.led, self.motor_A, self.motor_B,
-                               self.motor_AB, self.tilt_sensor, self.button, self.battery)
+                               self.motor_AB, self.tilt_sensor, self.button, self.amperage, self.voltage)
             if None not in builtin_devices:
                 return
             log.debug("Waiting for builtin devices to appear: %s", builtin_devices)
@@ -148,8 +150,10 @@ class MoveHub(object):
             self.devices[port] = LED(self, port)
         elif dev_type == DEV_TILT_SENSOR:
             self.devices[port] = TiltSensor(self, port)
-        elif dev_type == DEV_BATTERY:
-            self.devices[port] = Battery(self, port)
+        elif dev_type == DEV_AMPERAGE:
+            self.devices[port] = Amperage(self, port)
+        elif dev_type == DEV_VOLTAGE:
+            self.devices[port] = Voltage(self, port)
         else:
             log.debug("Unhandled peripheral type 0x%x on port 0x%x", dev_type, port)
             self.devices[port] = Peripheral(self, port)
@@ -168,8 +172,10 @@ class MoveHub(object):
             self.led = self.devices[port]
         elif port == PORT_TILT_SENSOR:
             self.tilt_sensor = self.devices[port]
-        elif port == PORT_BATTERY:
-            self.battery = self.devices[port]
+        elif port == PORT_AMPERAGE:
+            self.amperage = self.devices[port]
+        elif port == PORT_VOLTAGE:
+            self.voltage = self.devices[port]
         else:
             log.debug("Unhandled port: %s", PORTS[port])
 
