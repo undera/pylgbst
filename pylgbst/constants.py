@@ -42,13 +42,13 @@ MSG_SENSOR_DATA = 0x45
 MSG_SENSOR_SUBSCRIBE_ACK = 0x47
 
 # DEVICE TYPES
-DEV_AMPERAGE = 0x15  # one of them is button? onboard temperature? maybe another kind of voltage, they have same params
 DEV_VOLTAGE = 0x14
+DEV_AMPERAGE = 0x15
+DEV_LED = 0x17
 DEV_DCS = 0x25
 DEV_IMOTOR = 0x26
 DEV_MOTOR = 0x27
 DEV_TILT_SENSOR = 0x28
-DEV_LED = 0x17
 
 DEVICE_TYPES = {
     DEV_DCS: "DISTANCE_COLOR_SENSOR",

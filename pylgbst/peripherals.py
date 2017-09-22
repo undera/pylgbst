@@ -170,7 +170,7 @@ class EncodedMotor(Peripheral):
             log.warning("Speed cannot be more than 1")
             relative = 1
 
-        absolute = round(relative * 100)
+        absolute = round(relative * 100)  # scale of 100 is proven by experiments
         if absolute < 0:
             absolute += 255
         return int(absolute)
