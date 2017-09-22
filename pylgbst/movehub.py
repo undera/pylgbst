@@ -20,14 +20,15 @@ class MoveHub(object):
     :type led: LED
     :type tilt_sensor: TiltSensor
     :type button: Button
-    :type amperage: Voltage
+    :type amperage: Amperage
+    :type voltage: Voltage
     :type color_distance_sensor: pylgbst.peripherals.ColorDistanceSensor
-    :type motor_external: EncodedMotor
     :type port_C: Peripheral
     :type port_D: Peripheral
     :type motor_A: EncodedMotor
     :type motor_B: EncodedMotor
     :type motor_AB: EncodedMotor
+    :type motor_external: EncodedMotor
     """
 
     def __init__(self, connection=None):
