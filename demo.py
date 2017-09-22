@@ -150,17 +150,25 @@ def demo_motor_sensors(movehub):
         movehub.motor_external.unsubscribe(callback_e)
 
 
-def demo_battery(movehub):
-    def callback(value):
-        log.info("Battery voltage: %s", value)
+def demo_voltage(movehub):
+    def callback1(value):
+        log.info("Amperage: %s", value)
 
-    movehub.battery.subscribe(callback, mode=Battery.MODE2)
-    time.sleep(1)
-    movehub.battery.unsubscribe(callback)
+    def callback2(value):
+        log.info("Voltage: %s", value)
+
+    movehub.amperage.subscribe(callback1, mode=Amperage.MODE1, granularity=0)
+    movehub.amperage.subscribe(callback1, mode=Amperage.MODE1, granularity=1)
+
+    movehub.voltage.subscribe(callback2, mode=Voltage.MODE1, granularity=0)
+    movehub.voltage.subscribe(callback2, mode=Voltage.MODE1, granularity=1)
+    time.sleep(5)
+    movehub.amperage.unsubscribe(callback1)
+    movehub.voltage.unsubscribe(callback2)
 
 
 def demo_all(movehub):
-    demo_battery(movehub)
+    demo_voltage(movehub)
     demo_led_colors(movehub)
     demo_motors_timed(movehub)
     demo_motors_angled(movehub)
