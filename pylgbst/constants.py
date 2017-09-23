@@ -1,3 +1,23 @@
+import binascii
+import struct
+import sys
+
+if sys.version_info[0] == 2:
+    import Queue as queue
+else:
+    import queue as queue
+
+queue = queue  # just to use it
+
+
+def str2hex(data):  # TODO: eliminate it
+    return binascii.hexlify(data).decode("utf8")
+
+
+def get_byte(seq, index):
+    return struct.unpack("<B", seq[index:index + 1])[0]
+
+
 # GENERAL
 MOVE_HUB_HARDWARE_HANDLE = 0x0E
 MOVE_HUB_HARDWARE_UUID = '00001624-1212-efde-1623-785feabcd123'

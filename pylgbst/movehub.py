@@ -2,7 +2,7 @@ import logging
 import time
 from struct import pack
 
-from pylgbst.comms import BLEConnection, str2hex, get_byte
+from pylgbst.comms import BLEConnection
 from pylgbst.constants import *
 from pylgbst.peripherals import Button, EncodedMotor, ColorDistanceSensor, LED, TiltSensor, Voltage, Peripheral, \
     Amperage
@@ -30,6 +30,10 @@ class MoveHub(object):
     :type motor_AB: EncodedMotor
     :type motor_external: EncodedMotor
     """
+
+    DEV_STATUS_DETACHED = 0x00
+    DEV_STATUS_DEVICE = 0x01
+    DEV_STATUS_GROUP = 0x02
 
     def __init__(self, connection=None):
         if not connection:
@@ -132,12 +136,26 @@ class MoveHub(object):
 
     def _handle_port_info(self, data):
         port = get_byte(data, 3)
-        dev_type = get_byte(data, 5)
+        status = get_byte(data, 4)
 
-        if port in PORTS and dev_type in DEVICE_TYPES:
-            log.debug("Device %s at port %s", DEVICE_TYPES[dev_type], PORTS[port])
+        if status == self.DEV_STATUS_DETACHED:
+            log.info("Detached %s", self.devices[port])
+            self.devices[port] = None
+        elif status == self.DEV_STATUS_DEVICE or status == self.DEV_STATUS_GROUP:
+            dev_type = get_byte(data, 5)
+            self._attach_device(dev_type, port)
         else:
-            log.warning("Device 0x%x at port 0x%x", dev_type, port)
+            raise ValueError("Unhandled device status: %s", status)
+
+        self._update_field(port)
+        if self.devices[port] is None:
+            del self.devices[port]
+
+    def _attach_device(self, dev_type, port):
+        if port in PORTS and dev_type in DEVICE_TYPES:
+            log.info("Attached %s at port %s", DEVICE_TYPES[dev_type], PORTS[port])
+        else:
+            log.warning("Attached device 0x%x at port 0x%x", dev_type, port)
 
         if dev_type == DEV_MOTOR:
             self.devices[port] = EncodedMotor(self, port)
@@ -156,9 +174,10 @@ class MoveHub(object):
         elif dev_type == DEV_VOLTAGE:
             self.devices[port] = Voltage(self, port)
         else:
-            log.debug("Unhandled peripheral type 0x%x on port 0x%x", dev_type, port)
+            log.warning("Unhandled peripheral type 0x%x on port 0x%x", dev_type, port)
             self.devices[port] = Peripheral(self, port)
 
+    def _update_field(self, port):
         if port == PORT_A:
             self.motor_A = self.devices[port]
         elif port == PORT_B:
@@ -178,7 +197,7 @@ class MoveHub(object):
         elif port == PORT_VOLTAGE:
             self.voltage = self.devices[port]
         else:
-            log.debug("Unhandled port: %s", PORTS[port])
+            log.warning("Unhandled port: %s", PORTS[port])
 
     def shutdown(self):
         cmd = pack("<B", PACKET_VER) + pack("<B", MSG_DEVICE_SHUTDOWN)

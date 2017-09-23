@@ -4,9 +4,6 @@ import traceback
 from struct import pack, unpack
 from threading import Thread
 
-from six.moves import queue
-
-from pylgbst.comms import str2hex
 from pylgbst.constants import *
 
 log = logging.getLogger('peripherals')
@@ -29,7 +26,6 @@ class Peripheral(object):
         self._working = False
         self._subscribers = set()
         self._port_subscription_mode = None
-        # noinspection PyUnresolvedReferences
         self._incoming_port_data = queue.Queue()
         thr = Thread(target=self._queue_reader)
         thr.setDaemon(True)

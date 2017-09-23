@@ -5,30 +5,15 @@ import binascii
 import json
 import logging
 import socket
-import sys
 import traceback
 from abc import abstractmethod
 from binascii import unhexlify
+from gattlib import DiscoveryService, GATTRequester
 from threading import Thread
 
-from gattlib import DiscoveryService, GATTRequester
-from six.moves import queue
-
-from pylgbst.constants import MSG_DEVICE_SHUTDOWN
+from pylgbst.constants import MSG_DEVICE_SHUTDOWN, queue, str2hex
 
 log = logging.getLogger('comms')
-
-
-def str2hex(data):  # TODO: eliminate it
-    return binascii.hexlify(data).decode("utf8")
-
-
-if sys.version_info[0] == 2:
-    def get_byte(seq, index):
-        return ord(seq[index])
-else:
-    def get_byte(seq, index):
-        return seq[index]
 
 LEGO_MOVE_HUB = "LEGO Move Hub"
 
@@ -44,7 +29,6 @@ class Requester(GATTRequester):
         super(Requester, self).__init__(p_object, *args, **kwargs)
         self.notification_sink = None
 
-        # noinspection PyUnresolvedReferences
         self._notify_queue = queue.Queue()  # this queue is to minimize time spent in gattlib C code
         thr = Thread(target=self._dispatch_notifications)
         thr.setDaemon(True)
