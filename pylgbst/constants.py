@@ -10,12 +10,16 @@ else:
 queue = queue  # just to use it
 
 
-def str2hex(data):  # TODO: eliminate it
+def str2hex(data):
     return binascii.hexlify(data).decode("utf8")
 
 
-def get_byte(seq, index):
+def usbyte(seq, index):
     return struct.unpack("<B", seq[index:index + 1])[0]
+
+
+def ushort(seq, index):
+    return struct.unpack("<H", seq[index:index + 2])[0]
 
 
 # GENERAL

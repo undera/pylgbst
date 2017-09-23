@@ -84,7 +84,7 @@ class MoveHub(object):
         data = data[3:]
         log.debug("Notification on %s: %s", handle, str2hex(orig))
 
-        msg_type = get_byte(data, 2)
+        msg_type = usbyte(data, 2)
 
         if msg_type == MSG_PORT_INFO:
             self._handle_port_info(data)
@@ -93,7 +93,7 @@ class MoveHub(object):
         elif msg_type == MSG_SENSOR_DATA:
             self._handle_sensor_data(data)
         elif msg_type == MSG_SENSOR_SUBSCRIBE_ACK:
-            port = get_byte(data, 3)
+            port = usbyte(data, 3)
             log.debug("Sensor subscribe ack on port %s", PORTS[port])
             self.devices[port].finished()
         elif msg_type == MSG_PORT_CMD_ERROR:
@@ -107,13 +107,13 @@ class MoveHub(object):
             log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
 
     def _handle_device_info(self, data):
-        if get_byte(data, 3) == 2:
+        if usbyte(data, 3) == 2:
             self.button.handle_port_data(data)
         else:
             log.warning("Unhandled device info: %s", str2hex(data))
 
     def _handle_sensor_data(self, data):
-        port = get_byte(data, 3)
+        port = usbyte(data, 3)
         if port not in self.devices:
             log.warning("Notification on port with no device: %s", PORTS[port])
             return
@@ -122,8 +122,8 @@ class MoveHub(object):
         device.queue_port_data(data)
 
     def _handle_port_status(self, data):
-        port = get_byte(data, 3)
-        status = get_byte(data, 4)
+        port = usbyte(data, 3)
+        status = usbyte(data, 4)
 
         if status == STATUS_STARTED:
             self.devices[port].started()
@@ -135,14 +135,14 @@ class MoveHub(object):
             log.warning("Unhandled status value: 0x%x", status)
 
     def _handle_port_info(self, data):
-        port = get_byte(data, 3)
-        status = get_byte(data, 4)
+        port = usbyte(data, 3)
+        status = usbyte(data, 4)
 
         if status == self.DEV_STATUS_DETACHED:
             log.info("Detached %s", self.devices[port])
             self.devices[port] = None
         elif status == self.DEV_STATUS_DEVICE or status == self.DEV_STATUS_GROUP:
-            dev_type = get_byte(data, 5)
+            dev_type = usbyte(data, 5)
             self._attach_device(dev_type, port)
         else:
             raise ValueError("Unhandled device status: %s", status)
