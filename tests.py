@@ -59,6 +59,9 @@ class HubMock(MoveHub):
     def _wait_for_devices(self):
         pass
 
+    def _report_status(self):
+        pass
+
 
 class GeneralTest(unittest.TestCase):
     def _wait_notifications_handled(self, hub):

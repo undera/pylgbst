@@ -36,9 +36,8 @@ class Peripheral(object):
         return "%s on port %s" % (self.__class__.__name__, PORTS[self.port] if self.port in PORTS else self.port)
 
     def _write_to_hub(self, msg_type, params):
-        cmd = pack("<B", PACKET_VER) + pack("<B", msg_type) + pack("<B", self.port)
-        cmd += params
-        self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE, pack("<B", len(cmd) + 1) + cmd)
+        cmd = pack("<B", self.port) + params
+        self.parent.send(msg_type, cmd)
 
     def _port_subscribe(self, mode, granularity, enable):
         params = pack("<B", mode)
@@ -373,7 +372,7 @@ class ColorDistanceSensor(Peripheral):
 
 class Voltage(Peripheral):
     MODE1 = 0x00  # give less frequent notifications
-    MODE2 = 0x01  # give more frequent notifications, maybe different voltage (cpu vs board?)
+    MODE2 = 0x01  # give more frequent notifications, maybe different value (cpu vs board?)
 
     def __init__(self, parent, port):
         super(Voltage, self).__init__(parent, port)
@@ -383,7 +382,7 @@ class Voltage(Peripheral):
         super(Voltage, self).subscribe(callback, mode, granularity)
 
     # we know only voltage subscription from it. is it really battery or just onboard voltage?
-    # device has turned off on 1b0e00060045 3b a800 - 168 dec / 1b0e00060045 3c 0803 / 1b0e000600453c 0703
+    # device has turned off on 1b0e00060045 3c 0803 / 1b0e000600453c 0703
     # moderate 9v ~= 3840
     # good 7.5v ~= 3892
     # liion 5v ~= 2100
@@ -397,7 +396,7 @@ class Voltage(Peripheral):
 
 class Amperage(Peripheral):
     MODE1 = 0x00  # give less frequent notifications
-    MODE2 = 0x01  # give more frequent notifications, maybe different voltage (cpu vs board?)
+    MODE2 = 0x01  # give more frequent notifications, maybe different value (cpu vs board?)
 
     def __init__(self, parent, port):
         super(Amperage, self).__init__(parent, port)
@@ -421,9 +420,8 @@ class Button(Peripheral):
         super(Button, self).__init__(parent, 0)  # fake port 0
 
     def subscribe(self, callback, mode=None, granularity=1, async=False):
-        cmd = pack("<B", PACKET_VER) + pack("<B", MSG_DEVICE_INFO) + b'\x02\x02'
         self.started()
-        self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE, pack("<B", len(cmd) + 1) + cmd)
+        self.parent.send(MSG_DEVICE_INFO, pack('<B', INFO_BUTTON_STATE) + pack('<B', INFO_ACTION_SUBSCRIBE))
         self._wait_sync(async)
 
         if callback:
@@ -434,8 +432,7 @@ class Button(Peripheral):
             self._subscribers.remove(callback)
 
         if not self._subscribers:
-            cmd = pack("<B", PACKET_VER) + pack("<B", MSG_DEVICE_INFO) + b'\x02\x03'
-            self.parent.connection.write(MOVE_HUB_HARDWARE_HANDLE, pack("<B", len(cmd) + 1) + cmd)
+            self.parent.send(MSG_DEVICE_INFO, pack('<B', INFO_BUTTON_STATE) + pack('<B', INFO_ACTION_UNSUBSCRIBE))
 
     def handle_port_data(self, data):
         param = usbyte(data, 5)

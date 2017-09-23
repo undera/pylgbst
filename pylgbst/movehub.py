@@ -40,6 +40,7 @@ class MoveHub(object):
             connection = BLEConnection()
 
         self.connection = connection
+        self.info = {}
         self.devices = {}
 
         # shorthand fields
@@ -59,6 +60,11 @@ class MoveHub(object):
         self.connection.set_notify_handler(self._notify)
 
         self._wait_for_devices()
+        self._report_status()
+
+    def send(self, msg_type, payload):
+        cmd = pack("<B", PACKET_VER) + pack("<B", msg_type) + payload
+        self.connection.write(MOVE_HUB_HARDWARE_HANDLE, pack("<B", len(cmd) + 1) + cmd)
 
     def _wait_for_devices(self):
         self.connection.write(ENABLE_NOTIFICATIONS_HANDLE, ENABLE_NOTIFICATIONS_VALUE)
@@ -107,8 +113,12 @@ class MoveHub(object):
             log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
 
     def _handle_device_info(self, data):
-        if usbyte(data, 3) == 2:
+        kind = usbyte(data, 3)
+        if kind == 2:
             self.button.handle_port_data(data)
+
+        if usbyte(data, 4) == 0x06:
+            self.info[kind] = data[5:]
         else:
             log.warning("Unhandled device info: %s", str2hex(data))
 
@@ -200,5 +210,27 @@ class MoveHub(object):
             log.warning("Unhandled port: %s", PORTS[port])
 
     def shutdown(self):
-        cmd = pack("<B", PACKET_VER) + pack("<B", MSG_DEVICE_SHUTDOWN)
-        self.connection.write(MOVE_HUB_HARDWARE_HANDLE, pack("<B", len(cmd) + 1) + cmd)
+        self.send(MSG_DEVICE_SHUTDOWN, b'')
+
+    def _report_status(self):
+        # TODO: add firmware version
+        log.info("%s by %s", self.info_get(INFO_DEVICE_NAME), self.info_get(INFO_MANUFACTURER))
+
+        self.__voltage = 0
+
+        def on_voltage(value):
+            self.__voltage = value
+
+        self.voltage.subscribe(on_voltage, granularity=0)
+        while not self.__voltage:
+            time.sleep(0.01)
+        self.voltage.unsubscribe(on_voltage)
+        log.info("Voltage: %d%%", self.__voltage * 100)
+
+    def info_get(self, info_type):
+        self.info[info_type] = None
+        self.send(MSG_DEVICE_INFO, pack("<B", info_type) + pack("<B", INFO_ACTION_GET))
+        while self.info[info_type] is None:  # FIXME: will hang forever on error
+            time.sleep(0.05)
+
+        return self.info[info_type]

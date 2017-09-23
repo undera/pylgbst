@@ -77,7 +77,7 @@ class BLEConnection(Connection):
         super(BLEConnection, self).__init__()
         self.requester = None
 
-    def connect(self, bt_iface_name='hci0'):
+    def connect(self, bt_iface_name='hci0', hub_mac=None):
         service = DiscoveryService(bt_iface_name)
 
         while not self.requester:
@@ -86,7 +86,7 @@ class BLEConnection(Connection):
             log.debug("Devices: %s", devices)
 
             for address, name in devices.items():
-                if name == LEGO_MOVE_HUB:
+                if name == LEGO_MOVE_HUB or hub_mac == address:
                     logging.info("Found %s at %s", name, address)
                     self.requester = Requester(address, True, bt_iface_name)
                     break
