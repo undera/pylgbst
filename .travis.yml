@@ -17,7 +17,7 @@ addons:
     - libglib2.0-dev
 install:
 - pip install codecov gattlib
-script: coverage run --source=. `which nosetests` .
+script: coverage run --source=. `which nosetests` . --nocapture
 after_success:
 - coverage report -m
 - codecov
