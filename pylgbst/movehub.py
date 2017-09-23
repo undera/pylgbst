@@ -76,7 +76,7 @@ class MoveHub(object):
             if None not in builtin_devices:
                 return
             log.debug("Waiting for builtin devices to appear: %s", builtin_devices)
-            time.sleep(1)
+            time.sleep(0.05)
         log.warning("Got only these devices: %s", builtin_devices)
         raise RuntimeError("Failed to obtain all builtin devices")
 
@@ -163,9 +163,9 @@ class MoveHub(object):
 
     def _attach_device(self, dev_type, port):
         if port in PORTS and dev_type in DEVICE_TYPES:
-            log.info("Attached %s at port %s", DEVICE_TYPES[dev_type], PORTS[port])
+            log.info("Attached %s on port %s", DEVICE_TYPES[dev_type], PORTS[port])
         else:
-            log.warning("Attached device 0x%x at port 0x%x", dev_type, port)
+            log.warning("Attached device 0x%x on port 0x%x", dev_type, port)
 
         if dev_type == DEV_MOTOR:
             self.devices[port] = EncodedMotor(self, port)
@@ -223,7 +223,7 @@ class MoveHub(object):
 
         self.voltage.subscribe(on_voltage, granularity=0)
         while not self.__voltage:
-            time.sleep(0.01)
+            time.sleep(0.05)
         self.voltage.unsubscribe(on_voltage)
         log.info("Voltage: %d%%", self.__voltage * 100)
 
