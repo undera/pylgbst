@@ -138,6 +138,10 @@ class GeneralTest(unittest.TestCase):
         conn.notifications.append((14, '1b0e00 0f00 8202 01'))
         conn.notifications.append((14, '1b0e00 0f00 8202 0a'))
 
+        self._inject_notification(conn, '1b0e00 1200 0101 06 4c45474f204d6f766520487562', 1)
+        self._inject_notification(conn, '1b0e00 1200 0108 06 4c45474f204d6f766520487562', 2)
+        self._inject_notification(conn, '1b0e00 0900 47 3c 0227003738', 3)
+        self._inject_notification(conn, '1b0e00 0600 45 3c 020d', 4)
         hub = MoveHub(conn)
         # demo_all(hub)
         self._wait_notifications_handled(hub)
@@ -181,6 +185,9 @@ class GeneralTest(unittest.TestCase):
     def _inject_notification(self, hub, notify, pause):
         def inject():
             time.sleep(pause)
-            hub.notify_mock.append((HANDLE, notify))
+            if isinstance(hub, ConnectionMock):
+                hub.notifications.append((HANDLE, notify))
+            else:
+                hub.notify_mock.append((HANDLE, notify))
 
         Thread(target=inject).start()
