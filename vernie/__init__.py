@@ -3,7 +3,6 @@ import hashlib
 import os
 import re
 import subprocess
-import sys
 
 from pylgbst import *
 from pylgbst.comms import DebugServerConnection
@@ -40,7 +39,7 @@ SPEECH_LANG_MAP = {
         'ready': "Vernie the Robot is ready.",
         "commands help": "Available commands are: "
                          "forward, backward, turn left, turn right, "
-                         "head left, head right, head straight and say",
+                         "head left, head right, head straight, shot and say",
         "finished": "Thank you! Robot is now turning off"
     },
     "ru": {
@@ -48,7 +47,7 @@ SPEECH_LANG_MAP = {
         "type commands": "печатайте команды",
         "ok": "хорошо",
         "commands help": "Доступные команды это: вперёд, назад, поворот влево, поворот вправо, "
-                         "голову влево, голову вправо, голову прямо, скажи",
+                         "голову влево, голову вправо, голову прямо, выстрел, скажи",
         "Finished": "Робот завершает работу. Спасибо!",
         "commands from file": "Исполняю команды из файла",
     }
@@ -113,6 +112,11 @@ class Vernie(MoveHub):
         self.head(STRAIGHT, speed=0.5)
         self.motor_AB.angled(distance * VERNIE_SINGLE_MOVE, speed * direction, speed * direction)
 
+    def shot(self):
+        self.head(RIGHT, 60, speed=1)
+        self.head(STRAIGHT)
+        self.head(STRAIGHT)
+
     def interpret_command(self, cmd, confirm):
         cmd = cmd.strip().lower().split(' ')
         if cmd[0] in ("head", "голова", "голова"):
@@ -127,7 +131,10 @@ class Vernie(MoveHub):
                 self.head(STRAIGHT)
         elif cmd[0] in ("say", "скажи", "сказать"):
             say(' '.join(cmd[1:]))
-        elif cmd[0] in ("end", "конец"):
+        elif cmd[0] in ("fire", "shot", "огонь", "выстрел"):
+            say("fire!")
+            self.shot()
+        elif cmd[0] in ("end", "finish", "конец", "стоп"):
             self.say("finished")
             raise KeyboardInterrupt()
         elif cmd[0] in ("forward", "вперёд", "вперед"):
