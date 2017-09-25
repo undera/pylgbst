@@ -12,6 +12,7 @@ try:
 
 
     def say(text):
+        print("%s" % text)
         if isinstance(text, str):
             text = text.decode("utf-8")
         md5 = hashlib.md5(text.encode('utf-8')).hexdigest()
@@ -28,7 +29,7 @@ try:
             subprocess.call("mplayer %s" % fname, shell=True, stderr=fnull, stdout=fnull)
 except BaseException:
     def say(text):
-        sys.stdout.write("%s\n", text)
+        print("%s" % text)
 
 forward = FORWARD = right = RIGHT = 1
 backward = BACKWARD = left = LEFT = -1
