@@ -104,6 +104,8 @@ class MoveHub(object):
             self.devices[port].finished()
         elif msg_type == MSG_PORT_CMD_ERROR:
             log.warning("Command error: %s", str2hex(data[3:]))
+            port = usbyte(data, 3)
+            self.devices[port].finished()
         elif msg_type == MSG_DEVICE_SHUTDOWN:
             log.warning("Device reported shutdown: %s", str2hex(data))
             raise KeyboardInterrupt("Device shutdown")
@@ -141,6 +143,7 @@ class MoveHub(object):
             self.devices[port].finished()
         elif status == STATUS_CONFLICT:
             log.warning("Command conflict on port %s", PORTS[port])
+            self.devices[port].finished()
         else:
             log.warning("Unhandled status value: 0x%x", status)
 

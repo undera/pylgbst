@@ -189,5 +189,5 @@ if __name__ == '__main__':
         connection = BLEConnection().connect()
 
     hub = MoveHub(connection)
-
-    demo_all(hub)
+    sleep(10000)
+    #demo_all(hub)

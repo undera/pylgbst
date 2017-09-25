@@ -287,8 +287,6 @@ Then push green button on MoveHub, so permanent BLE connection will be establish
 
 ## Roadmap & TODO
 
-- work out completely synchronous command model - with either command error or confirmation
-- organize requesting and printing device info on startup - firmware version at least
 - document all API methods
 - make sure unit tests cover all important code
 - make debug server to re-establish BLE connection on loss
