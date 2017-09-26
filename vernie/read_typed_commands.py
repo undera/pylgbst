@@ -1,4 +1,5 @@
 from vernie import *
+import six
 
 robot = Vernie()
 
@@ -11,5 +12,5 @@ def confirmation(_):
 
 while True:
     # noinspection PyUnresolvedReferences
-    cmd = six.moves.input("COMMAND >")
+    cmd = six.moves.input("> ")
     robot.interpret_command(cmd, confirmation)

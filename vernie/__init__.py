@@ -44,13 +44,14 @@ SPEECH_LANG_MAP = {
         "finished": "Thank you! Robot is now turning off"
     },
     "ru": {
-        "ready": "Робот Веернии 01 готов к работе",
+        "ready": "Робот Веернии готов к работе",
         "type commands": "печатайте команды",
         "ok": "хорошо",
-        "commands help": "Доступные команды это: вперёд, назад, поворот влево, поворот вправо, "
+        "commands help": "Доступные команды это: вперёд, назад, влево, вправо, "
                          "голову влево, голову вправо, голову прямо, выстрел, скажи",
         "Finished": "Робот завершает работу. Спасибо!",
         "commands from file": "Исполняю команды из файла",
+        "fire": "Выстрел!",
     }
 }
 
@@ -114,13 +115,13 @@ class Vernie(MoveHub):
         self.motor_AB.angled(distance * VERNIE_SINGLE_MOVE, speed * direction, speed * direction)
 
     def shot(self):
-        self.head(RIGHT, 60, speed=1)
+        self.motor_external.timed(0.5)
         self.head(STRAIGHT)
         self.head(STRAIGHT)
 
     def interpret_command(self, cmd, confirm):
         cmd = cmd.strip().lower().split(' ')
-        if cmd[0] in ("head", "голова", "голова"):
+        if cmd[0] in ("head", "голова", "голову"):
             if cmd[-1] in ("right", "вправо", "направо"):
                 confirm(cmd)
                 self.head(RIGHT)
@@ -133,7 +134,7 @@ class Vernie(MoveHub):
         elif cmd[0] in ("say", "скажи", "сказать"):
             say(' '.join(cmd[1:]))
         elif cmd[0] in ("fire", "shot", "огонь", "выстрел"):
-            say("fire!")
+            say("fire")
             self.shot()
         elif cmd[0] in ("end", "finish", "конец", "стоп"):
             self.say("finished")
@@ -162,6 +163,12 @@ class Vernie(MoveHub):
             else:
                 confirm(cmd)
                 self.turn(RIGHT, degrees=180)
-        else:
+        elif cmd[0] in ("right", "вправо", "направо"):
+            confirm(cmd)
+            self.turn(RIGHT)
+        elif cmd[0] in ("left", "влево", "налево"):
+            confirm(cmd)
+            self.turn(LEFT)
+        elif cmd[0]:
             self.say("Unknown command")
             self.say("commands help")
