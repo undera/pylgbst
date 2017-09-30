@@ -4,9 +4,9 @@ _Move Hub is central controller block of [LEGO® Boost Robotics Set](https://www
 
 In fact, Move Hub is just Bluetooth hardware, all manipulations are done with commands passed through Bluetooth Low Energy (BLE) wireless protocol. One of ways to issue these commands is to write Python program using this library.
 
-Best way to start is to look into [`demo.py`](demo.py) file, and run it (assuming you have installed library).
+Best way to start is to look into [`demo.py`](examples/demo.py) file, and run it (assuming you have installed library).
 
-If you have Vernie assembled, you might run scripts from [`vernie`](vernie/) directory.
+If you have Vernie assembled, you might run scripts from [`vernie`](examples/vernie/) directory.
 
 Demonstrational video:
 

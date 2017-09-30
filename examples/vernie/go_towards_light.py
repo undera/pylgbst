@@ -1,4 +1,4 @@
-from vernie import *
+from examples.vernie import *
 
 logging.basicConfig(level=logging.INFO)
 

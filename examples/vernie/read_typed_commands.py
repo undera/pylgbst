@@ -1,5 +1,6 @@
-from vernie import *
 import six
+
+from examples.vernie import *
 
 robot = Vernie()
 

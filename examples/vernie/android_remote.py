@@ -9,8 +9,8 @@ import logging
 import socket
 import time
 
+from examples.vernie import Vernie
 from pylgbst.peripherals import ColorDistanceSensor
-from vernie import Vernie
 
 host = ''
 port = 8999
