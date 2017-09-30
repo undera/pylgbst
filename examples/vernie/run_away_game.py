@@ -1,4 +1,4 @@
-from examples.vernie import *
+from . import *
 
 robot = Vernie()
 running = True

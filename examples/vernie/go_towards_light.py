@@ -1,4 +1,4 @@
-from examples.vernie import *
+from . import *
 
 logging.basicConfig(level=logging.INFO)
 

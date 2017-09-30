@@ -1,6 +1,6 @@
 import six
 
-from examples.vernie import *
+from . import *
 
 robot = Vernie()
 
