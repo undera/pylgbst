@@ -54,7 +54,10 @@ class Tracer(object):
         ix, iy = numpy.where(self.mark == False)
         return len(ix) or len(iy)
 
-    def _spiral_till_pixel(self):
+    def is_src(self, posx, posy):
+        return self.src[posy][posx] < self.threshold
+
+    def _spiral_till_pixel(self):  # TODO: optimize it, maybe use different algo (not spiral, just walkthrough?)
         radius = 1
         direction = 0
         offset = 0
@@ -62,7 +65,7 @@ class Tracer(object):
             in_lower = self.posy < self.height and self.posx < self.width
             in_upper = self.posy >= 0 and self.posx >= 0
             if in_lower and in_upper and not self.mark[self.posy][self.posx]:
-                if self.src[self.posy][self.posx] < self.threshold:
+                if self.is_src(self.posx, self.posy):
                     return True
 
                 self.mark[self.posy][self.posx] = True
@@ -80,7 +83,7 @@ class Tracer(object):
                 self.posx += 0
                 self.posy += -1
             else:
-                pass
+                raise ValueError()
 
             offset += 1
             if offset >= radius:
@@ -93,16 +96,62 @@ class Tracer(object):
                 if direction in (0, 2):
                     radius += 1
 
-        logging.debug("End of image")
+        logging.info("End of image")
         return False
 
     def _move_while_you_can(self):
         # time.sleep(0.1)
         logging.debug("%s:%s=%s", self.posy, self.posx, self.src[self.posy][self.posx])
-        self.mark[self.posy][self.posx] = True
+
+        dirs = self._check_directions()
+        dx, dy, length = self._get_best_direction(dirs)
+
         self.dst[self.posy][self.posx] = True
-        # self.posx += 1
-        # self.posy += 1
+        self.mark[self.posy][self.posx] = True
+        for n in range(0, length):
+            self.posy += dy
+            self.posx += dx
+            self.dst[self.posy][self.posx] = True
+            self.mark[self.posy][self.posx] = True
+
+    def _check_directions(self):
+        dirs = {
+            -1: {-1: 0, 0: 0, 1: 0},
+            0: {-1: 0, 0: 0, 1: 0},
+            1: {-1: 0, 0: 0, 1: 0},
+        }
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                if dy == 0 and dx == 0:
+                    continue
+
+                length = 1
+                while True:
+                    cx = self.posx + length * dx
+                    cy = self.posy + length * dy
+
+                    if not (0 <= cx < self.width) or not (0 <= cy < self.height):
+                        break
+
+                    if not self.is_src(cx, cy) or self.mark[cy][cx]:
+                        break
+
+                    dirs[dy][dx] = length
+                    length += 1
+
+        return dirs
+
+    def _get_best_direction(self, dirs):
+        bestlen = 0
+        bestx = 0
+        besty = 0
+        for y in dirs:
+            for x in dirs[y]:
+                if dirs[y][x] > bestlen:
+                    bestlen = dirs[y][x]
+                    bestx = x
+                    besty = y
+        return bestx, besty, bestlen
 
 
 class TracerVisualizer(object):
@@ -117,7 +166,7 @@ class TracerVisualizer(object):
 
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(nrows=2, ncols=2)
         ax1.imshow(tracer.orig)
-        ax2.imshow(tracer.src)
+        ax2.imshow(tracer.src, cmap='binary')
         plt.show(block=False)
 
         thr = Thread(target=tracer.trace)
@@ -128,12 +177,12 @@ class TracerVisualizer(object):
             ax3.set_title("%s:%s" % (tracer.posx, tracer.posy))
             ax3.imshow(tracer.mark, cmap='gray')
             ax4.imshow(tracer.dst, cmap='gray')
-            plt.pause(0.5)
+            plt.pause(1)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    trc = Tracer("test1.png")
+    logging.basicConfig(level=logging.INFO)
+    trc = Tracer("test2.png")
 
     TracerVisualizer(trc).run()
     time.sleep(5)
