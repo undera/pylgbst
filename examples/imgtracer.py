@@ -1,5 +1,6 @@
 import logging
 import matplotlib.pyplot as plt
+import time
 from threading import Thread
 
 import numpy
@@ -9,21 +10,42 @@ from PIL import Image
 class Tracer(object):
     def __init__(self, fname):
         super(Tracer, self).__init__()
+        self.threshold = 64
         self.orig = Image.open(fname)
-        self.conv1 = self.orig.convert("1")
+        self.conv1 = self.remove_transparency(self.orig)
+        self.conv1 = self.conv1.convert("L")
         self.src = numpy.asarray(self.conv1)
         self.dst = numpy.copy(self.src)
         self.dst.fill(False)
         self.mark = numpy.copy(self.dst)
         # start in center
-        self.height, self.width = self.dst.shape
+        self.height, self.width = self.dst.shape[0:2]
         self.posy = self.height / 2
         self.posx = self.width / 2
+
+    def remove_transparency(self, im, bg_colour=(255, 255, 255)):
+        # from https://stackoverflow.com/questions/35859140/remove-transparency-alpha-from-any-image-using-pil
+        # Only process if image has transparency (http://stackoverflow.com/a/1963146)
+        if im.mode in ('RGBA', 'LA') or (im.mode == 'P' and 'transparency' in im.info):
+
+            # Need to convert to RGBA if LA format due to a bug in PIL (http://stackoverflow.com/a/1963146)
+            alpha = im.convert('RGBA').split()[-1]
+
+            # Create a new background image of our matt color.
+            # Must be RGBA because paste requires both images have the same format
+            # (http://stackoverflow.com/a/8720632  and  http://stackoverflow.com/a/9459208)
+            bg = Image.new("RGBA", im.size, bg_colour + (255,))
+            bg.paste(im, mask=alpha)
+            return bg
+
+        else:
+            return im
 
     def trace(self):
         while self._has_unchecked_pixels():
             # go circles to find a pixel in src
-            self._spiral_till_pixel()
+            if not self._spiral_till_pixel():
+                break
 
             # move until we find new pixels
             self._move_while_you_can()
@@ -40,8 +62,8 @@ class Tracer(object):
             in_lower = self.posy < self.height and self.posx < self.width
             in_upper = self.posy >= 0 and self.posx >= 0
             if in_lower and in_upper and not self.mark[self.posy][self.posx]:
-                if self.src[self.posy][self.posx]:
-                    return
+                if self.src[self.posy][self.posx] < self.threshold:
+                    return True
 
                 self.mark[self.posy][self.posx] = True
 
@@ -71,10 +93,12 @@ class Tracer(object):
                 if direction in (0, 2):
                     radius += 1
 
-        raise KeyboardInterrupt("End of image")  # end of image
+        logging.debug("End of image")
+        return False
 
     def _move_while_you_can(self):
-        logging.debug("%s %s", self.posy, self.posx)
+        # time.sleep(0.1)
+        logging.debug("%s:%s=%s", self.posy, self.posx, self.src[self.posy][self.posx])
         self.mark[self.posy][self.posx] = True
         self.dst[self.posy][self.posx] = True
         # self.posx += 1
@@ -109,6 +133,7 @@ class TracerVisualizer(object):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    trc = Tracer("/tmp/truck.png")
+    trc = Tracer("test1.png")
 
     TracerVisualizer(trc).run()
+    time.sleep(5)
