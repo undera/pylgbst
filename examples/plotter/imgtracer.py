@@ -1,3 +1,4 @@
+import json
 import logging
 import matplotlib.pyplot as plt
 import time
@@ -11,6 +12,7 @@ class Tracer(object):
     def __init__(self, fname):
         super(Tracer, self).__init__()
         self.threshold = 64
+        self.orig_fname = fname
         self.orig = Image.open(fname)
         self.conv1 = self.remove_transparency(self.orig)
         self.conv1 = self.conv1.convert("L")
@@ -19,9 +21,10 @@ class Tracer(object):
         self.dst.fill(False)
         self.mark = numpy.copy(self.dst)
         # start in center
-        self.height, self.width = self.dst.shape[0:2]
+        self.height, self.width = self.dst.shanape[0:2]
         self.posy = self.height / 2
         self.posx = self.width / 2
+        self.lines = []
 
     def remove_transparency(self, im, bg_colour=(255, 255, 255)):
         # from https://stackoverflow.com/questions/35859140/remove-transparency-alpha-from-any-image-using-pil
@@ -50,8 +53,12 @@ class Tracer(object):
             # move until we find new pixels
             self._move_while_you_can()
 
+        logging.info("Done")
+        with open(self.orig_fname + ".json", "wt") as fhd:
+            fhd.write(json.dumps(self.lines))
+
     def _has_unchecked_pixels(self):
-        ix, iy = numpy.where(self.mark == False)
+        ix, iy = numpy.where(self.mark == False)  # FIXME: highly inefficient
         return len(ix) or len(iy)
 
     def is_src(self, posx, posy):
@@ -96,18 +103,26 @@ class Tracer(object):
                 if direction in (0, 2):
                     radius += 1
 
-        logging.info("End of image")
         return False
 
     def _move_while_you_can(self):
         # time.sleep(0.1)
         logging.debug("%s:%s=%s", self.posy, self.posx, self.src[self.posy][self.posx])
 
-        dirs = self._check_directions()
+        dirs = self._check_directions()  # TODO: use stack of this knowledge to speed-up walktrough
         dx, dy, length = self._get_best_direction(dirs)
 
         self.dst[self.posy][self.posx] = True
         self.mark[self.posy][self.posx] = True
+
+        line = {
+            "x1": self.posx, "y1": self.posy,
+            "x2": self.posx + dx * length, "y2": self.posy + dy * length,
+            "len": length
+        }
+        self.lines.append(line)
+        logging.info("%s", line)
+
         for n in range(0, length):
             self.posy += dy
             self.posx += dx
@@ -182,7 +197,7 @@ class TracerVisualizer(object):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    trc = Tracer("test2.png")
+    trc = Tracer("test3.png")
 
     TracerVisualizer(trc).run()
     time.sleep(5)
