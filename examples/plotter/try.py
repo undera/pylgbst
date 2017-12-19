@@ -1,49 +1,49 @@
 import logging
 import traceback
 
-from examples.plotter import Plotter, CARET_WIDTH
+from examples.plotter import Plotter, FIELD_WIDTH
 from pylgbst.comms import DebugServerConnection, BLEConnection
 
 
-def cross():
-    plotter.line(CARET_WIDTH, CARET_WIDTH)
-    plotter.move(-CARET_WIDTH, 0)
-    plotter.line(CARET_WIDTH, -CARET_WIDTH)
-
-
 def moves():
-    plotter.move(CARET_WIDTH, CARET_WIDTH)
-    plotter.move(-CARET_WIDTH, -CARET_WIDTH)
+    plotter.move(FIELD_WIDTH, FIELD_WIDTH)
+    plotter.move(-FIELD_WIDTH, -FIELD_WIDTH)
 
-    plotter.move(CARET_WIDTH, 0)
-    plotter.move(-CARET_WIDTH, 0)
-    plotter.move(0, CARET_WIDTH)
-    plotter.move(0, -CARET_WIDTH)
+    plotter.move(FIELD_WIDTH, 0)
+    plotter.move(-FIELD_WIDTH, 0)
+    plotter.move(0, FIELD_WIDTH)
+    plotter.move(0, -FIELD_WIDTH)
+
+
+def cross():
+    plotter.line(FIELD_WIDTH, FIELD_WIDTH)
+    plotter.move(-FIELD_WIDTH, 0)
+    plotter.line(FIELD_WIDTH, -FIELD_WIDTH)
 
 
 def square():
-    plotter.line(CARET_WIDTH, 0)
-    plotter.line(0, CARET_WIDTH)
-    plotter.line(-CARET_WIDTH, 0)
-    plotter.line(0, -CARET_WIDTH)
+    plotter.line(FIELD_WIDTH, 0)
+    plotter.line(0, FIELD_WIDTH)
+    plotter.line(-FIELD_WIDTH, 0)
+    plotter.line(0, -FIELD_WIDTH)
 
 
 def triangle():
-    plotter.line(CARET_WIDTH, 0)
-    plotter.line(0, CARET_WIDTH)
-    plotter.line(-CARET_WIDTH, -CARET_WIDTH)
+    plotter.line(FIELD_WIDTH, 0)
+    plotter.line(0, FIELD_WIDTH)
+    plotter.line(-FIELD_WIDTH, -FIELD_WIDTH)
 
 
 def romb():
-    plotter.move(-CARET_WIDTH * 2, 0)
-    plotter.line(CARET_WIDTH, CARET_WIDTH)
-    plotter.line(CARET_WIDTH, -CARET_WIDTH)
-    plotter.line(-CARET_WIDTH, -CARET_WIDTH)
-    plotter.line(-CARET_WIDTH, CARET_WIDTH)
+    plotter.move(-FIELD_WIDTH, 0)
+    plotter.line(FIELD_WIDTH, FIELD_WIDTH)
+    plotter.line(FIELD_WIDTH, -FIELD_WIDTH)
+    plotter.line(-FIELD_WIDTH, -FIELD_WIDTH)
+    plotter.line(-FIELD_WIDTH, FIELD_WIDTH)
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
 
     try:
         conn = DebugServerConnection()
@@ -52,13 +52,12 @@ if __name__ == '__main__':
         conn = BLEConnection().connect()
 
     plotter = Plotter(conn)
-    #plotter.initialize()
-    # plotter._tool_up() # and plotter._tool_up()
+    plotter.initialize()
 
-    triangle()
     # moves()
-    # square()
-    # cross()
-    # romb()
+    # triangle()
+    square()
+    cross()
+    #romb()
 
     plotter.finalize()

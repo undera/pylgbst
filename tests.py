@@ -1,7 +1,7 @@
 import unittest
 from binascii import unhexlify
 
-from examples.plotter import calc_motor
+from examples.plotter import Plotter
 from pylgbst import *
 from pylgbst.comms import Connection
 from pylgbst.movehub import MoveHub
@@ -195,12 +195,17 @@ class GeneralTest(unittest.TestCase):
 
 
 class TestPlotter(unittest.TestCase):
-    def test_calc(self):
-        self.assertEqual((100, 0, 0.24), calc_motor(100, 100))
-        self.assertEqual((100, 0, 0.24), calc_motor(-100, -100))
-        self.assertEqual((100, 0, 0.24), calc_motor(0, 100))
-        self.assertEqual((100, 0.75, 0), calc_motor(100, 0))
-        self.assertEqual((100, -0.75, 0), calc_motor(-100, 0))
-        self.assertEqual((100, 0, -0.24), calc_motor(0, -100))
-        self.assertEqual((100, 0.75, 0.12), calc_motor(100, 50))
-        self.assertEqual((100, 0.375, 0.24), calc_motor(50, 100))
+    def test_calc1(self):
+        self.assertEqual((100, 1, 1), Plotter.calc_motor(100, 50))
+
+    def test_calc2(self):
+        self.assertEqual((400, 0.25, 1), Plotter.calc_motor(100, 200))
+
+    def test_calc_xoverflow(self):
+        self.assertEqual((400, 0.25, 1), Plotter.calc_motor(10, 900))
+
+    def test_calc3(self):
+        self.assertEqual((100, 1, 0), Plotter.calc_motor(100, 0))
+
+    def test_calc4(self):
+        self.assertEqual((400, 0, 1), Plotter.calc_motor(0, 200))

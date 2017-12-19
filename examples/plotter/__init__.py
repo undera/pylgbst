@@ -5,8 +5,8 @@ import time
 from pylgbst import MoveHub
 from pylgbst.peripherals import EncodedMotor
 
-BASE_SPEED = 0.5
-CARET_WIDTH = 940
+BASE_SPEED = 0.75
+FIELD_WIDTH = 1.1
 
 
 class Plotter(MoveHub):
@@ -24,9 +24,9 @@ class Plotter(MoveHub):
         self.is_tool_down = False
 
     def _reset_caret(self):
-        self.motor_A.timed(0.5, -0.3)
+        self.motor_A.timed(0.5, -0.2)
         self.motor_A.subscribe(self._on_rotate, mode=EncodedMotor.SENSOR_SPEED)
-        self.motor_A.constant(0.3)
+        self.motor_A.constant(0.2)
         count = 0
         max_tries = 50
         while abs(self.__last_rotation_value) > 5 and count < max_tries:
@@ -38,18 +38,18 @@ class Plotter(MoveHub):
         self.motor_A.stop()
         if count >= max_tries:
             raise RuntimeError("Failed to center caret")
-        self.motor_A.angled(-CARET_WIDTH, BASE_SPEED)
+        self.motor_A.timed(FIELD_WIDTH, -BASE_SPEED)
 
     def _on_rotate(self, value):
         logging.debug("Rotation: %s", value)
         self.__last_rotation_value = value
 
     def _tool_down(self):
-        self.motor_external.angled(270, BASE_SPEED)
+        self.motor_external.angled(270, 1)
         self.is_tool_down = True
 
     def _tool_up(self):
-        self.motor_external.angled(-270, BASE_SPEED)
+        self.motor_external.angled(-270, 1)
         self.is_tool_down = False
 
     def finalize(self):
@@ -69,14 +69,14 @@ class Plotter(MoveHub):
         self._transfer_to(movx, movy)
 
     def _transfer_to(self, movx, movy):
-        if self.xpos + movx < -CARET_WIDTH:
+        if self.xpos + movx < -FIELD_WIDTH:
             logging.warning("Invalid xpos: %s", self.xpos)
-            movx += self.xpos - CARET_WIDTH
+            movx += self.xpos - FIELD_WIDTH
 
-        if self.xpos + movx > CARET_WIDTH:
+        if self.xpos + movx > FIELD_WIDTH:
             logging.warning("Invalid xpos: %s", self.xpos)
-            movx -= self.xpos - CARET_WIDTH
-            self.xpos -= self.xpos - CARET_WIDTH
+            movx -= self.xpos - FIELD_WIDTH
+            self.xpos -= self.xpos - FIELD_WIDTH
 
         if not movy and not movx:
             logging.warning("No movement, ignored")
@@ -85,42 +85,30 @@ class Plotter(MoveHub):
         self.xpos += movx
         self.ypos += movy
 
-        angle, speed_a, speed_b = calc_motor(movx, movy)
+        length, speed_a, speed_b = self.calc_motor(movx, movy)
 
-        if not speed_b:
-            self.motor_A.angled(angle, speed_a * BASE_SPEED)
-        elif not speed_a:
-            self.motor_B.angled(angle, speed_b * BASE_SPEED)
-        else:
-            self.motor_AB.angled(angle, speed_a * BASE_SPEED, speed_b * BASE_SPEED)
+        self.motor_AB.timed(length, -speed_a * BASE_SPEED, -speed_b * BASE_SPEED)
 
         # time.sleep(0.5)
 
+    @staticmethod
+    def calc_motor(movx, movy):
+        motor_ratio = 1.15
+        amovx = float(abs(movx))
+        amovy = float(abs(movy))
 
-def calc_motor(movx, movy):
-    amovy = abs(movy)
-    amovx = abs(movx)
-    angle = max(amovx, amovy)
+        length = max(amovx, amovy)
 
-    speed_a = (movx / float(amovx)) if amovx else 0.0
-    speed_b = (movy / float(amovy)) if amovy else 0.0
-    if amovx > amovy:
-        speed_b = (movy / float(amovx)) if movx else 0
-    else:
-        speed_a = (movx / float(amovy)) if movy else 0
+        speed_a = (movx / float(amovx)) if amovx else 0.0
+        speed_b = (movy / float(amovy)) if amovy else 0.0
 
-    if speed_a:
-        speed_b *= 2.75
-    else:
-        angle *= 1.5
+        if amovx >= amovy * motor_ratio:
+            speed_b = movy / amovx * motor_ratio
+        else:
+            speed_a = movx / amovy / motor_ratio
 
-    norm = max(abs(speed_a), abs(speed_b))
-    speed_a /= norm
-    speed_b /= norm
-    angle *= speed_a
+        logging.info("Motor: %s with %s/%s", length, speed_a, speed_b)
+        assert -1 <= speed_a <= 1
+        assert -1 <= speed_b <= 1
 
-    logging.info("Motor: %s with %s/%s", angle, speed_a, speed_b)
-    assert -1 <= speed_a <= 1
-    assert -1 <= speed_b <= 1
-
-    return angle, speed_a, speed_b
+        return length, speed_a, speed_b
