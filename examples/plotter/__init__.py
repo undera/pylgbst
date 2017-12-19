@@ -116,13 +116,13 @@ class Plotter(MoveHub):
 
     def circle(self, radius):
         if not self.is_tool_down:
-           self._tool_down()
+            self._tool_down()
 
         parts = int(2 * math.pi * radius * 5)
         dur = 0.225
         logging.info("Circle of radius %s, %s parts with %s time", radius, parts, dur)
         for x in range(0, parts):
-            speed_a = math.sin(x * 2 * math.pi / parts)
-            speed_b = math.cos(x * 2 * math.pi / parts)
+            speed_a = math.sin(x * 2.0 * math.pi / float(parts))
+            speed_b = math.cos(x * 2.0 * math.pi / float(parts))
             logging.debug("A: %s, B: %s", speed_a, speed_b)
             self.motor_AB.timed(dur, speed_a * BASE_SPEED, -speed_b * BASE_SPEED * MOTOR_RATIO)

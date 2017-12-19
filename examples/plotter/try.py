@@ -42,6 +42,23 @@ def romb():
     plotter.line(-FIELD_WIDTH, FIELD_WIDTH * 2)
 
 
+def circles():
+    plotter.move(FIELD_WIDTH / 5.0, 0)
+    plotter.circle(FIELD_WIDTH / 5.0)
+
+    plotter.move(FIELD_WIDTH / 5.0, 0)
+    plotter.circle(FIELD_WIDTH / 4.0)
+
+    plotter.move(FIELD_WIDTH / 5.0, 0)
+    plotter.circle(FIELD_WIDTH / 3.0)
+
+    plotter.move(FIELD_WIDTH / 5.0, 0)
+    plotter.circle(FIELD_WIDTH / 2.0)
+
+    plotter.move(FIELD_WIDTH / 5.0, 0)
+    plotter.circle(FIELD_WIDTH / 1.0)
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
@@ -61,11 +78,7 @@ if __name__ == '__main__':
         # square()
         # cross()
         # romb()
-        plotter.move(FIELD_WIDTH / 2.0, 0)
-        plotter.circle(FIELD_WIDTH / 2.0)
-
-        plotter.move(FIELD_WIDTH / 2.0, 0)
-        plotter.circle(FIELD_WIDTH)
+        circles()
         pass
     finally:
         plotter.finalize()
