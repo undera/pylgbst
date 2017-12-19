@@ -1,6 +1,7 @@
 import unittest
 from binascii import unhexlify
 
+from examples.plotter import calc_motor
 from pylgbst import *
 from pylgbst.comms import Connection
 from pylgbst.movehub import MoveHub
@@ -191,3 +192,15 @@ class GeneralTest(unittest.TestCase):
                 hub.notify_mock.append((HANDLE, notify))
 
         Thread(target=inject).start()
+
+
+class TestPlotter(unittest.TestCase):
+    def test_calc(self):
+        self.assertEqual((100, 0, 0.24), calc_motor(100, 100))
+        self.assertEqual((100, 0, 0.24), calc_motor(-100, -100))
+        self.assertEqual((100, 0, 0.24), calc_motor(0, 100))
+        self.assertEqual((100, 0.75, 0), calc_motor(100, 0))
+        self.assertEqual((100, -0.75, 0), calc_motor(-100, 0))
+        self.assertEqual((100, 0, -0.24), calc_motor(0, -100))
+        self.assertEqual((100, 0.75, 0.12), calc_motor(100, 50))
+        self.assertEqual((100, 0.375, 0.24), calc_motor(50, 100))

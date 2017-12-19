@@ -81,6 +81,8 @@ class MoveHub(object):
         raise RuntimeError("Failed to obtain all builtin devices")
 
     def _notify(self, handle, data):
+        # 1b0e000500823701
+
         orig = data
 
         if handle != MOVE_HUB_HARDWARE_HANDLE:
