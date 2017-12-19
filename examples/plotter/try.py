@@ -36,14 +36,14 @@ def triangle():
 
 def romb():
     plotter.move(-FIELD_WIDTH, 0)
-    plotter.line(FIELD_WIDTH, FIELD_WIDTH)
-    plotter.line(FIELD_WIDTH, -FIELD_WIDTH)
-    plotter.line(-FIELD_WIDTH, -FIELD_WIDTH)
-    plotter.line(-FIELD_WIDTH, FIELD_WIDTH)
+    plotter.line(FIELD_WIDTH, FIELD_WIDTH * 2)
+    plotter.line(FIELD_WIDTH, -FIELD_WIDTH * 2)
+    plotter.line(-FIELD_WIDTH, -FIELD_WIDTH * 2)
+    plotter.line(-FIELD_WIDTH, FIELD_WIDTH * 2)
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
 
     try:
         conn = DebugServerConnection()
@@ -52,12 +52,20 @@ if __name__ == '__main__':
         conn = BLEConnection().connect()
 
     plotter = Plotter(conn)
+    # plotter._tool_up()
     plotter.initialize()
 
-    # moves()
-    # triangle()
-    square()
-    cross()
-    #romb()
+    try:
+        # moves()
+        # triangle()
+        # square()
+        # cross()
+        # romb()
+        plotter.move(FIELD_WIDTH / 2.0, 0)
+        plotter.circle(FIELD_WIDTH / 2.0)
 
-    plotter.finalize()
+        plotter.move(FIELD_WIDTH / 2.0, 0)
+        plotter.circle(FIELD_WIDTH)
+        pass
+    finally:
+        plotter.finalize()

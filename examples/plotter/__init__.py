@@ -1,4 +1,5 @@
 import logging
+import math
 import sys
 import time
 
@@ -6,7 +7,8 @@ from pylgbst import MoveHub
 from pylgbst.peripherals import EncodedMotor
 
 BASE_SPEED = 0.75
-FIELD_WIDTH = 1.1
+FIELD_WIDTH = 1.2
+MOTOR_RATIO = 1.15
 
 
 class Plotter(MoveHub):
@@ -24,12 +26,12 @@ class Plotter(MoveHub):
         self.is_tool_down = False
 
     def _reset_caret(self):
-        self.motor_A.timed(0.5, -0.2)
-        self.motor_A.subscribe(self._on_rotate, mode=EncodedMotor.SENSOR_SPEED)
-        self.motor_A.constant(0.2)
+        self.motor_A.timed(0.5, BASE_SPEED)
+        self.motor_A.subscribe(self._on_rotate, mode=EncodedMotor.SENSOR_SPEED, granularity=2)
+        self.motor_A.constant(-BASE_SPEED)
         count = 0
         max_tries = 50
-        while abs(self.__last_rotation_value) > 5 and count < max_tries:
+        while abs(self.__last_rotation_value) > 20 and count < max_tries:
             logging.debug("Last rot: %s", self.__last_rotation_value)
             time.sleep(10.0 / max_tries)
             count += 1
@@ -38,7 +40,7 @@ class Plotter(MoveHub):
         self.motor_A.stop()
         if count >= max_tries:
             raise RuntimeError("Failed to center caret")
-        self.motor_A.timed(FIELD_WIDTH, -BASE_SPEED)
+        self.motor_A.timed(FIELD_WIDTH, BASE_SPEED)
 
     def _on_rotate(self, value):
         logging.debug("Rotation: %s", value)
@@ -93,7 +95,6 @@ class Plotter(MoveHub):
 
     @staticmethod
     def calc_motor(movx, movy):
-        motor_ratio = 1.15
         amovx = float(abs(movx))
         amovy = float(abs(movy))
 
@@ -102,13 +103,26 @@ class Plotter(MoveHub):
         speed_a = (movx / float(amovx)) if amovx else 0.0
         speed_b = (movy / float(amovy)) if amovy else 0.0
 
-        if amovx >= amovy * motor_ratio:
-            speed_b = movy / amovx * motor_ratio
+        if amovx >= amovy * MOTOR_RATIO:
+            speed_b = movy / amovx * MOTOR_RATIO
         else:
-            speed_a = movx / amovy / motor_ratio
+            speed_a = movx / amovy / MOTOR_RATIO
 
         logging.info("Motor: %s with %s/%s", length, speed_a, speed_b)
         assert -1 <= speed_a <= 1
         assert -1 <= speed_b <= 1
 
         return length, speed_a, speed_b
+
+    def circle(self, radius):
+        if not self.is_tool_down:
+           self._tool_down()
+
+        parts = int(2 * math.pi * radius * 5)
+        dur = 0.225
+        logging.info("Circle of radius %s, %s parts with %s time", radius, parts, dur)
+        for x in range(0, parts):
+            speed_a = math.sin(x * 2 * math.pi / parts)
+            speed_b = math.cos(x * 2 * math.pi / parts)
+            logging.debug("A: %s, B: %s", speed_a, speed_b)
+            self.motor_AB.timed(dur, speed_a * BASE_SPEED, -speed_b * BASE_SPEED * MOTOR_RATIO)
