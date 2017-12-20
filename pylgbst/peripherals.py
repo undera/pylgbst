@@ -101,7 +101,7 @@ class Peripheral(object):
         if not async:
             log.debug("Waiting for sync command work to finish...")
             while self.in_progress():
-                time.sleep(0.5)
+                time.sleep(0.001)
             log.debug("Command has finished.")
 
 
