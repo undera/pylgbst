@@ -4,8 +4,8 @@ import time
 
 from pylgbst import MoveHub, ColorDistanceSensor, COLORS, COLOR_RED, COLOR_CYAN
 
-BASE_SPEED = 0.75
-FIELD_WIDTH = 1.2
+BASE_SPEED = 0.4
+FIELD_WIDTH = 0.925 / BASE_SPEED
 MOTOR_RATIO = 1.15
 
 
@@ -32,9 +32,10 @@ class Plotter(MoveHub):
             count = 0
             max_tries = 50
             while not self._marker_color and count < max_tries:
-                time.sleep(5.0 / max_tries)
+                time.sleep(5.0 / BASE_SPEED / max_tries)
                 count += 1
-            logging.debug("Centering tries: %s", count)
+            logging.info("Centering tries: %s, color #%s", count,
+                         COLORS[self._marker_color] if self._marker_color else None)
             if count >= max_tries:
                 raise RuntimeError("Failed to center caret")
         finally:
@@ -57,11 +58,11 @@ class Plotter(MoveHub):
             self._tool_up()
 
     def _tool_down(self):
-        self.motor_external.angled(270, 1)
+        self.motor_external.angled(-270, 1)
         self.is_tool_down = True
 
     def _tool_up(self):
-        self.motor_external.angled(-270, 1)
+        self.motor_external.angled(270, 1)
         self.is_tool_down = False
 
     def move(self, movx, movy):
@@ -142,7 +143,7 @@ class Plotter(MoveHub):
             self._tool_down()
 
         dur = 0.00
-        parts = 12
+        parts = 16
         speeds = []
         for r in range(0, rounds):
             logging.info("Round: %s", r)

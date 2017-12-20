@@ -1,6 +1,8 @@
 import logging
 import traceback
 
+import time
+
 from examples.plotter import Plotter, FIELD_WIDTH
 from pylgbst.comms import DebugServerConnection, BLEConnection
 
@@ -50,6 +52,13 @@ def circles():
     plotter.circle(FIELD_WIDTH)
 
 
+class LaserPlotter(Plotter):
+
+    def _tool_down(self):
+        super(LaserPlotter, self)._tool_down()
+        time.sleep(1)
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
@@ -59,19 +68,20 @@ if __name__ == '__main__':
         logging.warning("Failed to use debug server: %s", traceback.format_exc())
         conn = BLEConnection().connect()
 
-    plotter = Plotter(conn)
+    plotter = LaserPlotter(conn)
 
     try:
+        # plotter._tool_down()
         # plotter._tool_up()
         plotter.initialize()
 
         # moves()
-        # triangle()
-        # square()
-        # cross()
+        #triangle()
+        #square()
+        #cross()
         # romb()
-        # circles()
-        plotter.spiral(4, 0.01)
+        #circles()
+        plotter.spiral(4, 0.02)
         pass
     finally:
         plotter.finalize()
