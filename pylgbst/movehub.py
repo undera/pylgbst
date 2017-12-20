@@ -144,8 +144,11 @@ class MoveHub(object):
         elif status == STATUS_CONFLICT:
             log.warning("Command conflict on port %s", PORTS[port])
             self.devices[port].finished()
+        elif status == STATUS_SOMEPROBLEM:
+            log.warning("Command problem on port %s", PORTS[port])
+            self.devices[port].finished()
         else:
-            log.warning("Unhandled status value: 0x%x", status)
+            log.warning("Unhandled status value: 0x%x on port %s", status, PORTS[port])
 
     def _handle_port_info(self, data):
         port = usbyte(data, 3)
