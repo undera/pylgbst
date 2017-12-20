@@ -43,20 +43,11 @@ def romb():
 
 
 def circles():
-    plotter.move(FIELD_WIDTH / 5.0, 0)
-    plotter.circle(FIELD_WIDTH / 5.0)
-
-    plotter.move(FIELD_WIDTH / 5.0, 0)
-    plotter.circle(FIELD_WIDTH / 4.0)
-
-    plotter.move(FIELD_WIDTH / 5.0, 0)
-    plotter.circle(FIELD_WIDTH / 3.0)
-
-    plotter.move(FIELD_WIDTH / 5.0, 0)
+    plotter.move(FIELD_WIDTH / 2.0, 0)
     plotter.circle(FIELD_WIDTH / 2.0)
 
-    plotter.move(FIELD_WIDTH / 5.0, 0)
-    plotter.circle(FIELD_WIDTH / 1.0)
+    plotter.move(FIELD_WIDTH / 2.0, 0)
+    plotter.circle(FIELD_WIDTH)
 
 
 if __name__ == '__main__':
@@ -69,16 +60,17 @@ if __name__ == '__main__':
         conn = BLEConnection().connect()
 
     plotter = Plotter(conn)
-    # plotter._tool_up()
-    plotter.initialize()
 
     try:
+        # plotter._tool_up()
+        plotter.initialize()
+
         # moves()
         # triangle()
         # square()
         # cross()
         # romb()
-        circles()
+        # circles()
         pass
     finally:
         plotter.finalize()
