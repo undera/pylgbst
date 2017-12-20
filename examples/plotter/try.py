@@ -62,7 +62,7 @@ if __name__ == '__main__':
     plotter = Plotter(conn)
 
     try:
-        # plotter._tool_up()
+        #plotter._tool_up()
         plotter.initialize()
 
         # moves()
@@ -70,7 +70,7 @@ if __name__ == '__main__':
         # square()
         # cross()
         # romb()
-        # circles()
+        circles()
         pass
     finally:
         plotter.finalize()

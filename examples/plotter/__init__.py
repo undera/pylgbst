@@ -2,7 +2,7 @@ import logging
 import math
 import time
 
-from pylgbst import MoveHub, ColorDistanceSensor, COLORS, COLOR_NONE, COLOR_RED, COLOR_CYAN
+from pylgbst import MoveHub, ColorDistanceSensor, COLORS, COLOR_RED, COLOR_CYAN
 
 BASE_SPEED = 0.75
 FIELD_WIDTH = 1.2
@@ -15,36 +15,49 @@ class Plotter(MoveHub):
         self.xpos = 0
         self.ypos = 0
         self.is_tool_down = False
-        self.__on_marker = False
+        self._marker_color = False
+        self._stop_on_marker = False
 
     def initialize(self):
+        self.color_distance_sensor.subscribe(self._on_distance, mode=ColorDistanceSensor.COLOR_DISTANCE_FLOAT,
+                                             granularity=10)
         self._reset_caret()
         self.xpos = 0
         self.ypos = 0
         self.is_tool_down = False
 
     def _reset_caret(self):
-        self.color_distance_sensor.subscribe(self._on_distance, mode=ColorDistanceSensor.COLOR_DISTANCE_FLOAT,
-                                             granularity=5)
-        self.motor_A.constant(BASE_SPEED)
+        self.motor_A.timed(0.2, BASE_SPEED)
+        self.motor_A.constant(-BASE_SPEED)
         count = 0
         max_tries = 50
-        while not self.__on_marker and count < max_tries:
+        while not self._marker_color and count < max_tries:
             time.sleep(5.0 / max_tries)
             count += 1
 
         logging.debug("Centering tries: %s", count)
-        # self.color_distance_sensor.unsubscribe(self._on_distance)
         self.motor_A.stop()
         if count >= max_tries:
             raise RuntimeError("Failed to center caret")
-        self.motor_A.timed(FIELD_WIDTH, -BASE_SPEED)
+        self.motor_A.timed(FIELD_WIDTH, BASE_SPEED)
 
     def _on_distance(self, color, distance):
-        if color != COLOR_NONE:
-            logging.info("Color: %s, distance %s", COLORS[color], distance)
+        self._marker_color = None
+        logging.debug("Color: %s, distance %s", COLORS[color], distance)
+        if color in (COLOR_RED, COLOR_CYAN):
+            if distance <= 3:
+                self._marker_color = color
+                if self._stop_on_marker:
+                    logging.info("Stopping motor because of marker: %s", COLORS[color])
+                    self.motor_AB.stop()
 
-        self.__on_marker = color if distance <= 3 and color in (COLOR_RED, COLOR_CYAN) else None
+    def finalize(self):
+        self.motor_AB.stop()
+        self.motor_external.stop()
+        if self.is_tool_down:
+            self._tool_up()
+
+        self.color_distance_sensor.unsubscribe(self._on_distance)
 
     def _tool_down(self):
         self.motor_external.angled(270, 1)
@@ -53,14 +66,6 @@ class Plotter(MoveHub):
     def _tool_up(self):
         self.motor_external.angled(-270, 1)
         self.is_tool_down = False
-
-    def finalize(self):
-        self.motor_AB.stop()
-        self.motor_external.stop()
-        if self.is_tool_down:
-            self._tool_up()
-
-        self.move(-self.xpos, -self.ypos)
 
     def move(self, movx, movy):
         if self.is_tool_down:
@@ -120,8 +125,8 @@ class Plotter(MoveHub):
         if not self.is_tool_down:
             self._tool_down()
 
-        parts = int(2 * math.pi * radius * 10)
-        dur = 0.02
+        parts = int(2 * math.pi * radius * 7)
+        dur = 0.025
         logging.info("Circle of radius %s, %s parts with %s time", radius, parts, dur)
         speeds = []
         for x in range(0, parts):
