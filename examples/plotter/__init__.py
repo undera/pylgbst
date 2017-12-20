@@ -16,11 +16,8 @@ class Plotter(MoveHub):
         self.ypos = 0
         self.is_tool_down = False
         self._marker_color = False
-        self._stop_on_marker = False
 
     def initialize(self):
-        self.color_distance_sensor.subscribe(self._on_distance, mode=ColorDistanceSensor.COLOR_DISTANCE_FLOAT,
-                                             granularity=10)
         self._reset_caret()
         self.xpos = 0
         self.ypos = 0
@@ -28,17 +25,22 @@ class Plotter(MoveHub):
 
     def _reset_caret(self):
         self.motor_A.timed(0.2, BASE_SPEED)
-        self.motor_A.constant(-BASE_SPEED)
-        count = 0
-        max_tries = 50
-        while not self._marker_color and count < max_tries:
-            time.sleep(5.0 / max_tries)
-            count += 1
+        self.color_distance_sensor.subscribe(self._on_distance, mode=ColorDistanceSensor.COLOR_DISTANCE_FLOAT,
+                                             granularity=5)
+        try:
+            self.motor_A.constant(-BASE_SPEED)
+            count = 0
+            max_tries = 50
+            while not self._marker_color and count < max_tries:
+                time.sleep(5.0 / max_tries)
+                count += 1
+            logging.debug("Centering tries: %s", count)
+            if count >= max_tries:
+                raise RuntimeError("Failed to center caret")
+        finally:
+            self.motor_A.stop()
+            self.color_distance_sensor.unsubscribe(self._on_distance)
 
-        logging.debug("Centering tries: %s", count)
-        self.motor_A.stop()
-        if count >= max_tries:
-            raise RuntimeError("Failed to center caret")
         self.motor_A.timed(FIELD_WIDTH, BASE_SPEED)
 
     def _on_distance(self, color, distance):
@@ -47,17 +49,12 @@ class Plotter(MoveHub):
         if color in (COLOR_RED, COLOR_CYAN):
             if distance <= 3:
                 self._marker_color = color
-                if self._stop_on_marker:
-                    logging.info("Stopping motor because of marker: %s", COLORS[color])
-                    self.motor_AB.stop()
 
     def finalize(self):
         self.motor_AB.stop()
         self.motor_external.stop()
         if self.is_tool_down:
             self._tool_up()
-
-        self.color_distance_sensor.unsubscribe(self._on_distance)
 
     def _tool_down(self):
         self.motor_external.angled(270, 1)
@@ -137,5 +134,27 @@ class Plotter(MoveHub):
         speeds.append((0, 0))
 
         for speed_a, speed_b in speeds:
+            self.motor_AB.constant(speed_a * BASE_SPEED, -speed_b * BASE_SPEED * MOTOR_RATIO)
+            time.sleep(dur)
+
+    def spiral(self, rounds, growth):
+        if not self.is_tool_down:
+            self._tool_down()
+
+        dur = 0.00
+        parts = 12
+        speeds = []
+        for r in range(0, rounds):
+            logging.info("Round: %s", r)
+
+            for x in range(0, parts):
+                speed_a = math.sin(x * 2.0 * math.pi / float(parts))
+                speed_b = math.cos(x * 2.0 * math.pi / float(parts))
+                dur += growth
+                speeds.append((speed_a, speed_b, dur))
+                logging.debug("A: %s, B: %s", speed_a, speed_b)
+        speeds.append((0, 0, 0))
+
+        for speed_a, speed_b, dur in speeds:
             self.motor_AB.constant(speed_a * BASE_SPEED, -speed_b * BASE_SPEED * MOTOR_RATIO)
             time.sleep(dur)
