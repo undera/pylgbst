@@ -21,7 +21,7 @@ class Tracer(object):
         self.dst.fill(False)
         self.mark = numpy.copy(self.dst)
         # start in center
-        self.height, self.width = self.dst.shanape[0:2]
+        self.height, self.width = self.dst.shape[0:2]
         self.posy = self.height / 2
         self.posx = self.width / 2
         self.lines = []
