@@ -24,15 +24,15 @@ class Plotter(MoveHub):
         self.is_tool_down = False
 
     def _reset_caret(self):
-        self.motor_A.timed(0.2, self.base_speed)
+        self.motor_A.timed(0.5, 0.4)
         self.color_distance_sensor.subscribe(self._on_distance, mode=ColorDistanceSensor.COLOR_DISTANCE_FLOAT,
-                                             granularity=5)
+                                             granularity=1)
         try:
-            self.motor_A.constant(-self.base_speed)
+            self.motor_A.constant(-0.4)
             count = 0
             max_tries = 50
-            while not self._marker_color and count < max_tries:
-                time.sleep(5.0 / self.base_speed / max_tries)
+            while self._marker_color != COLOR_RED and count < max_tries:
+                time.sleep(7.0 / max_tries)
                 count += 1
             logging.info("Centering tries: %s, color #%s", count,
                          COLORS[self._marker_color] if self._marker_color else None)
@@ -42,7 +42,7 @@ class Plotter(MoveHub):
             self.motor_A.stop()
             self.color_distance_sensor.unsubscribe(self._on_distance)
 
-        self.motor_A.timed(self.field_width, self.base_speed)
+        self.motor_A.timed(0.925 / 0.4, 0.5)
 
     def _on_distance(self, color, distance):
         self._marker_color = None
@@ -94,7 +94,7 @@ class Plotter(MoveHub):
 
         length, speed_a, speed_b = self._calc_motor(movx, movy)
 
-        self.motor_AB.timed(length * 4.0, -speed_a * self.base_speed / 4.0, -speed_b * self.base_speed / 4.0)
+        self.motor_AB.timed(length, -speed_a * self.base_speed, -speed_b * self.base_speed)
 
         # time.sleep(0.5)
 
@@ -165,3 +165,20 @@ class Plotter(MoveHub):
             self.motor_AB.constant(spa, spb)
             logging.info("Motor speeds: %.3f / %.3f", spa, spb)
             time.sleep(dur)
+
+    def rectangle(self, width, height, solid=False):
+        self.line(width, 0)
+        self.line(0, height)
+        self.line(-width, 0)
+        self.line(0, -height)
+
+        if solid:
+            max_step = 0.1
+            rounds = int(math.ceil(height / max_step))
+            step = height / rounds
+            flip = 1
+            self.line(0, step)  # luft
+            for r in range(1, rounds + 3):
+                self.line(0, step)
+                self.line(width * flip, 0)
+                flip = -flip
