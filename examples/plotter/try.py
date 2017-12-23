@@ -152,6 +152,18 @@ def christmas_tree():
     plotter.line(t, -t)
 
 
+def try_speeds():
+    speeds = [x * 1.0 / 10.0 for x in range(1, 11)]
+    for s in speeds:
+        logging.info("%s", s)
+        plotter.motor_AB.constant(s, -s)
+        time.sleep(1)
+    for s in reversed(speeds):
+        logging.info("%s", s)
+        plotter.motor_AB.constant(-s, s)
+        time.sleep(1)
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
@@ -161,25 +173,29 @@ if __name__ == '__main__':
         logging.warning("Failed to use debug server: %s", traceback.format_exc())
         conn = BLEConnection().connect()
 
-    plotter = LaserPlotter(conn, 0.15)
+    plotter = LaserPlotter(conn, 0.5)
     FIELD_WIDTH = plotter.field_width
 
     try:
+        #plotter.initialize()
+
         # plotter._tool_down()
-        # plotter._tool_up()
-        plotter.initialize()
+
+        # try_speeds()
+
 
         # moves()
-        # triangle()
+        triangle()
         # square()
         # cross()
         # romb()
         # circles()
         # plotter.spiral(4, 0.02)
         # plotter.rectangle(FIELD_WIDTH / 5.0, FIELD_WIDTH / 5.0, solid=True)
+
         # lego()
         # square_spiral()
-        christmas_tree()
+        # christmas_tree()
         pass
     finally:
         plotter.finalize()

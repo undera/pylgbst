@@ -6,16 +6,19 @@ from pylgbst import MoveHub, ColorDistanceSensor, COLORS, COLOR_RED, COLOR_CYAN
 
 
 class Plotter(MoveHub):
-    MOTOR_RATIO = 1.15
+    MOTOR_RATIO = 1.65
 
     def __init__(self, connection=None, base_speed=1.0):
         super(Plotter, self).__init__(connection)
         self.base_speed = base_speed
-        self.field_width = 0.925 / self.base_speed
+        self.field_width = 2.0 / self.base_speed
         self.xpos = 0
         self.ypos = 0
         self.is_tool_down = False
         self._marker_color = False
+        self.caret = self.motor_A
+        self.wheels = self.motor_B
+        self.both = self.motor_AB
 
     def initialize(self):
         self._reset_caret()
@@ -24,25 +27,25 @@ class Plotter(MoveHub):
         self.is_tool_down = False
 
     def _reset_caret(self):
-        self.motor_A.timed(0.5, 0.4)
+        self.caret.timed(0.5, self.base_speed)
         self.color_distance_sensor.subscribe(self._on_distance, mode=ColorDistanceSensor.COLOR_DISTANCE_FLOAT,
                                              granularity=1)
         try:
-            self.motor_A.constant(-0.4)
+            self.caret.constant(-self.base_speed)
             count = 0
             max_tries = 50
             while self._marker_color != COLOR_RED and count < max_tries:
-                time.sleep(7.0 / max_tries)
+                time.sleep(30.0 / max_tries)
                 count += 1
             logging.info("Centering tries: %s, color #%s", count,
                          COLORS[self._marker_color] if self._marker_color else None)
             if count >= max_tries:
                 raise RuntimeError("Failed to center caret")
         finally:
-            self.motor_A.stop()
+            self.caret.stop()
             self.color_distance_sensor.unsubscribe(self._on_distance)
 
-        self.motor_A.timed(0.925 / 0.4, 0.5)
+        self.caret.timed(0.925 / 0.4, self.base_speed)
 
     def _on_distance(self, color, distance):
         self._marker_color = None
@@ -52,10 +55,11 @@ class Plotter(MoveHub):
                 self._marker_color = color
 
     def finalize(self):
-        self.motor_AB.stop()
-        self.motor_external.stop()
         if self.is_tool_down:
             self._tool_up()
+        self.motor_AB.stop(async=True)
+        if self.motor_external:
+            self.motor_external.stop(async=True)
 
     def _tool_down(self):
         self.motor_external.angled(-270, 1)
@@ -94,7 +98,7 @@ class Plotter(MoveHub):
 
         length, speed_a, speed_b = self._calc_motor(movx, movy)
 
-        self.motor_AB.timed(length, -speed_a * self.base_speed, -speed_b * self.base_speed)
+        self.motor_AB.timed(length, -speed_a * self.base_speed / self.MOTOR_RATIO, -speed_b * self.base_speed)
 
         # time.sleep(0.5)
 
@@ -108,10 +112,10 @@ class Plotter(MoveHub):
         speed_a = (movx / float(amovx)) if amovx else 0.0
         speed_b = (movy / float(amovy)) if amovy else 0.0
 
-        if amovx >= amovy * Plotter.MOTOR_RATIO:
-            speed_b = movy / amovx * Plotter.MOTOR_RATIO
+        if amovx >= amovy:
+            speed_b = movy / amovx
         else:
-            speed_a = movx / amovy / Plotter.MOTOR_RATIO
+            speed_a = movx / amovy
 
         logging.info("Motor: %s with %s/%s", length, speed_a, speed_b)
         assert -1 <= speed_a <= 1
