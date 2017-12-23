@@ -11,7 +11,7 @@ class Plotter(MoveHub):
     def __init__(self, connection=None, base_speed=1.0):
         super(Plotter, self).__init__(connection)
         self.base_speed = base_speed
-        self.field_width = 2.0 / self.base_speed
+        self.field_width = 3.55 / self.base_speed
         self.xpos = 0
         self.ypos = 0
         self.is_tool_down = False
@@ -19,6 +19,7 @@ class Plotter(MoveHub):
         self.caret = self.motor_A
         self.wheels = self.motor_B
         self.both = self.motor_AB
+        self.__last_wheel_dir = 1
 
     def initialize(self):
         self._reset_caret()
@@ -45,7 +46,7 @@ class Plotter(MoveHub):
             self.caret.stop()
             self.color_distance_sensor.unsubscribe(self._on_distance)
 
-        self.caret.timed(0.925 / 0.4, self.base_speed)
+        self.move(-self.field_width, 0)
 
     def _on_distance(self, color, distance):
         self._marker_color = None
@@ -93,6 +94,8 @@ class Plotter(MoveHub):
             logging.warning("No movement, ignored")
             return
 
+        self._correct_wheels(movy)
+
         self.xpos += movx
         self.ypos += movy
 
@@ -101,6 +104,14 @@ class Plotter(MoveHub):
         self.motor_AB.timed(length, -speed_a * self.base_speed / self.MOTOR_RATIO, -speed_b * self.base_speed)
 
         # time.sleep(0.5)
+
+    def _correct_wheels(self, movy):
+        if not movy:
+            return
+        wheel_dir = movy / abs(movy)
+        if wheel_dir == -self.__last_wheel_dir:
+            self.wheels.angled(270, -wheel_dir)
+        self.__last_wheel_dir = wheel_dir
 
     @staticmethod
     def _calc_motor(movx, movy):
