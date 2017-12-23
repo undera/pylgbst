@@ -196,16 +196,16 @@ class GeneralTest(unittest.TestCase):
 
 class TestPlotter(unittest.TestCase):
     def test_calc1(self):
-        self.assertEqual((100, 1, 1), Plotter._calc_motor(100, 50))
+        self.assertEqual((100, 1, 0.5), Plotter._calc_motor(100, 50))
 
     def test_calc2(self):
-        self.assertEqual((400, 0.25, 1), Plotter._calc_motor(100, 200))
+        self.assertEqual((200, 0.5, 1), Plotter._calc_motor(100, 200))
 
     def test_calc_xoverflow(self):
-        self.assertEqual((400, 0.25, 1), Plotter._calc_motor(10, 900))
+        self.assertEqual((800, 0.0125, 1), Plotter._calc_motor(10, 800))
 
     def test_calc3(self):
         self.assertEqual((100, 1, 0), Plotter._calc_motor(100, 0))
 
     def test_calc4(self):
-        self.assertEqual((400, 0, 1), Plotter._calc_motor(0, 200))
+        self.assertEqual((200, 0, 1), Plotter._calc_motor(0, 200))
