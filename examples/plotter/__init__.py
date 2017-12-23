@@ -2,7 +2,7 @@ import logging
 import math
 import time
 
-from pylgbst import MoveHub, ColorDistanceSensor, COLORS, COLOR_RED, COLOR_CYAN
+from pylgbst import MoveHub, ColorDistanceSensor, COLORS, COLOR_RED, COLOR_YELLOW
 
 
 class Plotter(MoveHub):
@@ -35,23 +35,25 @@ class Plotter(MoveHub):
             self.caret.constant(-self.base_speed)
             count = 0
             max_tries = 50
-            while self._marker_color != COLOR_RED and count < max_tries:
+            while self._marker_color not in (COLOR_RED, COLOR_YELLOW) and count < max_tries:
                 time.sleep(30.0 / max_tries)
                 count += 1
-            logging.info("Centering tries: %s, color #%s", count,
-                         COLORS[self._marker_color] if self._marker_color else None)
+            self.color_distance_sensor.unsubscribe(self._on_distance)
+            clr = COLORS[self._marker_color] if self._marker_color else None
+            logging.info("Centering tries: %s, color #%s", count, clr)
             if count >= max_tries:
                 raise RuntimeError("Failed to center caret")
         finally:
             self.caret.stop()
             self.color_distance_sensor.unsubscribe(self._on_distance)
 
-        self.move(-self.field_width, 0)
+        if self._marker_color != COLOR_YELLOW:
+            self.move(-self.field_width, 0)
 
     def _on_distance(self, color, distance):
         self._marker_color = None
         logging.debug("Color: %s, distance %s", COLORS[color], distance)
-        if color in (COLOR_RED, COLOR_CYAN):
+        if color in (COLOR_RED, COLOR_YELLOW):
             if distance <= 3:
                 self._marker_color = color
 
@@ -110,7 +112,7 @@ class Plotter(MoveHub):
             return
         wheel_dir = movy / abs(movy)
         if wheel_dir == -self.__last_wheel_dir:
-            self.wheels.angled(270, -wheel_dir)
+            self.wheels.angled(230, -wheel_dir)
         self.__last_wheel_dir = wheel_dir
 
     @staticmethod
