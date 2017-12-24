@@ -138,7 +138,8 @@ class LED(Peripheral):
 
 
 class EncodedMotor(Peripheral):
-    TRAILER = b'\x64\x7f\x03'  # NOTE: \x64 is 100, might mean something
+    TRAILER = b'\x64\x7f\x03'  # NOTE: \x64 is 100, might mean something; also trailer might be a sequence terminator
+    # TODO: investigate sequence behavior, seen with zero values passed to angled mode
     # trailer is not required for all movement types
     MOVEMENT_TYPE = 0x11
 

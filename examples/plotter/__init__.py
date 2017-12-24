@@ -2,7 +2,7 @@ import logging
 import math
 import time
 
-from pylgbst import MoveHub, ColorDistanceSensor, COLORS, COLOR_RED, COLOR_YELLOW
+from pylgbst import MoveHub, ColorDistanceSensor, COLORS, COLOR_RED, COLOR_CYAN
 
 
 class Plotter(MoveHub):
@@ -10,7 +10,7 @@ class Plotter(MoveHub):
 
     def __init__(self, connection=None, base_speed=1.0):
         super(Plotter, self).__init__(connection)
-        self.base_speed = base_speed
+        self.base_speed = float(base_speed)
         self.field_width = 3.55 / self.base_speed
         self.xpos = 0
         self.ypos = 0
@@ -35,7 +35,7 @@ class Plotter(MoveHub):
             self.caret.constant(-self.base_speed)
             count = 0
             max_tries = 50
-            while self._marker_color not in (COLOR_RED, COLOR_YELLOW) and count < max_tries:
+            while self._marker_color not in (COLOR_RED, COLOR_CYAN) and count < max_tries:
                 time.sleep(30.0 / max_tries)
                 count += 1
             self.color_distance_sensor.unsubscribe(self._on_distance)
@@ -47,15 +47,26 @@ class Plotter(MoveHub):
             self.caret.stop()
             self.color_distance_sensor.unsubscribe(self._on_distance)
 
-        if self._marker_color != COLOR_YELLOW:
+        if self._marker_color != COLOR_CYAN:
             self.move(-self.field_width, 0)
 
     def _on_distance(self, color, distance):
         self._marker_color = None
         logging.debug("Color: %s, distance %s", COLORS[color], distance)
-        if color in (COLOR_RED, COLOR_YELLOW):
+        if color in (COLOR_RED, COLOR_CYAN):
             if distance <= 3:
                 self._marker_color = color
+
+    def _compensate_wheels_backlash(self, movy):
+        """
+        corrects backlash of wheels gear system
+        """
+        if not movy:
+            return
+        wheel_dir = movy / abs(movy)
+        if wheel_dir == -self.__last_wheel_dir:
+            self.wheels.angled(270, -wheel_dir)
+        self.__last_wheel_dir = wheel_dir
 
     def finalize(self):
         if self.is_tool_down:
@@ -96,27 +107,19 @@ class Plotter(MoveHub):
             logging.warning("No movement, ignored")
             return
 
-        self._correct_wheels(movy)
+        self._compensate_wheels_backlash(movy)
 
         self.xpos += movx
         self.ypos += movy
 
-        length, speed_a, speed_b = self._calc_motor(movx, movy)
+        length, speed_a, speed_b = self._calc_motor_timed(movx, movy)
 
         self.motor_AB.timed(length, -speed_a * self.base_speed / self.MOTOR_RATIO, -speed_b * self.base_speed)
 
         # time.sleep(0.5)
 
-    def _correct_wheels(self, movy):
-        if not movy:
-            return
-        wheel_dir = movy / abs(movy)
-        if wheel_dir == -self.__last_wheel_dir:
-            self.wheels.angled(230, -wheel_dir)
-        self.__last_wheel_dir = wheel_dir
-
     @staticmethod
-    def _calc_motor(movx, movy):
+    def _calc_motor_timed(movx, movy):
         amovx = float(abs(movx))
         amovy = float(abs(movy))
 
@@ -135,6 +138,11 @@ class Plotter(MoveHub):
         assert -1 <= speed_b <= 1
 
         return length, speed_a, speed_b
+
+    @staticmethod
+    def _calc_motor_angled(movx, movy):
+        pass
+        #return length, speed_a, speed_b
 
     def circle(self, radius):
         if not self.is_tool_down:

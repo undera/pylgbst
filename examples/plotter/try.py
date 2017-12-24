@@ -218,6 +218,25 @@ def snowflake():
         plotter.line(item[0] * zoom, -item[1] * zoom)
 
 
+def angles_experiment():
+    plotter._tool_down()
+
+    path = 1000
+
+    parts = 5
+    for x in range(1, parts):
+        spd_b = x * plotter.base_speed / parts
+        spd_a = plotter.base_speed - spd_b
+
+        angle = path * (1.0 + spd_b / spd_a)
+        logging.info("%s, %s, %s", angle, spd_a, spd_b)
+
+        plotter.motor_AB.angled(angle, spd_a, -spd_b)
+        plotter._compensate_wheels_backlash(-1)
+        plotter.motor_AB.angled(-angle, spd_a, -spd_b)
+        plotter._compensate_wheels_backlash(1)
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
@@ -227,13 +246,13 @@ if __name__ == '__main__':
         logging.warning("Failed to use debug server: %s", traceback.format_exc())
         conn = BLEConnection().connect()
 
-    plotter = LaserPlotter(conn, 0.75)
+    plotter = LaserPlotter(conn, 1.0)
     FIELD_WIDTH = plotter.field_width
 
     try:
-        plotter.initialize()
+        # plotter.initialize()
 
-        # plotter._tool_down()
+        angles_experiment()
 
         # try_speeds()
 
@@ -249,7 +268,7 @@ if __name__ == '__main__':
         # square_spiral()
         # lego()
         # christmas_tree()
-        snowflake()
+        # snowflake()
         pass
     finally:
         plotter.finalize()
