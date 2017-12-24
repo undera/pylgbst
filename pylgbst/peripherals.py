@@ -172,11 +172,17 @@ class EncodedMotor(Peripheral):
         if self.port == PORT_AB:
             mtype += 1  # de-facto rule
 
+        abs_primary = self._speed_abs(speed_primary)
+        abs_secondary = self._speed_abs(speed_secondary)
+
+        if mtype == self.ANGLED_GROUP and (not abs_secondary or not abs_primary):
+            raise ValueError("Cannot have zero speed in double angled mode")  # otherwise it gets nuts
+
         params = pack("<B", self.MOVEMENT_TYPE) + pack("<B", mtype) + params
 
-        params += pack("<b", self._speed_abs(speed_primary))
+        params += pack("<b", abs_primary)
         if self.port == PORT_AB:
-            params += pack("<b", self._speed_abs(speed_secondary))
+            params += pack("<b", abs_secondary)
 
         params += self.TRAILER
 
