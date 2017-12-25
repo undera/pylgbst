@@ -3,7 +3,9 @@ import time
 import traceback
 
 from examples.plotter import Plotter
+from pylgbst import EncodedMotor, PORT_AB, PORT_C, PORT_A, PORT_B, MoveHub
 from pylgbst.comms import DebugServerConnection, BLEConnection
+from tests import HubMock
 
 
 def moves():
@@ -160,11 +162,11 @@ def try_speeds():
     speeds = [x * 1.0 / 10.0 for x in range(1, 11)]
     for s in speeds:
         logging.info("%s", s)
-        plotter.motor_AB.constant(s, -s)
+        plotter.both.constant(s, -s)
         time.sleep(1)
     for s in reversed(speeds):
         logging.info("%s", s)
-        plotter.motor_AB.constant(-s, s)
+        plotter.both.constant(-s, s)
         time.sleep(1)
 
 
@@ -219,12 +221,22 @@ def snowflake():
 
 
 def angles_experiment():
-    plotter._tool_down()
-
-    path = 1000
-
     parts = 5
-    for x in range(1, parts):
+    for x in range(0, parts + 1):
+        movy = x * 1.0 / parts
+        plotter.line(1.0, movy)
+        plotter.move(-1.0, -movy)
+        logging.info("%s", movy)
+
+    for x in range(0, parts + 1):
+        movx = x * 1.0 / parts
+        plotter.line(movx, 1.0)
+        plotter.move(-movx, -1.0)
+        logging.info("%s", movx)
+
+        """
+        path = 1000
+
         spd_b = x * plotter.base_speed / parts
         spd_a = plotter.base_speed - spd_b
 
@@ -235,10 +247,26 @@ def angles_experiment():
         plotter._compensate_wheels_backlash(-1)
         plotter.motor_AB.angled(-angle, spd_a, -spd_b)
         plotter._compensate_wheels_backlash(1)
+        """
+
+
+class MotorMock(EncodedMotor):
+    def _wait_sync(self, async):
+        super(MotorMock, self)._wait_sync(True)
+
+
+def get_hub_mock():
+    hub = HubMock()
+    hub.motor_A = MotorMock(hub, PORT_A)
+    hub.motor_B = MotorMock(hub, PORT_B)
+    hub.motor_AB = MotorMock(hub, PORT_AB)
+    hub.motor_external = MotorMock(hub, PORT_C)
+    return hub
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
+    logging.getLogger('').setLevel(logging.INFO)
 
     try:
         conn = DebugServerConnection()
@@ -246,13 +274,16 @@ if __name__ == '__main__':
         logging.warning("Failed to use debug server: %s", traceback.format_exc())
         conn = BLEConnection().connect()
 
-    plotter = LaserPlotter(conn, 1.0)
+    hub = MoveHub(conn) if 1 else get_hub_mock()
+
+    plotter = LaserPlotter(hub, 1.0)
     FIELD_WIDTH = plotter.field_width
 
     try:
-        # plotter.initialize()
+        # plotter._tool_up()
+        plotter.initialize()
 
-        angles_experiment()
+        #angles_experiment()
 
         # try_speeds()
 

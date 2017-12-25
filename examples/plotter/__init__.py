@@ -2,23 +2,28 @@ import logging
 import math
 import time
 
-from pylgbst import MoveHub, ColorDistanceSensor, COLORS, COLOR_RED, COLOR_CYAN
+from pylgbst import ColorDistanceSensor, COLORS, COLOR_RED, COLOR_CYAN
 
 
-class Plotter(MoveHub):
+class Plotter(object):
     MOTOR_RATIO = 1.65
 
-    def __init__(self, connection=None, base_speed=1.0):
-        super(Plotter, self).__init__(connection)
+    def __init__(self, hub, base_speed=1.0):
+        """
+
+        :type hub: pylgbst.movehub.MoveHub
+        """
+        self._hub = hub
+        self.caret = self._hub.motor_A
+        self.wheels = self._hub.motor_B
+        self.both = self._hub.motor_AB
+
         self.base_speed = float(base_speed)
         self.field_width = 3.55 / self.base_speed
         self.xpos = 0
         self.ypos = 0
         self.is_tool_down = False
         self._marker_color = False
-        self.caret = self.motor_A
-        self.wheels = self.motor_B
-        self.both = self.motor_AB
         self.__last_wheel_dir = 1
 
     def initialize(self):
@@ -28,9 +33,13 @@ class Plotter(MoveHub):
         self.is_tool_down = False
 
     def _reset_caret(self):
+        if not self._hub.color_distance_sensor:
+            logging.warning("No color/distance sensor, cannot center caret")
+            return
+
         self.caret.timed(0.5, self.base_speed)
-        self.color_distance_sensor.subscribe(self._on_distance, mode=ColorDistanceSensor.COLOR_DISTANCE_FLOAT,
-                                             granularity=1)
+        self._hub.color_distance_sensor.subscribe(self._on_distance, mode=ColorDistanceSensor.COLOR_DISTANCE_FLOAT,
+                                                  granularity=1)
         try:
             self.caret.constant(-self.base_speed)
             count = 0
@@ -38,14 +47,14 @@ class Plotter(MoveHub):
             while self._marker_color not in (COLOR_RED, COLOR_CYAN) and count < max_tries:
                 time.sleep(30.0 / max_tries)
                 count += 1
-            self.color_distance_sensor.unsubscribe(self._on_distance)
+            self._hub.color_distance_sensor.unsubscribe(self._on_distance)
             clr = COLORS[self._marker_color] if self._marker_color else None
             logging.info("Centering tries: %s, color #%s", count, clr)
             if count >= max_tries:
                 raise RuntimeError("Failed to center caret")
         finally:
             self.caret.stop()
-            self.color_distance_sensor.unsubscribe(self._on_distance)
+            self._hub.color_distance_sensor.unsubscribe(self._on_distance)
 
         if self._marker_color != COLOR_CYAN:
             self.move(-self.field_width, 0)
@@ -71,16 +80,14 @@ class Plotter(MoveHub):
     def finalize(self):
         if self.is_tool_down:
             self._tool_up()
-        self.motor_AB.stop(async=True)
-        if self.motor_external:
-            self.motor_external.stop(async=True)
+        self.both.stop(async=True)
 
     def _tool_down(self):
-        self.motor_external.angled(-270, 1)
         self.is_tool_down = True
+        self._hub.motor_external.angled(-270, 1)
 
     def _tool_up(self):
-        self.motor_external.angled(270, 1)
+        self._hub.motor_external.angled(270, 1)
         self.is_tool_down = False
 
     def move(self, movx, movy):
@@ -94,29 +101,33 @@ class Plotter(MoveHub):
         self._transfer_to(movx, movy)
 
     def _transfer_to(self, movx, movy):
-        if self.xpos + movx < -self.field_width:
-            logging.warning("Invalid xpos: %s", self.xpos)
-            movx += self.xpos - self.field_width
-
-        if self.xpos + movx > self.field_width:
-            logging.warning("Invalid xpos: %s", self.xpos)
-            movx -= self.xpos - self.field_width
-            self.xpos -= self.xpos - self.field_width
-
         if not movy and not movx:
             logging.warning("No movement, ignored")
             return
 
-        self._compensate_wheels_backlash(movy)
+        if self.xpos + movx < -self.field_width:
+            logging.warning("Invalid xpos: %s", self.xpos)
+            # movx += self.xpos - self.field_width
+
+        if self.xpos + movx > self.field_width:
+            logging.warning("Invalid xpos: %s", self.xpos)
+            # movx -= self.xpos - self.field_width
+            # self.xpos -= self.xpos - self.field_width
+
+        # self._compensate_wheels_backlash(movy)
 
         self.xpos += movx
         self.ypos += movy
 
-        length, speed_a, speed_b = self._calc_motor_timed(movx, movy)
+        length, speed_a, speed_b = self._calc_motor_angled(movx, movy)
+        logging.info("Motors: %.3f with %.3f/%.3f", length, speed_a, speed_b)
 
-        self.motor_AB.timed(length, -speed_a * self.base_speed / self.MOTOR_RATIO, -speed_b * self.base_speed)
-
-        # time.sleep(0.5)
+        if not speed_b:
+            self.caret.angled(length, -speed_a * self.base_speed)
+        elif not speed_a:
+            self.wheels.angled(length, -speed_b * self.base_speed)
+        else:
+            self.both.angled(length, -speed_a * self.base_speed, -speed_b * self.base_speed)
 
     @staticmethod
     def _calc_motor_timed(movx, movy):
@@ -133,7 +144,6 @@ class Plotter(MoveHub):
         else:
             speed_a = movx / amovy
 
-        logging.info("Motor: %s with %s/%s", length, speed_a, speed_b)
         assert -1 <= speed_a <= 1
         assert -1 <= speed_b <= 1
 
@@ -141,8 +151,28 @@ class Plotter(MoveHub):
 
     @staticmethod
     def _calc_motor_angled(movx, movy):
-        pass
-        #return length, speed_a, speed_b
+        amovx = abs(movx)
+        amovy = abs(movy)
+        if amovx >= amovy:
+            ax = amovy / (amovx + amovy)
+            spd_a = ax
+            spd_b = (1.0 - spd_a)
+            rotate = 1500 * amovx * (1.0 + spd_a / spd_b)
+            logging.info("A: movx=%s, movy=%s, ax=%s", movx, movy, ax)
+        else:
+            ax = amovx / (amovx + amovy)
+            spd_b = ax
+            spd_a = (1.0 - spd_b)
+            rotate = 1500 * amovy * (1.0 + spd_b / spd_a)
+            logging.info("B: movx=%s, movy=%s, ax=%s", movx, movy, ax)
+
+        assert 0 <= spd_a <= 1
+        assert 0 <= spd_b <= 1
+
+        assert rotate < 6000  # safety valve
+        spd_a *= (movx / amovx) if amovx else 0
+        spd_b *= (movy / amovy) if amovy else 0
+        return rotate, spd_a, spd_b
 
     def circle(self, radius):
         if not self.is_tool_down:
@@ -163,7 +193,7 @@ class Plotter(MoveHub):
             spa = speed_a * self.base_speed
             spb = -speed_b * self.base_speed * self.MOTOR_RATIO
             logging.info("Motor speeds: %.3f / %.3f", spa, spb)
-            self.motor_AB.constant(spa, spb)
+            self.both.constant(spa, spb)
             time.sleep(dur)
 
     def spiral(self, rounds, growth):
@@ -187,7 +217,7 @@ class Plotter(MoveHub):
         for speed_a, speed_b, dur in speeds:
             spa = speed_a * self.base_speed
             spb = -speed_b * self.base_speed * self.MOTOR_RATIO
-            self.motor_AB.constant(spa, spb)
+            self.both.constant(spa, spb)
             logging.info("Motor speeds: %.3f / %.3f", spa, spb)
             time.sleep(dur)
 
