@@ -6,7 +6,8 @@ from pylgbst import ColorDistanceSensor, COLORS, COLOR_RED, COLOR_CYAN
 
 
 class Plotter(object):
-    MOTOR_RATIO = 1.65
+    MOTOR_RATIO = 1.45
+    ROTATE_UNIT = 2100
 
     def __init__(self, hub, base_speed=1.0):
         """
@@ -19,7 +20,7 @@ class Plotter(object):
         self.both = self._hub.motor_AB
 
         self.base_speed = float(base_speed)
-        self.field_width = 3.55 / self.base_speed
+        self.field_width = 1.0 / self.base_speed
         self.xpos = 0
         self.ypos = 0
         self.is_tool_down = False
@@ -28,6 +29,8 @@ class Plotter(object):
 
     def initialize(self):
         self._reset_caret()
+        self._compensate_wheels_backlash(1)
+        self._compensate_wheels_backlash(-1)
         self.xpos = 0
         self.ypos = 0
         self.is_tool_down = False
@@ -37,9 +40,8 @@ class Plotter(object):
             logging.warning("No color/distance sensor, cannot center caret")
             return
 
+        self._hub.color_distance_sensor.subscribe(self._on_distance, mode=ColorDistanceSensor.COLOR_DISTANCE_FLOAT)
         self.caret.timed(0.5, self.base_speed)
-        self._hub.color_distance_sensor.subscribe(self._on_distance, mode=ColorDistanceSensor.COLOR_DISTANCE_FLOAT,
-                                                  granularity=1)
         try:
             self.caret.constant(-self.base_speed)
             count = 0
@@ -56,7 +58,9 @@ class Plotter(object):
             self.caret.stop()
             self._hub.color_distance_sensor.unsubscribe(self._on_distance)
 
-        if self._marker_color != COLOR_CYAN:
+        if self._marker_color == COLOR_CYAN:
+            self.move(-self.field_width * 0.1, 0)
+        else:
             self.move(-self.field_width, 0)
 
     def _on_distance(self, color, distance):
@@ -114,18 +118,18 @@ class Plotter(object):
             # movx -= self.xpos - self.field_width
             # self.xpos -= self.xpos - self.field_width
 
-        # self._compensate_wheels_backlash(movy)
+        self._compensate_wheels_backlash(movy)
 
         self.xpos += movx
         self.ypos += movy
 
-        length, speed_a, speed_b = self._calc_motor_angled(movx, movy)
+        length, speed_a, speed_b = self._calc_motor_angled(movx, movy * self.MOTOR_RATIO)
         logging.info("Motors: %.3f with %.3f/%.3f", length, speed_a, speed_b)
 
         if not speed_b:
-            self.caret.angled(length, -speed_a * self.base_speed)
+            self.caret.angled(length * 2.0, -speed_a * self.base_speed)
         elif not speed_a:
-            self.wheels.angled(length, -speed_b * self.base_speed)
+            self.wheels.angled(length * 2.0, -speed_b * self.base_speed)
         else:
             self.both.angled(length, -speed_a * self.base_speed, -speed_b * self.base_speed)
 
@@ -155,21 +159,24 @@ class Plotter(object):
         amovy = abs(movy)
         if amovx >= amovy:
             ax = amovy / (amovx + amovy)
-            spd_a = ax
-            spd_b = (1.0 - spd_a)
-            rotate = 1500 * amovx * (1.0 + spd_a / spd_b)
+            spd_b = ax
+            if spd_b < 0.05:
+                spd_b = 0
+            spd_a = (1.0 - spd_b)
+            rotate = Plotter.ROTATE_UNIT * amovx * (1.0 + spd_b / spd_a)
             logging.info("A: movx=%s, movy=%s, ax=%s", movx, movy, ax)
         else:
             ax = amovx / (amovx + amovy)
-            spd_b = ax
-            spd_a = (1.0 - spd_b)
-            rotate = 1500 * amovy * (1.0 + spd_b / spd_a)
+            spd_a = ax
+            if spd_a < 0.05:
+                spd_a = 0
+            spd_b = (1.0 - spd_a)
+            rotate = Plotter.ROTATE_UNIT * amovy * (1.0 + spd_a / spd_b)
             logging.info("B: movx=%s, movy=%s, ax=%s", movx, movy, ax)
 
         assert 0 <= spd_a <= 1
         assert 0 <= spd_b <= 1
 
-        assert rotate < 6000  # safety valve
         spd_a *= (movx / amovx) if amovx else 0
         spd_b *= (movy / amovy) if amovy else 0
         return rotate, spd_a, spd_b
@@ -237,3 +244,10 @@ class Plotter(object):
                 self.line(0, step)
                 self.line(width * flip, 0)
                 flip = -flip
+
+
+class LaserPlotter(Plotter):
+
+    def _tool_down(self):
+        super(LaserPlotter, self)._tool_down()
+        time.sleep(1.0)

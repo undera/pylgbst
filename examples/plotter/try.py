@@ -2,7 +2,7 @@ import logging
 import time
 import traceback
 
-from examples.plotter import Plotter
+from examples.plotter import LaserPlotter
 from pylgbst import EncodedMotor, PORT_AB, PORT_C, PORT_A, PORT_B, MoveHub
 from pylgbst.comms import DebugServerConnection, BLEConnection
 from tests import HubMock
@@ -53,13 +53,6 @@ def circles():
 
     plotter.move(FIELD_WIDTH / 2.0, 0)
     plotter.circle(FIELD_WIDTH)
-
-
-class LaserPlotter(Plotter):
-
-    def _tool_down(self):
-        super(LaserPlotter, self)._tool_down()
-        time.sleep(1)
 
 
 def lego():
@@ -133,7 +126,7 @@ def lego():
 
 def square_spiral():
     rounds = 7
-    step = FIELD_WIDTH / 4.0 / rounds
+    step = plotter.base_speed / rounds / 3.0
     for r in range(1, rounds):
         plotter.line(step * r * 4, 0)
         plotter.line(0, step * (r * 4 + 1))
@@ -170,7 +163,7 @@ def try_speeds():
         time.sleep(1)
 
 
-def snowflake():
+def snowflake(scale=1.0):
     a = [300, 232,
          351, 144,
          307, 68,
@@ -206,7 +199,7 @@ def snowflake():
     vals = [(x[0] / float(maxval), x[1] / float(maxval)) for x in vals]
 
     logging.info("Moves: %s", vals)
-    zoom = FIELD_WIDTH * 2.0
+    zoom = FIELD_WIDTH * scale
     for item in vals:
         plotter.line(item[0] * zoom, item[1] * zoom)
 
@@ -221,14 +214,14 @@ def snowflake():
 
 
 def angles_experiment():
-    parts = 5
+    parts = 2
     for x in range(0, parts + 1):
         movy = x * 1.0 / parts
         plotter.line(1.0, movy)
         plotter.move(-1.0, -movy)
         logging.info("%s", movy)
 
-    for x in range(0, parts + 1):
+    for x in range(0, parts):
         movx = x * 1.0 / parts
         plotter.line(movx, 1.0)
         plotter.move(-movx, -1.0)
@@ -276,14 +269,15 @@ if __name__ == '__main__':
 
     hub = MoveHub(conn) if 1 else get_hub_mock()
 
-    plotter = LaserPlotter(hub, 1.0)
-    FIELD_WIDTH = plotter.field_width
+    plotter = LaserPlotter(hub, 0.4)
+    FIELD_WIDTH = plotter.field_width * 0.9
 
     try:
-        # plotter._tool_up()
         plotter.initialize()
 
-        #angles_experiment()
+        # plotter._tool_down()
+
+        # angles_experiment()
 
         # try_speeds()
 
@@ -296,10 +290,10 @@ if __name__ == '__main__':
         # plotter.spiral(4, 0.02)
         # plotter.rectangle(FIELD_WIDTH / 5.0, FIELD_WIDTH / 5.0, solid=True)
 
-        # square_spiral()
+        square_spiral()
         # lego()
         # christmas_tree()
-        # snowflake()
+        # snowflake(0.5)
         pass
     finally:
         plotter.finalize()

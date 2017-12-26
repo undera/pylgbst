@@ -209,3 +209,27 @@ class TestPlotter(unittest.TestCase):
 
     def test_calc4(self):
         self.assertEqual((200, 0, 1), Plotter._calc_motor_timed(0, 200))
+
+    def test_calc5(self):
+        parts = 2
+        for x in range(0, parts + 1):
+            res = Plotter._calc_motor_angled(1.0, x * 1.0 / parts)
+            logging.debug("%s", res)
+
+        for x in range(0, parts + 1):
+            res = Plotter._calc_motor_angled(x * 1.0 / parts, 1.0)
+            logging.debug("%s", res)
+
+    def test_zeroes(self):
+        res = Plotter._calc_motor_angled(1.0, 0.0)
+        self.assertNotEqual(0, res[1])
+        res = Plotter._calc_motor_angled(0.0, 1.0)
+        self.assertNotEqual(0, res[2])
+
+    def test_calc6(self):
+        res = Plotter._calc_motor_angled(1.0, 0.2)
+        logging.debug("%s", res)
+        res = Plotter._calc_motor_angled(1.0, 0.5)
+        logging.debug("%s", res)
+        res = Plotter._calc_motor_angled(1.0, 0.8)
+        logging.debug("%s", res)
