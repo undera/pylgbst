@@ -1,4 +1,5 @@
 import logging
+import math
 import time
 import traceback
 from struct import pack, unpack
@@ -166,7 +167,7 @@ class EncodedMotor(Peripheral):
             log.warning("Speed cannot be more than 1")
             relative = 1
 
-        absolute = round(relative * 100)  # scale of 100 is proven by experiments
+        absolute = math.ceil(relative * 100)  # scale of 100 is proven by experiments
         return int(absolute)
 
     def _wrap_and_write(self, mtype, params, speed_primary, speed_secondary):
@@ -175,6 +176,8 @@ class EncodedMotor(Peripheral):
 
         abs_primary = self._speed_abs(speed_primary)
         abs_secondary = self._speed_abs(speed_secondary)
+        if abs_primary == -97 and abs_secondary == 3:
+            logging.info("P/S: %s/%s", abs_primary, abs_secondary)
 
         if mtype == self.ANGLED_GROUP and (not abs_secondary or not abs_primary):
             raise ValueError("Cannot have zero speed in double angled mode")  # otherwise it gets nuts
@@ -203,6 +206,7 @@ class EncodedMotor(Peripheral):
         if speed_secondary is None:
             speed_secondary = speed_primary
 
+        angle = int(round(angle))
         if angle < 0:
             angle = -angle
             speed_primary = -speed_primary
