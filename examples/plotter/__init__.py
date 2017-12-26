@@ -6,7 +6,7 @@ from pylgbst import ColorDistanceSensor, COLORS, COLOR_RED, COLOR_CYAN
 
 
 class Plotter(object):
-    MOTOR_RATIO = 1.45
+    MOTOR_RATIO = 1.425
     ROTATE_UNIT = 2100
 
     def __init__(self, hub, base_speed=1.0):
@@ -20,7 +20,6 @@ class Plotter(object):
         self.both = self._hub.motor_AB
 
         self.base_speed = float(base_speed)
-        self.field_width = 1.0 / self.base_speed
         self.xpos = 0
         self.ypos = 0
         self.is_tool_down = False
@@ -41,9 +40,9 @@ class Plotter(object):
             return
 
         self._hub.color_distance_sensor.subscribe(self._on_distance, mode=ColorDistanceSensor.COLOR_DISTANCE_FLOAT)
-        self.caret.timed(0.5, self.base_speed)
+        self.caret.timed(0.5, 1)
         try:
-            self.caret.constant(-self.base_speed)
+            self.caret.constant(-1)
             count = 0
             max_tries = 50
             while self._marker_color not in (COLOR_RED, COLOR_CYAN) and count < max_tries:
@@ -59,9 +58,9 @@ class Plotter(object):
             self._hub.color_distance_sensor.unsubscribe(self._on_distance)
 
         if self._marker_color == COLOR_CYAN:
-            self.move(-self.field_width * 0.1, 0)
+            self.move(- 0.1, 0)
         else:
-            self.move(-self.field_width, 0)
+            self.move(-1.0, 0)
 
     def _on_distance(self, color, distance):
         self._marker_color = None
@@ -89,6 +88,7 @@ class Plotter(object):
     def _tool_down(self):
         self.is_tool_down = True
         self._hub.motor_external.angled(-270, 1)
+        time.sleep(1.0)  # for laser to heat up
 
     def _tool_up(self):
         self._hub.motor_external.angled(270, 1)
@@ -109,15 +109,6 @@ class Plotter(object):
             logging.warning("No movement, ignored")
             return
 
-        if self.xpos + movx < -self.field_width:
-            logging.warning("Invalid xpos: %s", self.xpos)
-            # movx += self.xpos - self.field_width
-
-        if self.xpos + movx > self.field_width:
-            logging.warning("Invalid xpos: %s", self.xpos)
-            # movx -= self.xpos - self.field_width
-            # self.xpos -= self.xpos - self.field_width
-
         self._compensate_wheels_backlash(movy)
 
         self.xpos += movx
@@ -127,9 +118,9 @@ class Plotter(object):
         logging.info("Motors: %.3f with %.3f/%.3f", length, speed_a, speed_b)
 
         if not speed_b:
-            self.caret.angled(length * 2.0, -speed_a * self.base_speed)
+            self.caret.angled(length * 2.0, -speed_a * self.base_speed * 0.75)  # slow down to cut better
         elif not speed_a:
-            self.wheels.angled(length * 2.0, -speed_b * self.base_speed)
+            self.wheels.angled(length * 2.0, -speed_b * self.base_speed * 0.75)  # slow down to cut better
         else:
             self.both.angled(length, -speed_a * self.base_speed, -speed_b * self.base_speed)
 
@@ -235,19 +226,11 @@ class Plotter(object):
         self.line(0, -height)
 
         if solid:
-            max_step = 0.1
+            max_step = 0.01
             rounds = int(math.ceil(height / max_step))
             step = height / rounds
             flip = 1
-            self.line(0, step)  # luft
-            for r in range(1, rounds + 3):
+            for r in range(1, rounds):
                 self.line(0, step)
                 self.line(width * flip, 0)
                 flip = -flip
-
-
-class LaserPlotter(Plotter):
-
-    def _tool_down(self):
-        super(LaserPlotter, self)._tool_down()
-        time.sleep(1.0)

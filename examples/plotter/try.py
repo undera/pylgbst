@@ -2,7 +2,7 @@ import logging
 import time
 import traceback
 
-from examples.plotter import LaserPlotter
+from examples.plotter import Plotter
 from pylgbst import EncodedMotor, PORT_AB, PORT_C, PORT_A, PORT_B, MoveHub
 from pylgbst.comms import DebugServerConnection, BLEConnection
 from tests import HubMock
@@ -269,8 +269,8 @@ if __name__ == '__main__':
 
     hub = MoveHub(conn) if 1 else get_hub_mock()
 
-    plotter = LaserPlotter(hub, 0.4)
-    FIELD_WIDTH = plotter.field_width * 0.9
+    plotter = Plotter(hub, 0.75)
+    FIELD_WIDTH = 0.9
 
     try:
         plotter.initialize()
@@ -290,7 +290,7 @@ if __name__ == '__main__':
         # plotter.spiral(4, 0.02)
         # plotter.rectangle(FIELD_WIDTH / 5.0, FIELD_WIDTH / 5.0, solid=True)
 
-        square_spiral()
+        # square_spiral()
         # lego()
         # christmas_tree()
         # snowflake(0.5)
