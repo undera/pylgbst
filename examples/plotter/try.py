@@ -55,75 +55,6 @@ def circles():
     plotter.circle(FIELD_WIDTH)
 
 
-def lego():
-    t = FIELD_WIDTH / 5.0
-    h = t * 5.0
-    w = t * 3.0
-
-    plotter.move(-t * 2.0, 0)
-
-    plotter.line(h, 0)
-    plotter.line(0, t)
-    plotter.line(-(h - t), 0)
-    plotter.line(0, 2 * t)
-    plotter.line(-t, 0)
-    plotter.line(0, -w)
-
-    plotter.move(0, w + t)
-
-    plotter.line(h, 0)
-    plotter.line(0, w)
-    plotter.line(-t, 0)
-    plotter.line(0, -2 * t)
-    plotter.line(-t, 0)
-    plotter.line(0, t)
-    plotter.line(-t, 0)
-    plotter.line(0, -t)
-    plotter.line(-t, 0)
-    plotter.line(0, 2 * t)
-    plotter.line(-t, 0)
-    plotter.line(0, -w)
-
-    plotter.move(0, w + t)
-
-    plotter.move(t, 0)
-    plotter.line(3 * t, 0)
-    plotter.line(t, t)
-    plotter.line(0, t)
-    plotter.line(-t, t)
-    plotter.line(-t, 0)
-    plotter.line(0, -t)
-    plotter.line(t, 0)
-    plotter.line(0, -t)
-    plotter.line(-3 * t, 0)
-    plotter.line(0, t)
-    plotter.line(t, 0)
-    plotter.line(0, t)
-    plotter.line(-3 * t, 0)
-    plotter.line(0, -t)
-    plotter.line(t, 0)
-    plotter.line(0, -t)
-    plotter.line(t, -t)
-    plotter.move(-t, 0)
-
-    plotter.move(0, w + t)
-
-    plotter.move(t, 0)
-    plotter.line(3 * t, 0)
-    plotter.line(t, t)
-    plotter.line(0, t)
-    plotter.line(-t, t)
-    plotter.line(-3 * t, 0)
-    plotter.line(-t, -t)
-    plotter.line(0, -t)
-    plotter.line(t, -t)
-    plotter.move(0, t)
-    plotter.line(3 * t, 0)
-    plotter.line(0, t)
-    plotter.line(-3 * t, 0)
-    plotter.line(0, -t)
-
-
 def square_spiral():
     rounds = 7
     step = plotter.base_speed / rounds / 3.0
@@ -212,6 +143,8 @@ def snowflake(scale=1.0):
     for item in reversed(vals):
         plotter.line(item[0] * zoom, -item[1] * zoom)
 
+    plotter.line(0.05 * zoom, 0)
+
 
 def angles_experiment():
     parts = 2
@@ -291,9 +224,9 @@ if __name__ == '__main__':
         # plotter.rectangle(FIELD_WIDTH / 5.0, FIELD_WIDTH / 5.0, solid=True)
 
         # square_spiral()
-        # lego()
+        snowflake(0.75)
         # christmas_tree()
-        # snowflake(0.5)
+        # lego(plotter, FIELD_WIDTH / 5.0)
         pass
     finally:
         plotter.finalize()
