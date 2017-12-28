@@ -3,6 +3,7 @@ import time
 import traceback
 
 from examples.plotter import Plotter
+from examples.plotter.lego import lego
 from pylgbst import EncodedMotor, PORT_AB, PORT_C, PORT_A, PORT_B, MoveHub
 from pylgbst.comms import DebugServerConnection, BLEConnection
 from tests import HubMock
@@ -56,17 +57,18 @@ def circles():
 
 
 def square_spiral():
-    rounds = 7
-    step = plotter.base_speed / rounds / 3.0
+    rounds = 5
+    step = plotter.base_speed / rounds / 5.0
     for r in range(1, rounds):
         plotter.line(step * r * 4, 0)
         plotter.line(0, step * (r * 4 + 1))
         plotter.line(-step * (r * 4 + 2), 0)
         plotter.line(0, -step * (r * 4 + 3))
+    plotter.line(step * 2.0, step * 2.0)  # cut
 
 
 def christmas_tree():
-    t = FIELD_WIDTH / 5
+    t = FIELD_WIDTH / 3
     plotter.line(t, t)
     plotter.line(-t * 0.5, 0)
     plotter.line(t, t)
@@ -208,12 +210,14 @@ if __name__ == '__main__':
     try:
         plotter.initialize()
 
+        snowflake(0.75)
+        # christmas_tree()
+        # square_spiral()
+        # lego(plotter, FIELD_WIDTH / 7.0)
+
         # plotter._tool_down()
-
         # angles_experiment()
-
         # try_speeds()
-
         # moves()
         # triangle()
         # square()
@@ -223,10 +227,6 @@ if __name__ == '__main__':
         # plotter.spiral(4, 0.02)
         # plotter.rectangle(FIELD_WIDTH / 5.0, FIELD_WIDTH / 5.0, solid=True)
 
-        # square_spiral()
-        snowflake(0.75)
-        # christmas_tree()
-        # lego(plotter, FIELD_WIDTH / 5.0)
         pass
     finally:
         plotter.finalize()

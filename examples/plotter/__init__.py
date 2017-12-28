@@ -58,7 +58,7 @@ class Plotter(object):
             self._hub.color_distance_sensor.unsubscribe(self._on_distance)
 
         if self._marker_color == COLOR_CYAN:
-            self.move(- 0.1, 0)
+            self.move(-0.1, 0)
         else:
             self.move(-1.0, 0)
 

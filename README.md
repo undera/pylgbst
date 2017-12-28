@@ -8,9 +8,10 @@ Best way to start is to look into [`demo.py`](examples/demo.py) file, and run it
 
 If you have Vernie assembled, you might run scripts from [`vernie`](examples/vernie/) directory.
 
-Demonstrational video:
+Demonstrational videos:
 
 [![Demonstrational video](http://img.youtube.com/vi/oqsmgZlVE8I/0.jpg)](http://www.youtube.com/watch?v=oqsmgZlVE8I)
+[![Demonstrational video](http://img.youtube.com/vi/ZbKmqVBBMhM/0.jpg)](https://youtu.be/ZbKmqVBBMhM)
 
 
 ## Features
