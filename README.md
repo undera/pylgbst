@@ -30,7 +30,7 @@ Demonstrational videos:
 
 Install library like this: 
 ```bash
-pip install https://github.com/undera/pylgbst/archive/0.4.tar.gz
+pip install https://github.com/undera/pylgbst/archive/0.5.tar.gz
 ```
 
 Then instantiate MoveHub object and start invoking its methods. Following is example to just print peripherals detected on Hub:  
