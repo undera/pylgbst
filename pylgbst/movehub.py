@@ -37,7 +37,7 @@ class MoveHub(object):
 
     def __init__(self, connection=None):
         if not connection:
-            connection = BLEConnection()
+            connection = BLEConnection().connect()
 
         self.connection = connection
         self.info = {}
