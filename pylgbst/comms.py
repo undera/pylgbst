@@ -91,6 +91,9 @@ class BLEConnection(Connection):
                     self.requester = Requester(address, True, bt_iface_name)
                     break
 
+            if self.requester:
+                break
+
         return self
 
     def set_notify_handler(self, handler):
