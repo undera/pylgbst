@@ -27,7 +27,7 @@ class Peripheral(object):
         self._working = False
         self._subscribers = set()
         self._port_subscription_mode = None
-        self._incoming_port_data = queue.Queue()
+        self._incoming_port_data = queue.Queue(1)  # limit 1 means we drop data if we can't handle it fast enough
         thr = Thread(target=self._queue_reader)
         thr.setDaemon(True)
         thr.setName("Port data queue: %s" % self)
@@ -83,7 +83,10 @@ class Peripheral(object):
             subscriber(*args, **kwargs)
 
     def queue_port_data(self, data):
-        self._incoming_port_data.put(data)
+        try:
+            self._incoming_port_data.put_nowait(data)
+        except queue.Full:
+            logging.debug("Dropped port data: %s", data)
 
     def handle_port_data(self, data):
         log.warning("Unhandled device notification for %s: %s", self, str2hex(data[4:]))
