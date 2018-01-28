@@ -28,6 +28,8 @@ Demonstrational videos:
 
 ## Usage
 
+_Please note that it requires [gattlib](https://bitbucket.org/OscarAcena/pygattlib) to be installed, which is not supported on Windows._
+
 Install library like this: 
 ```bash
 pip install https://github.com/undera/pylgbst/archive/0.5.tar.gz
