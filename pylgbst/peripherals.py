@@ -27,6 +27,7 @@ class Peripheral(object):
         self._working = False
         self._subscribers = set()
         self._port_subscription_mode = None
+        # TODO: maybe max queue len of 2?
         self._incoming_port_data = queue.Queue(1)  # limit 1 means we drop data if we can't handle it fast enough
         thr = Thread(target=self._queue_reader)
         thr.setDaemon(True)
