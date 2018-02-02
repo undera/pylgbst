@@ -15,6 +15,7 @@ class ColorSorter(MoveHub):
         self.distance = 10
         self._last_wheel_dir = 1
         self.color_distance_sensor.subscribe(self.on_color)
+        self.queue = [None for _ in range(0, 1)]
 
     def on_color(self, colr, dist):
         if colr not in (COLOR_BLACK,) or dist < 2.5:
@@ -38,13 +39,40 @@ class ColorSorter(MoveHub):
         offset = newpos - self.position
         wheel_dir = offset / abs(offset)
 
-        if wheel_dir != self._last_wheel_dir:
-            self.motor_B.angled(270 * wheel_dir)
+        # if wheel_dir != self._last_wheel_dir:
+        #    self.motor_B.angled(30 * wheel_dir)
 
-        self.motor_B.angled(offset * 360 * 15)
+        self.motor_B.angled(offset * 600, 0.8)
 
         self.position = newpos
         self._last_wheel_dir = wheel_dir
+
+    def clear(self):
+        self.color_distance_sensor.unsubscribe(self.on_color)
+        if not self.motor_B.in_progress():
+            self.move_to_bucket(COLOR_BLACK)
+        self.motor_AB.stop(async=True)
+
+    def tick(self):
+        res = False
+        item = (self.color, self.distance)  # read once
+
+        if item[1] <= 5.0:
+            logging.info("Detected: %s", COLORS[item[0]])
+            self.queue.append(item)
+            res = True
+        else:
+            self.queue.append(None)
+
+        logging.debug("%s", [COLORS[x[0]] if x else None for x in self.queue])
+
+        last = self.queue.pop(0)
+        if last:
+            self.move_to_bucket(last[0])
+            res = True
+
+        self.feed()
+        return res
 
 
 if __name__ == '__main__':
@@ -56,34 +84,15 @@ if __name__ == '__main__':
         logging.warning("Failed to use debug server: %s", traceback.format_exc())
         conn = BLEConnection().connect()
 
-    queue = [None for _ in range(0, 1)]
-
     sorter = ColorSorter(conn)
     empty = 0
     try:
         while True:
             empty += 1
-            item = (sorter.color, sorter.distance)  # read once
-            # logging.info("%s %.2f", COLORS[item[0]], item[1])
-            if item[1] <= 5.0:
-                logging.info("Detected: %s", COLORS[item[0]])
-                queue.append(item)
+            if sorter.tick():
                 empty = 0
-            else:
-                queue.append(None)
+            elif empty > 10:
+                break
 
-            logging.debug("%s", [COLORS[x[0]] if x else None for x in queue])
-
-            last = queue.pop(0)
-            if last:
-                sorter.move_to_bucket(last[0])
-                empty = 0
-
-            if empty > 20:
-                sorter.move_to_bucket(COLOR_BLACK)
-
-            sorter.feed()
     finally:
-        if not sorter.motor_B.in_progress():
-            sorter.move_to_bucket(COLOR_BLACK)
-        sorter.motor_AB.stop(async=True)
+        sorter.clear()
