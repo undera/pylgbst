@@ -91,7 +91,7 @@ if __name__ == '__main__':
             empty += 1
             if sorter.tick():
                 empty = 0
-            elif empty > 10:
+            elif empty > 20:
                 break
 
     finally:
