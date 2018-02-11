@@ -29,7 +29,9 @@ Demonstrational videos:
 
 ## Usage
 
-_Please note that it requires [gattlib](https://bitbucket.org/OscarAcena/pygattlib) to be installed, which is not supported on Windows._
+_Please note:_ 
+- _it requires [gattlib](https://bitbucket.org/OscarAcena/pygattlib) to be installed, which is not supported on Windows._
+- _to enable the text-to-speech functionality [gTTS](https://github.com/pndurette/gTTS) may be installed but is not required by default._
 
 Install library like this: 
 ```bash
