@@ -4,7 +4,8 @@ import traceback
 import time
 
 from pylgbst import MoveHub
-from pylgbst.comms import DebugServerConnection, BLEConnection
+from pylgbst.comms import DebugServerConnection
+from pylgbst.comms_gattlib import BLEConnection
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
