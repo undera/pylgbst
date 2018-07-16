@@ -16,17 +16,15 @@ unterstützt. Zusätzlich wird BlueZ unter Linux (Raspberry Pi 3) unterstützt.
 """
 
 import logging
+import threading
 from time import sleep
 
+import gatt.gatt_linux as gatt
 import pygatt
 from pygatt.backends.bgapi.util import find_usb_serial_devices
 
 from pylgbst.constants import *
 from pylgbst.utilities import *
-
-if sys.platform.startswith('linux'):  # gatt gibt es nur für Linux. Nur dann importieren
-    import gatt
-    import threading
 
 BLED112_VENDOR_ID = 0x2458
 BLED112_PRODUCT_ID = 0x0001
