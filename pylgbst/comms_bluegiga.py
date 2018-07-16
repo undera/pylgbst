@@ -1,38 +1,46 @@
+import logging
+
+import pygatt
+
+from pylgbst.comms import Connection, DebugServer, LEGO_MOVE_HUB
+from pylgbst.constants import MOVE_HUB_HW_UUID_CHAR
+from pylgbst.utilities import str2hex
+
+log = logging.getLogger('comms-pygatt')
 
 
-class BlueGigaInterface(pygatt.BGAPIBackend):  # Pendant zu Klasse BlueZInterface
-    """
-    Durch BlueGiga BLED112 Dongle bereitgestelltes externes BLE-Interface auf Linux-
-    oder Windowsrechnern.
-    """
+class BlueGigaConnection(Connection):
+    def __init__(self):
+        Connection.__init__(self)
+        self.backend = pygatt.BGAPIBackend
+        self._conn_hnd = None
 
-    def __init__(self):  # Zusätzliches Attribut conn_hnd = Handle auf BLE-Verbindung
-        pygatt.BGAPIBackend.__init__(self)
-        self.conn_hnd = None  # Handle BLE-Verbindung = Rückgabeobjekt Funktion connect() anders als BlueZInterface!!
+    def connect(self, hub_mac=None):
+        log.debug("Trying to connect client to MoveHub with MAC: %s", hub_mac)
+        service = self.backend()
+        service.start()
 
-    def client_conn(self, hub_mac):  # Client mit dem GATT-Server MoveHub (MAC-Adresse hub_mac) verbinden
-        logging.debug("BlueGiga: Trying to connect client to MoveHub with MAC %s.", hub_mac)
-        self.conn_hnd = self.connect(hub_mac)
+        while not self._conn_hnd:
+            log.info("Discovering devices...")
+            devices = service.scan(1)
+            log.debug("Devices: %s", devices)
 
-    def read(self, handle):  # Lesen Charakteristik über angegebenes Handle
-        logging.debug("BlueGiga: Reading from handle %s.", handle)
-        return self.conn_hnd.char_read_handle(handle)
+            for dev in devices:
+                address = dev['address']
+                name = dev['name']
+                if name == LEGO_MOVE_HUB or hub_mac == address:
+                    logging.info("Found %s at %s", name, address)
+                    self._conn_hnd = service.connect(address)
+                    break
 
-    def write(self, handle, data):  # Schreiben Charakteristik über angegebenes Handle
-        logging.debug("BlueGiga: Writing to handle %s: %s", handle, str2hex(data))
-        return self.conn_hnd.char_write_handle(handle, data)
+            if self._conn_hnd:
+                break
 
-    def set_notific_handler(self, uuid, func_hnd):  # Callbackfunktion für Notifications festlegen
-        logging.debug("BlueGiga: Set notification handler to callback function.")
-        self.conn_hnd.subscribe(uuid, func_hnd)
+        return self
 
-    def enable_notifications(self):
-        self.write(ENABLE_NOTIFICATIONS_HANDLE, ENABLE_NOTIFICATIONS_VALUE)
+    def write(self, handle, data):
+        log.debug("Writing to handle %s: %s", handle, str2hex(data))
+        return self._conn_hnd.char_write_handle(handle, data)
 
-    def online(self):  # Kontrolle, ob Verbindungsprozess stattgefunden hat
-        if self.conn_hnd == None:
-            return False
-        else:
-            return True
-
-    # Verbindung trennen direkt über Methode pygatt.BGAPIBackend.stop(), daher nicht implementiert hier
+    def set_notify_handler(self, handler):
+        self._conn_hnd.subscribe(MOVE_HUB_HW_UUID_CHAR, handler)

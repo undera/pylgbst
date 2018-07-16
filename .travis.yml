@@ -18,7 +18,7 @@ addons:
     - libbluetooth-dev
     - libglib2.0-dev
 install:
-- pip install codecov gattlib
+- pip install codecov gattlib pygatt gatt
 script: coverage run --source=. `which nosetests` tests --nocapture
 after_success:
 - coverage report -m

@@ -2,7 +2,6 @@ import logging
 import time
 from struct import pack
 
-from pylgbst.comms import BLEConnection
 from pylgbst.constants import *
 from pylgbst.peripherals import Button, EncodedMotor, ColorDistanceSensor, LED, TiltSensor, Voltage, Peripheral, \
     Amperage
@@ -38,7 +37,7 @@ class MoveHub(object):
 
     def __init__(self, connection=None):
         if not connection:
-            connection = BLEConnection().connect()
+            raise ValueError()
 
         self.connection = connection
         self.info = {}
