@@ -6,6 +6,7 @@ from pylgbst.comms import BLEConnection
 from pylgbst.constants import *
 from pylgbst.peripherals import Button, EncodedMotor, ColorDistanceSensor, LED, TiltSensor, Voltage, Peripheral, \
     Amperage
+from pylgbst.utilities import str2hex, usbyte
 
 log = logging.getLogger('movehub')
 
