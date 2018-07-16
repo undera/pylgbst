@@ -46,7 +46,7 @@ class Requester(GATTRequester):
                 log.warning("Dropped notification %s: %s", handle, str2hex(data))
 
 
-class BLEConnection(Connection):
+class GattLibConnection(Connection):
     """
     Main transport class, uses real Bluetooth LE connection.
     Loops with timeout of 1 seconds to find device named "Lego MOVE Hub"
@@ -55,7 +55,7 @@ class BLEConnection(Connection):
     """
 
     def __init__(self):
-        super(BLEConnection, self).__init__()
+        super(GattLibConnection, self).__init__()
         self.requester = None
 
     def connect(self, bt_iface_name='hci0', hub_mac=None):
@@ -90,7 +90,7 @@ class BLEConnection(Connection):
 
 
 def start_debug_server(iface="hci0", port=9090):
-    ble = BLEConnection()
+    ble = GattLibConnection()
     ble.connect(iface)
     server = DebugServer(ble)
     server.start(port)

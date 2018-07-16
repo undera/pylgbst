@@ -5,7 +5,7 @@ import time
 
 from pylgbst import MoveHub
 from pylgbst.comms import DebugServerConnection
-from pylgbst.comms_gattlib import BLEConnection
+from pylgbst.comms_gattlib import GattLibConnection
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
@@ -14,7 +14,7 @@ if __name__ == '__main__':
         conn = DebugServerConnection()
     except BaseException:
         logging.warning("Failed to use debug server: %s", traceback.format_exc())
-        conn = BLEConnection().connect()
+        conn = GattLibConnection().connect()
 
     hub = MoveHub(conn)
     try:
