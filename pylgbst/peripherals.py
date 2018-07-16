@@ -451,5 +451,5 @@ class Button(Peripheral):
     def handle_port_data(self, data):
         param = usbyte(data, 5)
         if self.in_progress():
-            self.finished()  #
+            self.finished()
         self._notify_subscribers(bool(param))

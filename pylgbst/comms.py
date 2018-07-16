@@ -11,7 +11,8 @@ from binascii import unhexlify
 from gattlib import DiscoveryService, GATTRequester
 from threading import Thread
 
-from pylgbst.constants import MSG_DEVICE_SHUTDOWN, queue, str2hex
+from pylgbst.constants import MSG_DEVICE_SHUTDOWN
+from pylgbst.utilities import queue, str2hex
 
 log = logging.getLogger('comms')
 
