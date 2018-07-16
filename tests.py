@@ -2,9 +2,9 @@ import unittest
 from binascii import unhexlify
 
 from examples.plotter import Plotter
-from pylgbst import *
 from pylgbst.comms import Connection
 from pylgbst.movehub import MoveHub
+from pylgbst.peripherals import *
 
 HANDLE = MOVE_HUB_HARDWARE_HANDLE
 
