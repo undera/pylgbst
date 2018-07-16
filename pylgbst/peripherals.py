@@ -6,6 +6,7 @@ from struct import pack, unpack
 from threading import Thread
 
 from pylgbst.constants import *
+from pylgbst.utilities import queue, str2hex, usbyte, ushort
 
 log = logging.getLogger('peripherals')
 
@@ -49,11 +50,11 @@ class Peripheral(object):
         self._write_to_hub(MSG_SENSOR_SUBSCRIBE, params)
 
     def started(self):
-        log.debug("Started: %s", self)
+        log.debug("Peripheral Started: %s", self)
         self._working = True
 
     def finished(self):
-        log.debug("Finished: %s", self)
+        log.debug("Peripheral Finished: %s", self)
         self._working = False
 
     def in_progress(self):
@@ -87,7 +88,7 @@ class Peripheral(object):
         try:
             self._incoming_port_data.put_nowait(data)
         except queue.Full:
-            logging.debug("Dropped port data: %s", data)
+            log.debug("Dropped port data: %s", data)
 
     def handle_port_data(self, data):
         log.warning("Unhandled device notification for %s: %s", self, str2hex(data[4:]))
@@ -403,7 +404,7 @@ class Voltage(Peripheral):
         val = ushort(data, 4)
         self.last_value = val / 4096.0
         if self.last_value < 0.2:
-            logging.warning("Battery low! %s%%", int(100 * self.last_value))
+            log.warning("Battery low! %s%%", int(100 * self.last_value))
         self._notify_subscribers(self.last_value)
 
 
@@ -450,5 +451,5 @@ class Button(Peripheral):
     def handle_port_data(self, data):
         param = usbyte(data, 5)
         if self.in_progress():
-            self.finished()
+            self.finished()  #
         self._notify_subscribers(bool(param))
