@@ -20,7 +20,7 @@ def demo_led_colors(movehub):
 
 def demo_motors_timed(movehub):
     log.info("Motors movement demo: timed")
-    for level in range(0, 101, 5):
+    for level in range(0, 101, 10):
         level /= 100.0
         log.info("Speed level: %s%%", level * 100)
         movehub.motor_A.timed(0.2, level)

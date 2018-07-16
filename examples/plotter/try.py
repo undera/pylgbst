@@ -1,9 +1,11 @@
+# coding=utf-8
 import logging
 import time
 import traceback
 
+import six
+
 from examples.plotter import Plotter
-from examples.plotter.lego import lego
 from pylgbst import EncodedMotor, PORT_AB, PORT_C, PORT_A, PORT_B, MoveHub
 from pylgbst.comms import DebugServerConnection, BLEConnection
 from tests import HubMock
@@ -192,9 +194,30 @@ def get_hub_mock():
     return hub
 
 
+def interpret_command(cmd, plotter):
+    scale = 0.075
+    for c in cmd.lower():
+        if c == u'л':
+            plotter._transfer_to(-scale, 0)
+        elif c == u'п':
+            plotter._transfer_to(scale, 0)
+        elif c == u'н':
+            plotter._transfer_to(0, -scale)
+        elif c == u'в':
+            plotter._transfer_to(0, scale)
+        elif c == u'1':
+            plotter._tool_down()
+        elif c == u'0':
+            plotter._tool_up()
+        elif c == u' ':
+            pass
+        else:
+            logging.warning(u"Неизвестная команда: %s", c)
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
-    logging.getLogger('').setLevel(logging.INFO)
+    logging.getLogger('').setLevel(logging.DEBUG)
 
     try:
         conn = DebugServerConnection()
@@ -208,9 +231,20 @@ if __name__ == '__main__':
     FIELD_WIDTH = 0.9
 
     try:
+        """
+        while True:
+            cmd = six.moves.input("программа> ").decode('utf8')
+            if not cmd.strip():
+                continue
+            plotter.initialize()
+            interpret_command(cmd, plotter)
+            plotter.finalize()
+        """
+
+        time.sleep(1)
         plotter.initialize()
 
-        snowflake(0.75)
+        # snowflake(0.75)
         # christmas_tree()
         # square_spiral()
         # lego(plotter, FIELD_WIDTH / 7.0)
