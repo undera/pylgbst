@@ -9,7 +9,7 @@ from pylgbst.utilities import str2hex
 log = logging.getLogger('comms-pygatt')
 
 
-class PygattConnection(Connection):
+class GattoolConnection(Connection):
     """
     Used for connecting to
 
@@ -18,7 +18,7 @@ class PygattConnection(Connection):
 
     def __init__(self):
         Connection.__init__(self)
-        self.backend = pygatt.BGAPIBackend
+        self.backend = pygatt.GATTToolBackend
         self._conn_hnd = None
 
     def connect(self, hub_mac=None):
@@ -49,7 +49,12 @@ class PygattConnection(Connection):
 
     def write(self, handle, data):
         log.debug("Writing to handle %s: %s", handle, str2hex(data))
-        return self._conn_hnd.char_write_handle(handle, data)
+        return self._conn_hnd.char_write_handle(handle, bytearray(data))
 
     def set_notify_handler(self, handler):
         self._conn_hnd.subscribe(MOVE_HUB_HW_UUID_CHAR, handler)
+
+class BlueGigaConnection(Connection):
+    def __init__(self):
+        super(BlueGigaConnection, self).__init__()
+        self.backend = pygatt.BGAPIBackend
