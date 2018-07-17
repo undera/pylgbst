@@ -11,7 +11,7 @@ from pylgbst.utilities import str2hex
 log = logging.getLogger('comms-bluez')
 
 
-class BlueZInterface(gatt.Device, object):  # Pendant zu Klasse BlueGigaInterface
+class MoveHubDevice(gatt.Device, object):  # Pendant zu Klasse BlueGigaInterface
     def __init__(self, mac_address, manager):
         gatt.Device.__init__(self, mac_address=mac_address, manager=manager)
         self._notify_callback = lambda hnd, val: None
@@ -61,13 +61,13 @@ class BlueZInterface(gatt.Device, object):  # Pendant zu Klasse BlueGigaInterfac
         self._notify_callback(MOVE_HUB_HARDWARE_HANDLE, value)
 
 
-class BlueZConnection(Connection):
+class GattConnection(Connection):
     """
-    :type _device: BlueZInterface
+    :type _device: MoveHubDevice
     """
 
     def __init__(self):
-        super(BlueZConnection, self).__init__()
+        super(GattConnection, self).__init__()
         self._device = None
 
     def connect(self, bt_iface_name='hci0', hub_mac=None):
@@ -88,7 +88,7 @@ class BlueZConnection(Connection):
                 name = dev.alias()
                 if name == LEGO_MOVE_HUB or hub_mac == address:
                     logging.info("Found %s at %s", name, address)
-                    self._device = BlueZInterface(address, dev_manager)
+                    self._device = MoveHubDevice(address, dev_manager)
                     break
 
             if not self._device:

@@ -6,7 +6,7 @@ from pygatt import BLEAddressType
 from pygatt.backends.bgapi.bgapi import MAX_CONNECTION_ATTEMPTS
 from pygatt.backends.bgapi.device import BGAPIBLEDevice
 
-from pylgbst.comms_bluegiga import BlueGigaConnection
+from pylgbst.comms_pygatt import PygattConnection
 from tests import log
 
 
@@ -58,7 +58,7 @@ class BlueGigaBackendMock(pygatt.BGAPIBackend):
 
 class BlueGigaTests(unittest.TestCase):
     def test_1(self):
-        obj = BlueGigaConnection()
+        obj = PygattConnection()
         obj.backend = BlueGigaBackendMock
         obj.connect(u'66:65:64:63:62:61')
         obj.write(0, "test")

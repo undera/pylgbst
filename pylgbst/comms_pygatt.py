@@ -9,8 +9,10 @@ from pylgbst.utilities import str2hex
 log = logging.getLogger('comms-pygatt')
 
 
-class BlueGigaConnection(Connection):
+class PygattConnection(Connection):
     """
+    Used for connecting to
+
     :type _conn_hnd: pygatt.backends.bgapi.device.BGAPIBLEDevice
     """
 
@@ -21,12 +23,12 @@ class BlueGigaConnection(Connection):
 
     def connect(self, hub_mac=None):
         log.debug("Trying to connect client to MoveHub with MAC: %s", hub_mac)
-        service = self.backend()
-        service.start()
+        adapter = self.backend()
+        adapter.start()
 
         while not self._conn_hnd:
             log.info("Discovering devices...")
-            devices = service.scan(1)
+            devices = adapter.scan(1)
             log.debug("Devices: %s", devices)
 
             for dev in devices:
@@ -34,7 +36,7 @@ class BlueGigaConnection(Connection):
                 name = dev['name']
                 if name == LEGO_MOVE_HUB or hub_mac == address:
                     logging.info("Found %s at %s", name, address)
-                    self._conn_hnd = service.connect(address)
+                    self._conn_hnd = adapter.connect(address)
                     break
 
             if self._conn_hnd:
