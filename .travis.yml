@@ -17,6 +17,7 @@ addons:
     - libboost-thread-dev
     - libbluetooth-dev
     - libglib2.0-dev
+    - python3-dbus
 install:
 - pip install codecov gattlib pygatt gatt
 script: coverage run --source=. `which nosetests` tests --nocapture
