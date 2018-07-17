@@ -12,7 +12,7 @@ from pylgbst.utilities import str2hex
 log = logging.getLogger('comms-bluez')
 
 
-class MoveHubDevice(gatt.Device, object):  # Pendant zu Klasse BlueGigaInterface
+class CustomDevice(gatt.Device, object):  # Pendant zu Klasse BlueGigaInterface
     def __init__(self, mac_address, manager):
         gatt.Device.__init__(self, mac_address=mac_address, manager=manager)
         self._notify_callback = lambda hnd, val: None
@@ -72,7 +72,7 @@ class MoveHubDevice(gatt.Device, object):  # Pendant zu Klasse BlueGigaInterface
 
 class GattConnection(Connection):
     """
-    :type _device: MoveHubDevice
+    :type _device: CustomDevice
     """
 
     def __init__(self):
@@ -97,7 +97,7 @@ class GattConnection(Connection):
                 name = dev.alias()
                 if name == LEGO_MOVE_HUB or hub_mac == address:
                     logging.info("Found %s at %s", name, address)
-                    self._device = MoveHubDevice(address, dev_manager)
+                    self._device = CustomDevice(address, dev_manager)
                     break
 
             if not self._device:
