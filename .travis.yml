@@ -19,7 +19,7 @@ addons:
     - libglib2.0-dev
     - libdbus-1-dev
 install:
-- pip install codecov gattlib pygatt gatt dbus-python
+- pip install codecov gattlib pygatt gatt dbus-python<=1.2.4
 script: coverage run --source=. `which nosetests` tests --nocapture
 after_success:
 - coverage report -m
