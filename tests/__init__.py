@@ -1,7 +1,7 @@
 from binascii import unhexlify
 
-from pylgbst import MoveHub
 from pylgbst.comms import Connection
+from pylgbst.movehub import MoveHub
 from pylgbst.peripherals import *
 
 logging.basicConfig(level=logging.DEBUG)

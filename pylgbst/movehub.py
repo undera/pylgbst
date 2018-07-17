@@ -75,6 +75,7 @@ class MoveHub(object):
             builtin_devices = (self.led, self.motor_A, self.motor_B,
                                self.motor_AB, self.tilt_sensor, self.button, self.amperage, self.voltage)
             if None not in builtin_devices:
+                log.debug("All devices are present")
                 return
             log.debug("Waiting for builtin devices to appear: %s", builtin_devices)
             time.sleep(0.05)

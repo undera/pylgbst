@@ -1,7 +1,7 @@
 import time
 import unittest
 
-from pylgbst import MoveHub
+from pylgbst.movehub import MoveHub
 from pylgbst.peripherals import LED, PORT_LED, MOVE_HUB_HARDWARE_HANDLE, COLOR_RED, TiltSensor, COLORS
 from tests import log, HubMock, ConnectionMock, Thread
 
@@ -15,7 +15,7 @@ class GeneralTest(unittest.TestCase):
             time.sleep(1)
             log.debug("Waiting for notifications to process...")
             if hub.connection.finished:
-                log.debug("Done waiting")
+                log.debug("Done waiting for notifications to process")
                 break
 
     def test_led(self):
@@ -51,8 +51,9 @@ class GeneralTest(unittest.TestCase):
         hub.notify_mock.append((HANDLE, "0600453a04fe"))
         time.sleep(1)
 
-        self._wait_notifications_handled(hub)
+        self._inject_notification(hub, '0a00 47 3a 090100000001', 1)
         hub.tilt_sensor.unsubscribe(callback)
+        self._wait_notifications_handled(hub)
         # TODO: assert
 
     def test_motor(self):
@@ -87,6 +88,7 @@ class GeneralTest(unittest.TestCase):
         self._inject_notification(conn, '1200 0108 06 4c45474f204d6f766520487562', 2)
         self._inject_notification(conn, '0900 47 3c 0227003738', 3)
         self._inject_notification(conn, '0600 45 3c 020d', 4)
+        self._inject_notification(conn, '0900 47 3c 0227003738', 5)
         hub = MoveHub(conn)
         # demo_all(hub)
         self._wait_notifications_handled(hub)
@@ -107,8 +109,9 @@ class GeneralTest(unittest.TestCase):
         hub.notify_mock.append((HANDLE, "08004501ff0aff00"))
         time.sleep(1)
         # TODO: assert
-        self._wait_notifications_handled(hub)
+        self._inject_notification(hub, '0a00 4701090100000001', 1)
         hub.color_distance_sensor.unsubscribe(callback)
+        self._wait_notifications_handled(hub)
 
     def test_button(self):
         hub = HubMock()
@@ -124,8 +127,8 @@ class GeneralTest(unittest.TestCase):
         hub.notify_mock.append((HANDLE, "060001020600"))
         time.sleep(1)
         # TODO: assert
-        self._wait_notifications_handled(hub)
         hub.button.unsubscribe(callback)
+        self._wait_notifications_handled(hub)
 
     def _inject_notification(self, hub, notify, pause):
         def inject():
