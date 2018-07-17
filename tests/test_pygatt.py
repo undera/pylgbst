@@ -23,7 +23,7 @@ class SerialMock(serial.Serial):
         pass
 
     def read(self, size=1):
-        return bytes("")
+        return bytes()
 
 
 class BGAPIBLEDeviceMock(BGAPIBLEDevice):
@@ -43,7 +43,7 @@ class BlueGigaBackendMock(pygatt.BGAPIBackend):
         log.debug("Mock expect")
         data = {
             "packet_type": 0x04,
-            "sender": "abcdef",
+            "sender": "abcdef".encode('ascii'),
             "data": [1, 2, 3],
             "rssi": 1
         }
@@ -61,5 +61,5 @@ class BlueGigaTests(unittest.TestCase):
         obj = GattoolConnection()
         obj.backend = BlueGigaBackendMock
         obj.connect(u'66:65:64:63:62:61')
-        obj.write(0, "test")
+        obj.write(0, "test".encode('ascii'))
         obj.set_notify_handler(lambda x: None)
