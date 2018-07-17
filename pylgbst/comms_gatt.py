@@ -3,7 +3,7 @@ import re
 import threading
 from time import sleep
 
-from gatt import gatt_linux as gatt, DeviceManager  # FIXME: temporary
+import gatt
 
 from pylgbst.comms import Connection, LEGO_MOVE_HUB
 from pylgbst.constants import MOVE_HUB_HW_UUID_SERV, MOVE_HUB_HW_UUID_CHAR, MOVE_HUB_HARDWARE_HANDLE
@@ -75,12 +75,13 @@ class GattConnection(Connection):
     :type _device: CustomDevice
     """
 
-    def __init__(self):
+    def __init__(self, bt_iface_name='hci0'):
         super(GattConnection, self).__init__()
         self._device = None
+        self._iface = bt_iface_name
 
-    def connect(self, bt_iface_name='hci0', hub_mac=None):
-        dev_manager = DeviceManager(adapter_name=bt_iface_name)
+    def connect(self, hub_mac=None):
+        dev_manager = gatt.DeviceManager(adapter_name=self._iface)
         dman_thread = threading.Thread(target=dev_manager.run)
         dman_thread.setDaemon(True)
         log.debug('Starting DeviceManager...')

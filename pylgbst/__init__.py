@@ -1,41 +1,62 @@
-import sys
+import logging
+import traceback
 
-from pylgbst.movehub import MoveHub
+from pylgbst.comms import DebugServer
+
+log = logging.getLogger('pylgbst')
 
 
-def get_connection(self, backend='Auto', controller='hci0', hub_mac=''):
-    if backend not in ['Auto', 'BlueZ', 'BlueGiga']:
-        raise ValueError("Backend has to be one of Auto, BlueZ, BlueGiga")
-    system = sys.platform
-    print('Erkanntes Betriebssystem: ', system)
-    if system.startswith('linux'):
-        system = 'linux'
-    if system in ['linux', 'win32']:
-        detected_ifaces = find_usb_serial_devices(vendor_id=BLED112_VENDOR_ID, product_id=BLED112_PRODUCT_ID)
-        if backend == 'Auto':
-            if system == 'linux':
-                if len(detected_ifaces) == 0:  # BlueGiga nicht gefunden, also verwende BlueZ
-                    print('Kein BlueGiga-Dongle unter Linux gefunden, verwende BlueZ-Interface.')
-                    controller = controller
-                    conn_bluez(hub_mac, controller)
-                else:  # BlueGiga gefunden und diesen verwenden
-                    controller = detected_ifaces[0].port_name
-                    print('BlueGiga-Dongle unter Linux gefunden unter: ', controller)
-                    conn_bluegiga(hub_mac)
-            else:  # Windows-Betriebssystem
-                if len(detected_ifaces) == 0:
-                    print('Kein BlueGiga-Dongle unter Windows gefunden > Programmabbruch')
-                else:
-                    controller = detected_ifaces[0].port_name
-                    print('BlueGiga-Dongle unter Windows gefunden unter: ', controller)
-                    conn_bluegiga(hub_mac)
-        elif backend == 'BlueZ':
-            controller = controller
-            backend = backend
-            conn_bluez(hub_mac, controller)
-        elif backend == 'BlueGiga':
-            controller = controller
-            backend = backend
-            conn_bluegiga(hub_mac)
-    else:
-        print('Platform not supported'.format(sys.platform))
+def get_connection_bluegiga():
+    from pylgbst.comms_pygatt import BlueGigaConnection
+
+    return BlueGigaConnection()
+
+
+def get_connection_gattool(controller):
+    from pylgbst.comms_pygatt import GattoolConnection
+
+    return GattoolConnection(controller)
+
+
+def get_connection_gatt(controller):
+    from pylgbst.comms_gatt import GattConnection
+
+    return GattConnection(controller)
+
+
+def get_connection_gattlib(controller):
+    from pylgbst.comms_gattlib import GattLibConnection
+
+    return GattLibConnection(controller)
+
+
+def get_connection_auto(controller='hci0', hub_mac=None):
+    conn = None
+    try:
+        return get_connection_bluegiga().connect()
+    except BaseException:
+        logging.debug("Failed: %s", traceback.format_exc())
+        try:
+            conn = get_connection_gattool(controller).connect(hub_mac)
+        except BaseException:
+            logging.debug("Failed: %s", traceback.format_exc())
+
+            try:
+                conn = get_connection_gatt(controller).connect(hub_mac)
+            except BaseException:
+                logging.debug("Failed: %s", traceback.format_exc())
+
+                try:
+                    conn = get_connection_gattlib(controller).connect(hub_mac)
+                except BaseException:
+                    logging.debug("Failed: %s", traceback.format_exc())
+
+    if conn is None:
+        raise Exception("Failed to autodetect connection, make sure you have installed prerequisites")
+
+    return conn
+
+
+def start_debug_server(iface="hci0", port=9090):
+    server = DebugServer(get_connection_auto(iface))
+    server.start(port)

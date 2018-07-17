@@ -4,7 +4,7 @@ import traceback
 from gattlib import DiscoveryService, GATTRequester
 from threading import Thread
 
-from pylgbst.comms import Connection, LEGO_MOVE_HUB, DebugServer
+from pylgbst.comms import Connection, LEGO_MOVE_HUB
 from pylgbst.utilities import queue, str2hex
 
 log = logging.getLogger('comms-gattlib')
@@ -55,22 +55,23 @@ class GattLibConnection(Connection):
     :type requester: Requester
     """
 
-    def __init__(self):
+    def __init__(self, bt_iface_name='hci0'):
         super(GattLibConnection, self).__init__()
         self.requester = None
+        self._iface = bt_iface_name
 
-    def connect(self, bt_iface_name='hci0', hub_mac=None):
-        service = DiscoveryService(bt_iface_name)
+    def connect(self, hub_mac=None):
+        service = DiscoveryService(self._iface)
 
         while not self.requester:
-            log.info("Discovering devices using %s...", bt_iface_name)
+            log.info("Discovering devices using %s...", self._iface)
             devices = service.discover(1)
             log.debug("Devices: %s", devices)
 
             for address, name in devices.items():
                 if name == LEGO_MOVE_HUB or hub_mac == address:
                     logging.info("Found %s at %s", name, address)
-                    self.requester = Requester(address, True, bt_iface_name)
+                    self.requester = Requester(address, True, self._iface)
                     break
 
             if self.requester:
@@ -88,10 +89,3 @@ class GattLibConnection(Connection):
     def write(self, handle, data):
         log.debug("Writing to %s: %s", handle, str2hex(data))
         return self.requester.write_by_handle(handle, data)
-
-
-def start_debug_server(iface="hci0", port=9090):
-    ble = GattLibConnection()
-    ble.connect(iface)
-    server = DebugServer(ble)
-    server.start(port)

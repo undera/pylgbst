@@ -2,6 +2,7 @@ import logging
 import time
 from struct import pack
 
+from pylgbst import get_connection_auto
 from pylgbst.constants import *
 from pylgbst.peripherals import Button, EncodedMotor, ColorDistanceSensor, LED, TiltSensor, Voltage, Peripheral, \
     Amperage
@@ -37,7 +38,7 @@ class MoveHub(object):
 
     def __init__(self, connection=None):
         if not connection:
-            raise ValueError()
+            connection = get_connection_auto()
 
         self.connection = connection
         self.info = {}

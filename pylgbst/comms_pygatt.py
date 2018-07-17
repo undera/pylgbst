@@ -16,9 +16,9 @@ class GattoolConnection(Connection):
     :type _conn_hnd: pygatt.backends.bgapi.device.BGAPIBLEDevice
     """
 
-    def __init__(self):
+    def __init__(self, controller='hci0'):
         Connection.__init__(self)
-        self.backend = pygatt.GATTToolBackend
+        self.backend = lambda: pygatt.GATTToolBackend(hci_device=controller)
         self._conn_hnd = None
 
     def connect(self, hub_mac=None):
@@ -54,7 +54,8 @@ class GattoolConnection(Connection):
     def set_notify_handler(self, handler):
         self._conn_hnd.subscribe(MOVE_HUB_HW_UUID_CHAR, handler)
 
-class BlueGigaConnection(Connection):
+
+class BlueGigaConnection(GattoolConnection):
     def __init__(self):
         super(BlueGigaConnection, self).__init__()
-        self.backend = pygatt.BGAPIBackend
+        self.backend = lambda: pygatt.GATTToolBackend()
