@@ -67,7 +67,7 @@ class MoveHub(object):
         self.connection.write(MOVE_HUB_HARDWARE_HANDLE, pack("<B", len(cmd) + 1) + cmd)
 
     def _wait_for_devices(self):
-        self.connection.write(ENABLE_NOTIFICATIONS_HANDLE, ENABLE_NOTIFICATIONS_VALUE)
+        self.connection.enable_notifications()
 
         builtin_devices = ()
         for num in range(0, 60):
@@ -87,7 +87,6 @@ class MoveHub(object):
             log.warning("Unsupported notification handle: 0x%s", handle)
             return
 
-        data = data[3:]
         log.debug("Notification on %s: %s", handle, str2hex(orig))
 
         msg_type = usbyte(data, 2)

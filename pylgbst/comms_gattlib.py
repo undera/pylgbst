@@ -36,6 +36,7 @@ class Requester(GATTRequester):
     def _dispatch_notifications(self):
         while True:
             handle, data = self._notify_queue.get()
+            data = data[3:] # for some reason, there are extra bytes
             if self.notification_sink:
                 try:
                     self.notification_sink(handle, data)

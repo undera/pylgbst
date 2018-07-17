@@ -2,7 +2,7 @@ import logging
 
 import pygatt
 
-from pylgbst.comms import Connection, DebugServer, LEGO_MOVE_HUB
+from pylgbst.comms import Connection, LEGO_MOVE_HUB
 from pylgbst.constants import MOVE_HUB_HW_UUID_CHAR
 from pylgbst.utilities import str2hex
 
@@ -10,6 +10,10 @@ log = logging.getLogger('comms-pygatt')
 
 
 class BlueGigaConnection(Connection):
+    """
+    :type _conn_hnd: pygatt.backends.bgapi.device.BGAPIBLEDevice
+    """
+
     def __init__(self):
         Connection.__init__(self)
         self.backend = pygatt.BGAPIBackend
@@ -37,6 +41,9 @@ class BlueGigaConnection(Connection):
                 break
 
         return self
+
+    def disconnect(self):
+        self._conn_hnd.disconnect()
 
     def write(self, handle, data):
         log.debug("Writing to handle %s: %s", handle, str2hex(data))

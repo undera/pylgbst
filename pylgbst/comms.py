@@ -10,7 +10,7 @@ from abc import abstractmethod
 from binascii import unhexlify
 from threading import Thread
 
-from pylgbst.constants import MSG_DEVICE_SHUTDOWN
+from pylgbst.constants import MSG_DEVICE_SHUTDOWN, ENABLE_NOTIFICATIONS_HANDLE, ENABLE_NOTIFICATIONS_VALUE
 from pylgbst.utilities import str2hex
 
 log = logging.getLogger('comms')
@@ -19,6 +19,12 @@ LEGO_MOVE_HUB = "LEGO Move Hub"
 
 
 class Connection(object):
+    def connect(self):
+        pass
+
+    def disconnect(self):
+        pass
+
     @abstractmethod
     def write(self, handle, data):
         pass
@@ -26,6 +32,9 @@ class Connection(object):
     @abstractmethod
     def set_notify_handler(self, handler):
         pass
+
+    def enable_notifications(self):
+        self.write(ENABLE_NOTIFICATIONS_HANDLE, ENABLE_NOTIFICATIONS_VALUE)
 
 
 class DebugServer(object):
