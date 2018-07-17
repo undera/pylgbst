@@ -1,4 +1,5 @@
 import logging
+import re
 import threading
 from time import sleep
 
@@ -57,8 +58,16 @@ class MoveHubDevice(gatt.Device, object):  # Pendant zu Klasse BlueGigaInterface
             self._handle = RuntimeError("Failed to obtain MoveHub handle")
 
     def characteristic_value_updated(self, characteristic, value):
+        value = self._fix_weird_bug(value)
         log.debug('Notification in GattDevice: %s', str2hex(value))
         self._notify_callback(MOVE_HUB_HARDWARE_HANDLE, value)
+
+    def _fix_weird_bug(self, value):
+        if isinstance(value, str) and "dbus.Array" in value:  # weird bug from gatt on my Ubuntu 16.04!
+            log.debug("Fixing broken notify string: %s", value)
+            return ''.join([chr(int(x.group(1))) for x in re.finditer(r"dbus.Byte\((\d+)\)", value)])
+
+        return value
 
 
 class GattConnection(Connection):
