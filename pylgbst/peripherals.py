@@ -70,14 +70,16 @@ class Peripheral(object):
         if callback:
             self._subscribers.add(callback)
 
-    def unsubscribe(self, callback=None):
+    def unsubscribe(self, callback=None, async=False):
         if callback in self._subscribers:
             self._subscribers.remove(callback)
 
         if self._port_subscription_mode is None:
             log.warning("Attempt to unsubscribe while never subscribed: %s", self)
         elif not self._subscribers:
+            self.started()
             self._port_subscribe(self._port_subscription_mode, 0, False)
+            self._wait_sync(async)
             self._port_subscription_mode = None
 
     def _notify_subscribers(self, *args, **kwargs):
