@@ -37,12 +37,12 @@ def get_connection_auto(controller='hci0', hub_mac=None):
     except BaseException:
         logging.debug("Failed: %s", traceback.format_exc())
         try:
-            conn = get_connection_gattool(controller).connect(hub_mac)
+            conn = get_connection_gatt(controller).connect(hub_mac)
         except BaseException:
             logging.debug("Failed: %s", traceback.format_exc())
 
             try:
-                conn = get_connection_gatt(controller).connect(hub_mac)
+                conn = get_connection_gattool(controller).connect(hub_mac)
             except BaseException:
                 logging.debug("Failed: %s", traceback.format_exc())
 
