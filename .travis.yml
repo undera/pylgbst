@@ -23,6 +23,8 @@ addons:
     - libglib2.0-dev
     - libdbus-1-dev
     - libdbus-glib-1-dev
+    - libgirepository-1.0-1
+
 install:
 - pip install codecov gattlib pygatt gatt pexpect dbus-python==1.2.4 pgi
 script: coverage run --source=. `which nosetests` tests --nocapture
