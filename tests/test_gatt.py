@@ -1,27 +1,15 @@
 import unittest
 
+from gatt import DeviceManager
+
 from pylgbst.comms_gatt import CustomDevice
 from tests import log, str2hex
-
-
-class BusMock(object):
-    def get_object(self, a, b):
-        return self
-
-
-class DeviceManagerMock(object):
-    def __init__(self):
-        super(DeviceManagerMock, self).__init__()
-        self._bus = BusMock()
-        self._object_manager = None
-        self.adapter_name = None
-        self._manage_device = lambda x: None
 
 
 class TestGatt(unittest.TestCase):
     def test_one(self):
         log.debug("")
-        obj = CustomDevice("AA", DeviceManagerMock())
+        obj = CustomDevice("AA", DeviceManager("hci0"))
 
         def callback(handle, value):
             log.debug("%s: %s", type(value), str2hex(value))
