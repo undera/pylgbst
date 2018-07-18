@@ -9,7 +9,7 @@ from pylgbst.comms import Connection, LEGO_MOVE_HUB
 from pylgbst.constants import MOVE_HUB_HW_UUID_SERV, MOVE_HUB_HW_UUID_CHAR, MOVE_HUB_HARDWARE_HANDLE
 from pylgbst.utilities import str2hex
 
-log = logging.getLogger('comms-bluez')
+log = logging.getLogger('comms-gatt')
 
 
 class CustomDevice(gatt.Device, object):

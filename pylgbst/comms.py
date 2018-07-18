@@ -19,7 +19,7 @@ LEGO_MOVE_HUB = "LEGO Move Hub"
 
 
 class Connection(object):
-    def connect(self):
+    def connect(self, hub_mac=None):
         pass
 
     def disconnect(self):
@@ -43,13 +43,13 @@ class DebugServer(object):
     It holds BLE connection to Move Hub, so no need to re-start it every time
     Usage: DebugServer(BLEConnection().connect()).start()
 
-    :type ble: BLEConnection
+    :type connection: BLEConnection
     """
 
-    def __init__(self, ble_trans):
+    def __init__(self, connection):
         self._running = False
         self.sock = socket.socket()
-        self.ble = ble_trans
+        self.connection = connection
 
     def start(self, port=9090):
         self.sock.bind(('', port))
@@ -57,11 +57,11 @@ class DebugServer(object):
 
         self._running = True
         while self._running:
-            log.info("Accepting connections at %s", port)
+            log.info("Accepting MoveHub debug connections at %s", port)
             conn, addr = self.sock.accept()
             if not self._running:
                 raise KeyboardInterrupt("Shutdown")
-            self.ble.requester.notification_sink = lambda x, y: self._notify(conn, x, y)
+            self.connection.requester.notification_sink = lambda x, y: self._notify(conn, x, y)
             try:
                 self._handle_conn(conn)
             except KeyboardInterrupt:
@@ -69,7 +69,7 @@ class DebugServer(object):
             except BaseException:
                 log.error("Problem handling incoming connection: %s", traceback.format_exc())
             finally:
-                self.ble.requester.notification_sink = self._notify_dummy
+                self.connection.requester.notification_sink = self._notify_dummy
                 conn.close()
 
     def __del__(self):
@@ -124,7 +124,7 @@ class DebugServer(object):
 
     def _handle_cmd(self, cmd):
         if cmd['type'] == 'write':
-            self.ble.write(cmd['handle'], unhexlify(cmd['data']))
+            self.connection.write(cmd['handle'], unhexlify(cmd['data']))
         else:
             raise ValueError("Unhandled cmd: %s", cmd)
 

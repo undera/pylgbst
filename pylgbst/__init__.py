@@ -6,48 +6,48 @@ from pylgbst.comms import DebugServer
 log = logging.getLogger('pylgbst')
 
 
-def get_connection_bluegiga():
+def get_connection_bluegiga(mac):
     from pylgbst.comms_pygatt import BlueGigaConnection
 
-    return BlueGigaConnection().connect()
+    return BlueGigaConnection().connect(mac)
 
 
-def get_connection_gattool(controller='hci0'):
+def get_connection_gattool(controller='hci0', hub_mac=None):
     from pylgbst.comms_pygatt import GattoolConnection
 
-    return GattoolConnection(controller).connect()
+    return GattoolConnection(controller).connect(hub_mac)
 
 
-def get_connection_gatt(controller='hci0'):
+def get_connection_gatt(controller='hci0', hub_mac=None):
     from pylgbst.comms_gatt import GattConnection
 
-    return GattConnection(controller).connect()
+    return GattConnection(controller).connect(hub_mac)
 
 
-def get_connection_gattlib(controller='hci0'):
+def get_connection_gattlib(controller='hci0', hub_mac=None):
     from pylgbst.comms_gattlib import GattLibConnection
 
-    return GattLibConnection(controller).connect()
+    return GattLibConnection(controller).connect(hub_mac)
 
 
 def get_connection_auto(controller='hci0', hub_mac=None):
     conn = None
     try:
-        return get_connection_bluegiga()
+        return get_connection_bluegiga(hub_mac)
     except BaseException:
         logging.debug("Failed: %s", traceback.format_exc())
         try:
-            conn = get_connection_gatt(controller).connect(hub_mac)
+            conn = get_connection_gatt(controller, hub_mac)
         except BaseException:
             logging.debug("Failed: %s", traceback.format_exc())
 
             try:
-                conn = get_connection_gattool(controller).connect(hub_mac)
+                conn = get_connection_gattool(controller, hub_mac)
             except BaseException:
                 logging.debug("Failed: %s", traceback.format_exc())
 
                 try:
-                    conn = get_connection_gattlib(controller).connect(hub_mac)
+                    conn = get_connection_gattlib(controller, hub_mac)
                 except BaseException:
                     logging.debug("Failed: %s", traceback.format_exc())
 

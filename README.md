@@ -1,4 +1,4 @@
-# Python library to interact with Move Hub
+from pylgbst.comms_gatt import GattConnection# Python library to interact with Move Hub
 
 _Move Hub is central controller block of [LEGO® Boost Robotics Set](https://www.lego.com/en-us/boost)._
 
@@ -29,7 +29,7 @@ Demonstrational videos:
 
 ## Usage
 
-_Please note that it requires [gattlib](https://bitbucket.org/OscarAcena/pygattlib) to be installed, which is not supported on Windows._
+_Please note that this library requires one of Bluetooth backend libraries to be installed, please read section [here](#general-notes) for details_
 
 Install library like this: 
 ```bash
@@ -249,15 +249,35 @@ print ("Value: " % hub.voltage.last_value)
 
 ### General Notes
 
-#### Bluetooth Connection
-There is optional parameter for `MoveHub` class constructor, accepting instance of `Connection` object. By default, it uses instance of `BLEConnection` to connect directly to Move Hub. You can specify instance of `DebugServerConnection` if you are using Debug Server (more details below).
+#### Bluetooth Backend Prerequisites
 
-If you want to specify name for Bluetooth interface to use on local computer, create instance of `BLEConnection` and call `connect(if_name)` method of connection. Then pass it to `MoveHub` constructor. Like this:
+You have following options to install as Bluetooth backend:
+
+- `pip install pygatt` - [pygatt](https://github.com/peplin/pygatt) lib, works on both Windows and Linux  
+- `pip install gatt` - [gatt](https://github.com/getsenic/gatt-python) lib, supports Linux, does not work on Windows
+- `pip install gattlib` - [gattlib](https://bitbucket.org/OscarAcena/pygattlib) - supports Linux, does not work on Windows
+
+_Please let author know if you have discovered any compatibility/preprequisite details, so we will update this section to help future users_
+
+#### Bluetooth Connection Options
+There is optional parameter for `MoveHub` class constructor, accepting instance of `Connection` object. By default, it will try to use whatever `get_connection_auto()` returns. You have several options to manually control that:
+
+- use `pylgbst.get_connection_auto()` to attempt backend auto-choice, autodetect uses 
+- use `BlueGigaConnection()` - if you use BlueGiga Adapter (`pygatt` library prerequisite)
+- use `GattConnection()` - if you use GattTool Backend on Linux (`gatt` library prerequisite)
+- use `GattoolConnection()` - if you use GattTool Backend on Linux (`pygatt` library prerequisite)
+- use `GattLibConnection()` - if you use GattTool Backend on Linux (`gattlib` library prerequisite)
+- pass instance of `DebugServerConnection` if you are using [Debug Server](#debug-server) (more details below).
+
+All the functions above have optional arguments to specify adapter name and MoveHub mac address. Please look function source code for details.
+
+If you want to specify name for Bluetooth interface to use on local computer, you can passthat to class or function of getting a connection. Then pass connection object to `MoveHub` constructor. Like this:
 ```python
-from pylgbst.movehub import BLEConnection, MoveHub
+from pylgbst.movehub import MoveHub
+from pylgbst.comms_gatt import GattConnection
 
-conn = BLEConnection()
-conn.connect("hci1")
+conn = GattConnection("hci1")
+conn.connect()  # you can pass MoveHub mac address as parameter here, like 'AA:BB:CC:DD:EE:FF'
 
 hub = MoveHub(conn)
 ```
@@ -274,17 +294,19 @@ It is possible to subscribe with multiple times for the same sensor. Only one, v
 
 Good practice for any program is to unsubscribe from all sensor subscriptions before ending, especially when used with `DebugServer`.
 
+#### Use Disconnect in `finally`
+
+#TODO
 
 ## Debug Server
 Running debug server opens permanent BLE connection to Hub and listening on TCP port for communications. This avoids the need to re-start Hub all the time. 
 
 There is `DebugServerConnection` class that you can use with it, instead of `BLEConnection`. 
 
-Starting debug server is done like this:
+Starting debug server is done like this (you may need to run it with `sudo`, depending on your BLE backend):
 ```bash
-sudo python -c "from pylgbst.comms import *; \
-    import logging; logging.basicConfig(level=logging.DEBUG); \
-    DebugServer(BLEConnection().connect()).start()"
+python -c "import logging; logging.basicConfig(level=logging.DEBUG); \
+                import pylgbst; pylgbst.start_debug_server()"
 ```
 
 Then push green button on MoveHub, so permanent BLE connection will be established.
