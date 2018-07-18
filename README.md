@@ -273,8 +273,6 @@ There is optional parameter for `MoveHub` class constructor, accepting instance 
 
 All the functions above have optional arguments to specify adapter name and MoveHub mac address. Please look function source code for details.
 
-
-
 If you want to specify name for Bluetooth interface to use on local computer, you can passthat to class or function of getting a connection. Then pass connection object to `MoveHub` constructor. Like this:
 ```python
 from pylgbst.movehub import MoveHub
@@ -284,6 +282,21 @@ conn = GattConnection("hci1")
 conn.connect()  # you can pass MoveHub mac address as parameter here, like 'AA:BB:CC:DD:EE:FF'
 
 hub = MoveHub(conn)
+```
+
+#### Use Disconnect in `finally`
+
+It is recommended to make sure `disconnect()` method is called on connection object after you have finished your program. This ensures Bluetooth subsystem is cleared and avoids problems for subsequent re-connects of MoveHub. The best way to do that in Python is to use `try ... finally` clause:
+
+```python
+from pylgbst import get_connection_auto
+from pylgbst.movehub import MoveHub
+
+conn=get_connection_auto()  # ! don't put this into `try` block
+try:
+    hub = MoveHub(conn)
+finally:
+    conn.disconnect()
 ```
 
 #### Devices Detecting
@@ -297,10 +310,6 @@ There is optional `granularity` parameter for each subscription call, by default
 It is possible to subscribe with multiple times for the same sensor. Only one, very last subscribe mode is in effect, with many subscriber callbacks allowed to receive notifications. 
 
 Good practice for any program is to unsubscribe from all sensor subscriptions before ending, especially when used with `DebugServer`.
-
-#### Use Disconnect in `finally`
-
-#TODO
 
 ## Debug Server
 Running debug server opens permanent BLE connection to Hub and listening on TCP port for communications. This avoids the need to re-start Hub all the time. 
