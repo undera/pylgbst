@@ -1,4 +1,7 @@
 sudo: false
+env:
+- DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
+
 language: python
 virtualenv:
   system_site_packages: true
@@ -28,7 +31,10 @@ addons:
     - python3-gi
 install:
 - pip install codecov gattlib pygatt gatt pexpect # dbus-python==1.2.4 pgi
+
+
 script: coverage run --source=. `which nosetests` tests --nocapture
+
 after_success:
 - coverage report -m
 - codecov
