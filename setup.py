@@ -6,5 +6,10 @@ setup(name='pylgbst',
       author='Andrey Pokhilko',
       author_email='apc4@ya.ru',
       packages=['pylgbst'],
-      requires=['pygatt']
+      requires=[],
+      extras_require={
+          'gatt': ["gatt"],
+          'gattlib': ["gattlib"],
+          'pygatt': ["pygatt"],
+      }
       )

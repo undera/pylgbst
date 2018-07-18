@@ -3,11 +3,10 @@ import logging
 import time
 import traceback
 
-import six
-
 from examples.plotter import Plotter
-from pylgbst import EncodedMotor, PORT_AB, PORT_C, PORT_A, PORT_B, MoveHub
-from pylgbst.comms import DebugServerConnection, BLEConnection
+from pylgbst import get_connection_auto
+from pylgbst.comms import DebugServerConnection
+from pylgbst.movehub import EncodedMotor, PORT_AB, PORT_C, PORT_A, PORT_B, MoveHub
 from tests import HubMock
 
 
@@ -223,7 +222,7 @@ if __name__ == '__main__':
         conn = DebugServerConnection()
     except BaseException:
         logging.warning("Failed to use debug server: %s", traceback.format_exc())
-        conn = BLEConnection().connect()
+        conn = get_connection_auto()
 
     hub = MoveHub(conn) if 1 else get_hub_mock()
 

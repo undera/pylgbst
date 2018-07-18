@@ -39,7 +39,7 @@ pip install https://github.com/undera/pylgbst/archive/0.5.tar.gz
 Then instantiate MoveHub object and start invoking its methods. Following is example to just print peripherals detected on Hub:  
 
 ```python
-from pylgbst import MoveHub
+from pylgbst.movehub import MoveHub
 
 hub = MoveHub()
 
@@ -67,7 +67,7 @@ All these methods are synchronous by default, means method does not return until
 
 An example:
 ```python
-from pylgbst import MoveHub
+from pylgbst.movehub import MoveHub
 import time
 
 hub = MoveHub()
@@ -92,7 +92,7 @@ hub.motor_external.stop()
 Any motor allows to subscribe to its rotation sensor. Two sensor modes are available: rotation angle (`EncodedMotor.SENSOR_ANGLE`) and rotation speed (`EncodedMotor.SENSOR_SPEED`). Example: 
 
 ```python
-from pylgbst import MoveHub, EncodedMotor
+from pylgbst.movehub import MoveHub, EncodedMotor
 import time
 
 def callback(angle):
@@ -112,7 +112,7 @@ MoveHub's internal tilt sensor is available through `tilt_sensor` field. There a
 An example:
 
 ```python
-from pylgbst import MoveHub, TiltSensor
+from pylgbst.movehub import MoveHub, TiltSensor
 import time
 
 def callback(pitch, roll, yaw):
@@ -159,7 +159,7 @@ Distance works in range of 0-10 inches, with ability to measure last inch in hig
 Simple example of subscribing to sensor:
 
 ```python
-from pylgbst import MoveHub, ColorDistanceSensor
+from pylgbst.movehub import MoveHub, ColorDistanceSensor
 import time
 
 def callback(clr, distance):
@@ -194,7 +194,7 @@ You can obtain colors are present as constants `COLOR_*` and also a map of avail
 Additionally, you can subscribe to LED color change events, using callback function as shown in example below.
 
 ```python
-from pylgbst import MoveHub, COLORS, COLOR_NONE, COLOR_RED
+from pylgbst.movehub import MoveHub, COLORS, COLOR_NONE, COLOR_RED
 import time
 
 def callback(clr):
@@ -221,7 +221,7 @@ Tip: blinking orange color of LED means battery is low.
 Note that `Button` class is not real `Peripheral`, as it has no port and not listed in `devices` field of Hub. Still, subscribing to button is done usual way: 
 
 ```python
-from pylgbst import MoveHub
+from pylgbst.movehub import MoveHub
 
 def callback(is_pressed):
     print("Btn pressed: %s" % is_pressed)
@@ -235,7 +235,7 @@ hub.button.subscribe(callback)
 `MoveHub` class has field `voltage` to subscribe to battery voltage status. Callback accepts single parameter with current value. The range of values is float between `0` and `1.0`. Every time data is received, value is also written into `last_value` field of `Voltage` object. Values less than `0.2` are known as lowest values, when unit turns off.
 
 ```python
-from pylgbst import MoveHub
+from pylgbst.movehub import MoveHub
 import time
 
 def callback(value):
@@ -254,7 +254,7 @@ There is optional parameter for `MoveHub` class constructor, accepting instance 
 
 If you want to specify name for Bluetooth interface to use on local computer, create instance of `BLEConnection` and call `connect(if_name)` method of connection. Then pass it to `MoveHub` constructor. Like this:
 ```python
-from pylgbst import BLEConnection, MoveHub
+from pylgbst.movehub import BLEConnection, MoveHub
 
 conn = BLEConnection()
 conn.connect("hci1")

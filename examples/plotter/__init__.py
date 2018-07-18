@@ -2,7 +2,8 @@ import logging
 import math
 import time
 
-from pylgbst import ColorDistanceSensor, COLORS, COLOR_RED, COLOR_CYAN
+from pylgbst.constants import COLOR_RED, COLOR_CYAN, COLORS
+from pylgbst.peripherals import ColorDistanceSensor
 
 
 class Plotter(object):

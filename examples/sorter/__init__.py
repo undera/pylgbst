@@ -1,8 +1,10 @@
 import logging
 import traceback
 
-from pylgbst import MoveHub, COLORS, COLOR_RED, COLOR_YELLOW, COLOR_CYAN, COLOR_BLUE, COLOR_BLACK
-from pylgbst.comms import DebugServerConnection, BLEConnection
+from pylgbst import get_connection_auto
+from pylgbst.comms import DebugServerConnection
+from pylgbst.constants import COLORS, COLOR_YELLOW, COLOR_BLUE, COLOR_CYAN, COLOR_RED, COLOR_BLACK
+from pylgbst.movehub import MoveHub
 
 
 class ColorSorter(MoveHub):
@@ -82,7 +84,7 @@ if __name__ == '__main__':
         conn = DebugServerConnection()
     except BaseException:
         logging.warning("Failed to use debug server: %s", traceback.format_exc())
-        conn = BLEConnection().connect()
+        conn = get_connection_auto()
 
     sorter = ColorSorter(conn)
     empty = 0

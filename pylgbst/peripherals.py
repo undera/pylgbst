@@ -5,7 +5,8 @@ import traceback
 from struct import pack, unpack
 from threading import Thread
 
-from pylgbst.constants import *
+from pylgbst.constants import PORTS, MSG_SENSOR_SUBSCRIBE, COLOR_NONE, COLOR_BLACK, COLORS, MSG_SET_PORT_VAL, PORT_AB, \
+    MSG_DEVICE_INFO, INFO_BUTTON_STATE, INFO_ACTION_SUBSCRIBE, INFO_ACTION_UNSUBSCRIBE
 from pylgbst.utilities import queue, str2hex, usbyte, ushort
 
 log = logging.getLogger('peripherals')
@@ -140,7 +141,7 @@ class LED(Peripheral):
     def subscribe(self, callback, mode=None, granularity=None, async=False):
         self._subscribers.add(callback)
 
-    def unsubscribe(self, callback=None):
+    def unsubscribe(self, callback=None, async=False):
         if callback in self._subscribers:
             self._subscribers.remove(callback)
 
@@ -443,12 +444,13 @@ class Button(Peripheral):
         if callback:
             self._subscribers.add(callback)
 
-    def unsubscribe(self, callback=None):
+    def unsubscribe(self, callback=None, async=False):
         if callback in self._subscribers:
             self._subscribers.remove(callback)
 
         if not self._subscribers:
             self.parent.send(MSG_DEVICE_INFO, pack('<B', INFO_BUTTON_STATE) + pack('<B', INFO_ACTION_UNSUBSCRIBE))
+            # FIXME: will this require sync wait?
 
     def handle_port_data(self, data):
         param = usbyte(data, 5)

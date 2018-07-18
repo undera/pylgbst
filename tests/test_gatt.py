@@ -8,7 +8,7 @@ from pylgbst.comms_gatt import CustomDevice
 from tests import log, str2hex
 
 
-class MockBus():
+class MockBus(object):
     def __init__(self, *args, **kwargs):
         # super(MockBus, self).__init__(*args, **kwargs)
         pass
