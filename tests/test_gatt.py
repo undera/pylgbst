@@ -1,3 +1,4 @@
+import dbus
 import unittest
 
 from gatt import DeviceManager
@@ -6,10 +7,28 @@ from pylgbst.comms_gatt import CustomDevice
 from tests import log, str2hex
 
 
+class MockBus():
+    def __init__(self, *args, **kwargs):
+        # super(MockBus, self).__init__(*args, **kwargs)
+        pass
+
+    def get_object(self, bus_name, object_path, introspect=True, follow_name_owner_changes=False, **kwargs):
+        return None
+
+
+dbus.SystemBus = lambda: MockBus()
+
+
+class DeviceManagerMock(DeviceManager, object):
+    def update_devices(self):
+        pass
+
+
 class TestGatt(unittest.TestCase):
     def test_one(self):
         log.debug("")
-        obj = CustomDevice("AA", DeviceManager("hci0"))
+        manager = DeviceManagerMock("hci0")
+        obj = CustomDevice("AA", manager)
 
         def callback(handle, value):
             log.debug("%s: %s", type(value), str2hex(value))
