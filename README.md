@@ -33,7 +33,7 @@ _Please note that this library requires one of Bluetooth backend libraries to be
 
 Install library like this: 
 ```bash
-pip install https://github.com/undera/pylgbst/archive/0.5.tar.gz
+pip install https://github.com/undera/pylgbst/archive/0.6.tar.gz
 ```
 
 Then instantiate MoveHub object and start invoking its methods. Following is example to just print peripherals detected on Hub:  
@@ -255,9 +255,11 @@ You have following options to install as Bluetooth backend:
 
 - `pip install pygatt` - [pygatt](https://github.com/peplin/pygatt) lib, works on both Windows and Linux  
 - `pip install gatt` - [gatt](https://github.com/getsenic/gatt-python) lib, supports Linux, does not work on Windows
-- `pip install gattlib` - [gattlib](https://bitbucket.org/OscarAcena/pygattlib) - supports Linux, does not work on Windows
+- `pip install gattlib` - [gattlib](https://bitbucket.org/OscarAcena/pygattlib) - supports Linux, does not work on Windows, requires `sudo`
 
 _Please let author know if you have discovered any compatibility/preprequisite details, so we will update this section to help future users_
+
+Depending on backend type, you might need Linux `sudo` to be used when running Python.
 
 #### Bluetooth Connection Options
 There is optional parameter for `MoveHub` class constructor, accepting instance of `Connection` object. By default, it will try to use whatever `get_connection_auto()` returns. You have several options to manually control that:
@@ -270,6 +272,8 @@ There is optional parameter for `MoveHub` class constructor, accepting instance 
 - pass instance of `DebugServerConnection` if you are using [Debug Server](#debug-server) (more details below).
 
 All the functions above have optional arguments to specify adapter name and MoveHub mac address. Please look function source code for details.
+
+
 
 If you want to specify name for Bluetooth interface to use on local computer, you can passthat to class or function of getting a connection. Then pass connection object to `MoveHub` constructor. Like this:
 ```python
