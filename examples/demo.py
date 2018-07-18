@@ -190,6 +190,9 @@ if __name__ == '__main__':
         logging.debug("Failed to use debug server: %s", traceback.format_exc())
         connection = get_connection_auto()
 
-    hub = MoveHub(connection)
-    sleep(1)
-    #demo_all(hub)
+    try:
+        hub = MoveHub(connection)
+        sleep(1)
+        # demo_all(hub)
+    finally:
+        connection.disconnect()

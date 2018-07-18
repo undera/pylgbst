@@ -9,31 +9,31 @@ log = logging.getLogger('pylgbst')
 def get_connection_bluegiga():
     from pylgbst.comms_pygatt import BlueGigaConnection
 
-    return BlueGigaConnection()
+    return BlueGigaConnection().connect()
 
 
-def get_connection_gattool(controller):
+def get_connection_gattool(controller='hci0'):
     from pylgbst.comms_pygatt import GattoolConnection
 
-    return GattoolConnection(controller)
+    return GattoolConnection(controller).connect()
 
 
-def get_connection_gatt(controller):
+def get_connection_gatt(controller='hci0'):
     from pylgbst.comms_gatt import GattConnection
 
-    return GattConnection(controller)
+    return GattConnection(controller).connect()
 
 
-def get_connection_gattlib(controller):
+def get_connection_gattlib(controller='hci0'):
     from pylgbst.comms_gattlib import GattLibConnection
 
-    return GattLibConnection(controller)
+    return GattLibConnection(controller).connect()
 
 
 def get_connection_auto(controller='hci0', hub_mac=None):
     conn = None
     try:
-        return get_connection_bluegiga().connect()
+        return get_connection_bluegiga()
     except BaseException:
         logging.debug("Failed: %s", traceback.format_exc())
         try:
