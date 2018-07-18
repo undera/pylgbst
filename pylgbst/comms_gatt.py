@@ -12,7 +12,7 @@ from pylgbst.utilities import str2hex
 log = logging.getLogger('comms-bluez')
 
 
-class CustomDevice(gatt.Device, object):  # Pendant zu Klasse BlueGigaInterface
+class CustomDevice(gatt.Device, object):
     def __init__(self, mac_address, manager):
         gatt.Device.__init__(self, mac_address=mac_address, manager=manager)
         self._notify_callback = lambda hnd, val: None

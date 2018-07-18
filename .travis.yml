@@ -30,7 +30,7 @@ install:
 - pip install codecov gattlib pygatt gatt pexpect
 
 
-script: coverage run --source=. `which nosetests` tests --nocapture
+script: coverage run --source=. `which nosetests` tests --nocapture --exclude-dir=examples
 
 after_success:
 - coverage report -m
