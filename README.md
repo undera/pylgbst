@@ -1,4 +1,4 @@
-# Python library to interact with Move Hub
+from pylgbst.comms_gatt import GattConnection# Python library to interact with Move Hub
 
 _Move Hub is central controller block of [LEGO® Boost Robotics Set](https://www.lego.com/en-us/boost)._
 
@@ -29,19 +29,17 @@ Demonstrational videos:
 
 ## Usage
 
-_Please note:_ 
-- _it requires [gattlib](https://bitbucket.org/OscarAcena/pygattlib) to be installed, which is not supported on Windows._
-- _to enable the text-to-speech functionality [gTTS](https://github.com/pndurette/gTTS) may be installed but is not required by default._
+_Please note that this library requires one of Bluetooth backend libraries to be installed, please read section [here](#general-notes) for details_
 
 Install library like this: 
 ```bash
-pip install https://github.com/undera/pylgbst/archive/0.5.tar.gz
+pip install https://github.com/undera/pylgbst/archive/0.6.tar.gz
 ```
 
 Then instantiate MoveHub object and start invoking its methods. Following is example to just print peripherals detected on Hub:  
 
 ```python
-from pylgbst import MoveHub
+from pylgbst.movehub import MoveHub
 
 hub = MoveHub()
 
@@ -69,7 +67,7 @@ All these methods are synchronous by default, means method does not return until
 
 An example:
 ```python
-from pylgbst import MoveHub
+from pylgbst.movehub import MoveHub
 import time
 
 hub = MoveHub()
@@ -94,7 +92,7 @@ hub.motor_external.stop()
 Any motor allows to subscribe to its rotation sensor. Two sensor modes are available: rotation angle (`EncodedMotor.SENSOR_ANGLE`) and rotation speed (`EncodedMotor.SENSOR_SPEED`). Example: 
 
 ```python
-from pylgbst import MoveHub, EncodedMotor
+from pylgbst.movehub import MoveHub, EncodedMotor
 import time
 
 def callback(angle):
@@ -114,7 +112,7 @@ MoveHub's internal tilt sensor is available through `tilt_sensor` field. There a
 An example:
 
 ```python
-from pylgbst import MoveHub, TiltSensor
+from pylgbst.movehub import MoveHub, TiltSensor
 import time
 
 def callback(pitch, roll, yaw):
@@ -161,7 +159,7 @@ Distance works in range of 0-10 inches, with ability to measure last inch in hig
 Simple example of subscribing to sensor:
 
 ```python
-from pylgbst import MoveHub, ColorDistanceSensor
+from pylgbst.movehub import MoveHub, ColorDistanceSensor
 import time
 
 def callback(clr, distance):
@@ -196,7 +194,7 @@ You can obtain colors are present as constants `COLOR_*` and also a map of avail
 Additionally, you can subscribe to LED color change events, using callback function as shown in example below.
 
 ```python
-from pylgbst import MoveHub, COLORS, COLOR_NONE, COLOR_RED
+from pylgbst.movehub import MoveHub, COLORS, COLOR_NONE, COLOR_RED
 import time
 
 def callback(clr):
@@ -223,7 +221,7 @@ Tip: blinking orange color of LED means battery is low.
 Note that `Button` class is not real `Peripheral`, as it has no port and not listed in `devices` field of Hub. Still, subscribing to button is done usual way: 
 
 ```python
-from pylgbst import MoveHub
+from pylgbst.movehub import MoveHub
 
 def callback(is_pressed):
     print("Btn pressed: %s" % is_pressed)
@@ -237,7 +235,7 @@ hub.button.subscribe(callback)
 `MoveHub` class has field `voltage` to subscribe to battery voltage status. Callback accepts single parameter with current value. The range of values is float between `0` and `1.0`. Every time data is received, value is also written into `last_value` field of `Voltage` object. Values less than `0.2` are known as lowest values, when unit turns off.
 
 ```python
-from pylgbst import MoveHub
+from pylgbst.movehub import MoveHub
 import time
 
 def callback(value):
@@ -251,17 +249,54 @@ print ("Value: " % hub.voltage.last_value)
 
 ### General Notes
 
-#### Bluetooth Connection
-There is optional parameter for `MoveHub` class constructor, accepting instance of `Connection` object. By default, it uses instance of `BLEConnection` to connect directly to Move Hub. You can specify instance of `DebugServerConnection` if you are using Debug Server (more details below).
+#### Bluetooth Backend Prerequisites
 
-If you want to specify name for Bluetooth interface to use on local computer, create instance of `BLEConnection` and call `connect(if_name)` method of connection. Then pass it to `MoveHub` constructor. Like this:
+You have following options to install as Bluetooth backend:
+
+- `pip install pygatt` - [pygatt](https://github.com/peplin/pygatt) lib, works on both Windows and Linux  
+- `pip install gatt` - [gatt](https://github.com/getsenic/gatt-python) lib, supports Linux, does not work on Windows
+- `pip install gattlib` - [gattlib](https://bitbucket.org/OscarAcena/pygattlib) - supports Linux, does not work on Windows, requires `sudo`
+
+_Please let author know if you have discovered any compatibility/preprequisite details, so we will update this section to help future users_
+
+Depending on backend type, you might need Linux `sudo` to be used when running Python.
+
+#### Bluetooth Connection Options
+There is optional parameter for `MoveHub` class constructor, accepting instance of `Connection` object. By default, it will try to use whatever `get_connection_auto()` returns. You have several options to manually control that:
+
+- use `pylgbst.get_connection_auto()` to attempt backend auto-choice, autodetect uses 
+- use `BlueGigaConnection()` - if you use BlueGiga Adapter (`pygatt` library prerequisite)
+- use `GattConnection()` - if you use GattTool Backend on Linux (`gatt` library prerequisite)
+- use `GattoolConnection()` - if you use GattTool Backend on Linux (`pygatt` library prerequisite)
+- use `GattLibConnection()` - if you use GattTool Backend on Linux (`gattlib` library prerequisite)
+- pass instance of `DebugServerConnection` if you are using [Debug Server](#debug-server) (more details below).
+
+All the functions above have optional arguments to specify adapter name and MoveHub mac address. Please look function source code for details.
+
+If you want to specify name for Bluetooth interface to use on local computer, you can passthat to class or function of getting a connection. Then pass connection object to `MoveHub` constructor. Like this:
 ```python
-from pylgbst import BLEConnection, MoveHub
+from pylgbst.movehub import MoveHub
+from pylgbst.comms_gatt import GattConnection
 
-conn = BLEConnection()
-conn.connect("hci1")
+conn = GattConnection("hci1")
+conn.connect()  # you can pass MoveHub mac address as parameter here, like 'AA:BB:CC:DD:EE:FF'
 
 hub = MoveHub(conn)
+```
+
+#### Use Disconnect in `finally`
+
+It is recommended to make sure `disconnect()` method is called on connection object after you have finished your program. This ensures Bluetooth subsystem is cleared and avoids problems for subsequent re-connects of MoveHub. The best way to do that in Python is to use `try ... finally` clause:
+
+```python
+from pylgbst import get_connection_auto
+from pylgbst.movehub import MoveHub
+
+conn=get_connection_auto()  # ! don't put this into `try` block
+try:
+    hub = MoveHub(conn)
+finally:
+    conn.disconnect()
 ```
 
 #### Devices Detecting
@@ -276,17 +311,15 @@ It is possible to subscribe with multiple times for the same sensor. Only one, v
 
 Good practice for any program is to unsubscribe from all sensor subscriptions before ending, especially when used with `DebugServer`.
 
-
 ## Debug Server
 Running debug server opens permanent BLE connection to Hub and listening on TCP port for communications. This avoids the need to re-start Hub all the time. 
 
 There is `DebugServerConnection` class that you can use with it, instead of `BLEConnection`. 
 
-Starting debug server is done like this:
+Starting debug server is done like this (you may need to run it with `sudo`, depending on your BLE backend):
 ```bash
-sudo python -c "from pylgbst.comms import *; \
-    import logging; logging.basicConfig(level=logging.DEBUG); \
-    DebugServer(BLEConnection().connect()).start()"
+python -c "import logging; logging.basicConfig(level=logging.DEBUG); \
+                import pylgbst; pylgbst.start_debug_server()"
 ```
 
 Then push green button on MoveHub, so permanent BLE connection will be established.

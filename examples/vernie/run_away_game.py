@@ -1,3 +1,4 @@
+from pylgbst.constants import COLOR_GREEN, COLOR_NONE
 from . import *
 
 robot = Vernie()

@@ -1,9 +1,11 @@
 # coding=utf-8
+import time
 from time import sleep
 
 from pylgbst import *
 from pylgbst.comms import DebugServerConnection
-from pylgbst.movehub import MoveHub
+from pylgbst.movehub import MoveHub, COLORS, COLOR_BLACK
+from pylgbst.peripherals import EncodedMotor, TiltSensor, Amperage, Voltage
 
 log = logging.getLogger("demo")
 
@@ -20,7 +22,7 @@ def demo_led_colors(movehub):
 
 def demo_motors_timed(movehub):
     log.info("Motors movement demo: timed")
-    for level in range(0, 101, 5):
+    for level in range(0, 101, 10):
         level /= 100.0
         log.info("Speed level: %s%%", level * 100)
         movehub.motor_A.timed(0.2, level)
@@ -185,9 +187,12 @@ if __name__ == '__main__':
     try:
         connection = DebugServerConnection()
     except BaseException:
-        logging.warning("Failed to use debug server: %s", traceback.format_exc())
-        connection = BLEConnection().connect()
+        logging.debug("Failed to use debug server: %s", traceback.format_exc())
+        connection = get_connection_auto()
 
-    hub = MoveHub(connection)
-    sleep(10000)
-    #demo_all(hub)
+    try:
+        hub = MoveHub(connection)
+        sleep(1)
+        # demo_all(hub)
+    finally:
+        connection.disconnect()

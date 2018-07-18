@@ -3,9 +3,11 @@ import hashlib
 import os
 import re
 import subprocess
+import time
 
 from pylgbst import *
 from pylgbst.comms import DebugServerConnection
+from pylgbst.movehub import MoveHub
 
 try:
     import gtts
@@ -66,8 +68,8 @@ class Vernie(MoveHub):
         try:
             conn = DebugServerConnection()
         except BaseException:
-            logging.debug("Failed to use debug server: %s", traceback.format_exc())
-            conn = BLEConnection().connect()
+            logging.warning("Failed to use debug server: %s", traceback.format_exc())
+            conn = get_connection_auto()
 
         super(Vernie, self).__init__(conn)
         self.language = language

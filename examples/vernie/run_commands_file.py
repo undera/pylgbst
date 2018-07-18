@@ -1,3 +1,5 @@
+import sys
+
 from . import *
 
 robot = Vernie()

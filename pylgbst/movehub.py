@@ -2,10 +2,11 @@ import logging
 import time
 from struct import pack
 
-from pylgbst.comms import BLEConnection
+from pylgbst import get_connection_auto
 from pylgbst.constants import *
 from pylgbst.peripherals import Button, EncodedMotor, ColorDistanceSensor, LED, TiltSensor, Voltage, Peripheral, \
     Amperage
+from pylgbst.utilities import str2hex, usbyte
 
 log = logging.getLogger('movehub')
 
@@ -37,7 +38,7 @@ class MoveHub(object):
 
     def __init__(self, connection=None):
         if not connection:
-            connection = BLEConnection().connect()
+            connection = get_connection_auto()
 
         self.connection = connection
         self.info = {}
@@ -67,13 +68,14 @@ class MoveHub(object):
         self.connection.write(MOVE_HUB_HARDWARE_HANDLE, pack("<B", len(cmd) + 1) + cmd)
 
     def _wait_for_devices(self):
-        self.connection.write(ENABLE_NOTIFICATIONS_HANDLE, ENABLE_NOTIFICATIONS_VALUE)
+        self.connection.enable_notifications()
 
         builtin_devices = ()
         for num in range(0, 60):
             builtin_devices = (self.led, self.motor_A, self.motor_B,
                                self.motor_AB, self.tilt_sensor, self.button, self.amperage, self.voltage)
             if None not in builtin_devices:
+                log.debug("All devices are present")
                 return
             log.debug("Waiting for builtin devices to appear: %s", builtin_devices)
             time.sleep(0.05)
@@ -87,7 +89,6 @@ class MoveHub(object):
             log.warning("Unsupported notification handle: 0x%s", handle)
             return
 
-        data = data[3:]
         log.debug("Notification on %s: %s", handle, str2hex(orig))
 
         msg_type = usbyte(data, 2)
