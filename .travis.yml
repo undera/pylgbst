@@ -19,6 +19,8 @@ addons:
     - libglib2.0-dev
     - libdbus-1-dev
     - libdbus-glib-1-dev
+    - python-gi
+    - python3-gi
 install:
 - pip install codecov gattlib pygatt gatt dbus-python==1.2.4
 script: coverage run --source=. `which nosetests` tests --nocapture
