@@ -1,6 +1,6 @@
 sudo: false
 env:
-- DBUS_SYSTEM_BUS_ADDRESS=unix:path=/var/run/dbus/system_bus_socket
+- DBUS_SYSTEM_BUS_ADDRESS=unix:path=/dev/null
 
 language: python
 virtualenv:
