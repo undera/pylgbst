@@ -1,7 +1,4 @@
 sudo: false
-env:
-- DBUS_SYSTEM_BUS_ADDRESS=unix:path=/dev/null
-
 language: python
 virtualenv:
   system_site_packages: true
@@ -33,11 +30,7 @@ install:
 - pip install codecov gattlib pygatt gatt pexpect
 
 
-script:
-- find /run
-- find /host/run
-- find /var/run
-- coverage run --source=. `which nosetests` tests --nocapture
+script: coverage run --source=. `which nosetests` tests --nocapture
 
 after_success:
 - coverage report -m
