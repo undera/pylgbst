@@ -30,11 +30,14 @@ addons:
     - python3-dbus
     - python3-gi
 install:
-- find /var/run | grep dbus
 - pip install codecov gattlib pygatt gatt pexpect
 
 
-script: coverage run --source=. `which nosetests` tests --nocapture
+script:
+- find /run
+- find /host/run
+- find /var/run
+- coverage run --source=. `which nosetests` tests --nocapture
 
 after_success:
 - coverage report -m
