@@ -6,7 +6,7 @@ In fact, Move Hub is just Bluetooth hardware, all manipulations are done with co
 
 Best way to start is to look into [`demo.py`](examples/demo.py) file, and run it (assuming you have installed library).
 
-If you have Vernie assembled, you might run scripts from [`vernie`](examples/vernie/) directory.
+If you have Vernie assembled, you might run scripts from [`examples/vernie`](examples/vernie/) directory.
 
 Demonstrational videos:
 

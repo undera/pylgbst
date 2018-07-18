@@ -43,7 +43,8 @@ SPEECH_LANG_MAP = {
         "commands help": "Available commands are: "
                          "forward, backward, turn left, turn right, "
                          "head left, head right, head straight, shot and say",
-        "finished": "Thank you! Robot is now turning off"
+        "finished": "Thank you! Robot is now turning off",
+        "text is empty": "Please, enter not empty text to say!"
     },
     "ru": {
         "ready": "Робот Веернии готов к работе",
@@ -51,9 +52,10 @@ SPEECH_LANG_MAP = {
         "ok": "хорошо",
         "commands help": "Доступные команды это: вперёд, назад, влево, вправо, "
                          "голову влево, голову вправо, голову прямо, выстрел, скажи",
-        "Finished": "Робот завершает работу. Спасибо!",
+        "finished": "Робот завершает работу. Спасибо!",
         "commands from file": "Исполняю команды из файла",
         "fire": "Выстрел!",
+        "text is empty": "Пожалуйста, наберите не пустой текст!"
     }
 }
 
@@ -134,6 +136,9 @@ class Vernie(MoveHub):
                 confirm(cmd)
                 self.head(STRAIGHT)
         elif cmd[0] in ("say", "скажи", "сказать"):
+            if not cmd[1:]:
+                self.say("text is empty")
+                return
             say(' '.join(cmd[1:]))
         elif cmd[0] in ("fire", "shot", "огонь", "выстрел"):
             say("fire")
