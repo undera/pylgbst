@@ -1,3 +1,4 @@
+from pylgbst.peripherals import ColorDistanceSensor
 from . import *
 
 logging.basicConfig(level=logging.INFO)

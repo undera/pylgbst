@@ -1,32 +1,12 @@
-import binascii
-import struct
-import sys
-
-if sys.version_info[0] == 2:
-    import Queue as queue
-else:
-    import queue as queue
-
-queue = queue  # just to use it
-
-
-def str2hex(data):
-    return binascii.hexlify(data).decode("utf8")
-
-
-def usbyte(seq, index):
-    return struct.unpack("<B", seq[index:index + 1])[0]
-
-
-def ushort(seq, index):
-    return struct.unpack("<H", seq[index:index + 2])[0]
-
-
 # GENERAL
+ENABLE_NOTIFICATIONS_HANDLE = 0x000f
+ENABLE_NOTIFICATIONS_VALUE = b'\x01\x00'
 MOVE_HUB_HARDWARE_HANDLE = 0x0E
-MOVE_HUB_HARDWARE_UUID = '00001624-1212-efde-1623-785feabcd123'
+MOVE_HUB_HW_UUID_SERV = '00001623-1212-efde-1623-785feabcd123'
+MOVE_HUB_HW_UUID_CHAR = '00001624-1212-efde-1623-785feabcd123'
 
 PACKET_VER = 0x01
+LEGO_MOVE_HUB = "LEGO Move Hub"
 
 # PORTS
 PORT_C = 0x01

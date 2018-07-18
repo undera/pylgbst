@@ -5,7 +5,9 @@ import traceback
 from struct import pack, unpack
 from threading import Thread
 
-from pylgbst.constants import *
+from pylgbst.constants import PORTS, MSG_SENSOR_SUBSCRIBE, COLOR_NONE, COLOR_BLACK, COLORS, MSG_SET_PORT_VAL, PORT_AB, \
+    MSG_DEVICE_INFO, INFO_BUTTON_STATE, INFO_ACTION_SUBSCRIBE, INFO_ACTION_UNSUBSCRIBE
+from pylgbst.utilities import queue, str2hex, usbyte, ushort
 
 log = logging.getLogger('peripherals')
 
@@ -49,11 +51,11 @@ class Peripheral(object):
         self._write_to_hub(MSG_SENSOR_SUBSCRIBE, params)
 
     def started(self):
-        log.debug("Started: %s", self)
+        log.debug("Peripheral Started: %s", self)
         self._working = True
 
     def finished(self):
-        log.debug("Finished: %s", self)
+        log.debug("Peripheral Finished: %s", self)
         self._working = False
 
     def in_progress(self):
@@ -69,14 +71,16 @@ class Peripheral(object):
         if callback:
             self._subscribers.add(callback)
 
-    def unsubscribe(self, callback=None):
+    def unsubscribe(self, callback=None, async=False):
         if callback in self._subscribers:
             self._subscribers.remove(callback)
 
         if self._port_subscription_mode is None:
             log.warning("Attempt to unsubscribe while never subscribed: %s", self)
         elif not self._subscribers:
+            self.started()
             self._port_subscribe(self._port_subscription_mode, 0, False)
+            self._wait_sync(async)
             self._port_subscription_mode = None
 
     def _notify_subscribers(self, *args, **kwargs):
@@ -87,7 +91,7 @@ class Peripheral(object):
         try:
             self._incoming_port_data.put_nowait(data)
         except queue.Full:
-            logging.debug("Dropped port data: %s", data)
+            log.debug("Dropped port data: %s", data)
 
     def handle_port_data(self, data):
         log.warning("Unhandled device notification for %s: %s", self, str2hex(data[4:]))
@@ -137,7 +141,7 @@ class LED(Peripheral):
     def subscribe(self, callback, mode=None, granularity=None, async=False):
         self._subscribers.add(callback)
 
-    def unsubscribe(self, callback=None):
+    def unsubscribe(self, callback=None, async=False):
         if callback in self._subscribers:
             self._subscribers.remove(callback)
 
@@ -403,7 +407,7 @@ class Voltage(Peripheral):
         val = ushort(data, 4)
         self.last_value = val / 4096.0
         if self.last_value < 0.2:
-            logging.warning("Battery low! %s%%", int(100 * self.last_value))
+            log.warning("Battery low! %s%%", int(100 * self.last_value))
         self._notify_subscribers(self.last_value)
 
 
@@ -440,12 +444,13 @@ class Button(Peripheral):
         if callback:
             self._subscribers.add(callback)
 
-    def unsubscribe(self, callback=None):
+    def unsubscribe(self, callback=None, async=False):
         if callback in self._subscribers:
             self._subscribers.remove(callback)
 
         if not self._subscribers:
             self.parent.send(MSG_DEVICE_INFO, pack('<B', INFO_BUTTON_STATE) + pack('<B', INFO_ACTION_UNSUBSCRIBE))
+            # FIXME: will this require sync wait?
 
     def handle_port_data(self, data):
         param = usbyte(data, 5)
