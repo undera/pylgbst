@@ -16,13 +16,14 @@ addons:
     - libboost-python-dev
     - libboost-thread-dev
     - libbluetooth-dev
+
     - libglib2.0-dev
     - libdbus-1-dev
     - libdbus-glib-1-dev
     - python-gi
     - python3-gi
 install:
-- pip install codecov gattlib pygatt gatt dbus-python==1.2.4
+- pip install codecov gattlib pygatt gatt dbus-python==1.2.4 pexpect
 script: coverage run --source=. `which nosetests` tests --nocapture
 after_success:
 - coverage report -m
