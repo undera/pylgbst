@@ -247,9 +247,9 @@ time.sleep(1)
 print ("Value: " % hub.voltage.last_value)
 ```
 
-### General Notes
+## General Notes
 
-#### Bluetooth Backend Prerequisites
+### Bluetooth Backend Prerequisites
 
 You have following options to install as Bluetooth backend:
 
@@ -263,7 +263,7 @@ _Please let author know if you have discovered any compatibility/preprequisite d
 
 Depending on backend type, you might need Linux `sudo` to be used when running Python.
 
-#### Bluetooth Connection Options
+### Bluetooth Connection Options
 There is optional parameter for `MoveHub` class constructor, accepting instance of `Connection` object. By default, it will try to use whatever `get_connection_auto()` returns. You have several options to manually control that:
 
 - use `pylgbst.get_connection_auto()` to attempt backend auto-choice, autodetect uses 
@@ -286,7 +286,7 @@ conn.connect()  # you can pass MoveHub mac address as parameter here, like 'AA:B
 hub = MoveHub(conn)
 ```
 
-#### Use Disconnect in `finally`
+### Use Disconnect in `finally`
 
 It is recommended to make sure `disconnect()` method is called on connection object after you have finished your program. This ensures Bluetooth subsystem is cleared and avoids problems for subsequent re-connects of MoveHub. The best way to do that in Python is to use `try ... finally` clause:
 
@@ -301,10 +301,10 @@ finally:
     conn.disconnect()
 ```
 
-#### Devices Detecting
+### Devices Detecting
 As part of instantiating process, `MoveHub` waits up to 1 minute for all builtin devices to appear, such as motors on ports A and B, tilt sensor, button and battery. This not guarantees that external motor and/or color sensor will be present right after `MoveHub` instantiated. Usually, sleeping for couple of seconds gives it enough time to detect everything.
 
-#### Subscribing to Sensors
+### Subscribing to Sensors
 Each sensor usually has several different "subscription modes", differing with callback parameters and value semantics. 
 
 There is optional `granularity` parameter for each subscription call, by default it is `1`. This parameter tells Hub when to issue sensor data notification. Value of notification has to change greater or equals to `granularity` to issue notification. This means that specifying `0` will cause it to constantly send notifications, and specifying `5` will cause less frequent notifications, only when values change for more than `5` (inclusive).
