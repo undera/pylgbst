@@ -6,10 +6,10 @@ from pylgbst.comms import DebugServer
 log = logging.getLogger('pylgbst')
 
 
-def get_connection_bluegiga(mac):
+def get_connection_bluegiga(controller=None, hub_mac=None):
     from pylgbst.comms_pygatt import BlueGigaConnection
 
-    return BlueGigaConnection().connect(mac)
+    return BlueGigaConnection().connect(hub_mac)
 
 
 def get_connection_gattool(controller='hci0', hub_mac=None):
@@ -31,29 +31,27 @@ def get_connection_gattlib(controller='hci0', hub_mac=None):
 
 
 def get_connection_auto(controller='hci0', hub_mac=None):
+    fns = [
+        get_connection_bluegiga,
+        get_connection_gatt,
+        get_connection_gattool,
+        get_connection_gattlib,
+    ]
+
     conn = None
-    try:
-        return get_connection_bluegiga(hub_mac)
-    except BaseException:
-        logging.debug("Failed: %s", traceback.format_exc())
+    for fn in fns:
         try:
-            conn = get_connection_gatt(controller, hub_mac)
+            logging.info("Trying %s", fn.__name__)
+            return fn(controller, hub_mac)
+        except KeyboardInterrupt:
+            raise
         except BaseException:
             logging.debug("Failed: %s", traceback.format_exc())
-
-            try:
-                conn = get_connection_gattool(controller, hub_mac)
-            except BaseException:
-                logging.debug("Failed: %s", traceback.format_exc())
-
-                try:
-                    conn = get_connection_gattlib(controller, hub_mac)
-                except BaseException:
-                    logging.debug("Failed: %s", traceback.format_exc())
 
     if conn is None:
         raise Exception("Failed to autodetect connection, make sure you have installed prerequisites")
 
+    logging.info("Succeeded with %s", conn.__class__.__name__)
     return conn
 
 
