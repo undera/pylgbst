@@ -6,7 +6,7 @@ In fact, Move Hub is just Bluetooth hardware, all manipulations are done with co
 
 Best way to start is to look into [`demo.py`](examples/demo.py) file, and run it (assuming you have installed library).
 
-If you have Vernie assembled, you might run scripts from [`examples/vernie`](examples/vernie/) directory.
+If you have Vernie assembled, you might run scripts from [`examples/vernie`](examples/vernie) directory.
 
 Demonstrational videos:
 
@@ -29,7 +29,7 @@ Demonstrational videos:
 
 ## Usage
 
-_Please note that this library requires one of Bluetooth backend libraries to be installed, please read section [here](#general-notes) for details_
+_Please note that this library requires one of Bluetooth backend libraries to be installed, please read section [here](#bluetooth-backend-prerequisites) for details._
 
 Install library like this: 
 ```bash
@@ -257,6 +257,8 @@ You have following options to install as Bluetooth backend:
 - `pip install gatt` - [gatt](https://github.com/getsenic/gatt-python) lib, supports Linux, does not work on Windows
 - `pip install gattlib` - [gattlib](https://bitbucket.org/OscarAcena/pygattlib) - supports Linux, does not work on Windows, requires `sudo`
 
+Running on Windows requires [Bluegiga BLED112 Bluetooth Smart Dongle](https://www.silabs.com/products/wireless/bluetooth/bluetooth-low-energy-modules/bled112-bluetooth-smart-dongle) hardware piece, because no other hardware currently works on Windows with Python+BLE.
+
 _Please let author know if you have discovered any compatibility/preprequisite details, so we will update this section to help future users_
 
 Depending on backend type, you might need Linux `sudo` to be used when running Python.
@@ -266,9 +268,9 @@ There is optional parameter for `MoveHub` class constructor, accepting instance 
 
 - use `pylgbst.get_connection_auto()` to attempt backend auto-choice, autodetect uses 
 - use `BlueGigaConnection()` - if you use BlueGiga Adapter (`pygatt` library prerequisite)
-- use `GattConnection()` - if you use GattTool Backend on Linux (`gatt` library prerequisite)
+- use `GattConnection()` - if you use Gatt Backend on Linux (`gatt` library prerequisite)
 - use `GattoolConnection()` - if you use GattTool Backend on Linux (`pygatt` library prerequisite)
-- use `GattLibConnection()` - if you use GattTool Backend on Linux (`gattlib` library prerequisite)
+- use `GattLibConnection()` - if you use GattLib Backend on Linux (`gattlib` library prerequisite)
 - pass instance of `DebugServerConnection` if you are using [Debug Server](#debug-server) (more details below).
 
 All the functions above have optional arguments to specify adapter name and MoveHub mac address. Please look function source code for details.
@@ -276,7 +278,7 @@ All the functions above have optional arguments to specify adapter name and Move
 If you want to specify name for Bluetooth interface to use on local computer, you can passthat to class or function of getting a connection. Then pass connection object to `MoveHub` constructor. Like this:
 ```python
 from pylgbst.movehub import MoveHub
-from pylgbst.comms_gatt import GattConnection
+from pylgbst.comms.cgatt import GattConnection
 
 conn = GattConnection("hci1")
 conn.connect()  # you can pass MoveHub mac address as parameter here, like 'AA:BB:CC:DD:EE:FF'
