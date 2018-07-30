@@ -6,7 +6,7 @@ from pygatt import BLEAddressType
 from pygatt.backends.bgapi.bgapi import MAX_CONNECTION_ATTEMPTS
 from pygatt.backends.bgapi.device import BGAPIBLEDevice
 
-from pylgbst.comms_pygatt import GattoolConnection
+from pylgbst.comms.cpygatt import GattoolConnection
 from tests import log
 
 

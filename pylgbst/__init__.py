@@ -7,25 +7,25 @@ log = logging.getLogger('pylgbst')
 
 
 def get_connection_bluegiga(controller=None, hub_mac=None):
-    from pylgbst.comms_pygatt import BlueGigaConnection
+    from pylgbst.comms.cpygatt import BlueGigaConnection
 
     return BlueGigaConnection().connect(hub_mac)
 
 
 def get_connection_gattool(controller='hci0', hub_mac=None):
-    from pylgbst.comms_pygatt import GattoolConnection
+    from pylgbst.comms.cpygatt import GattoolConnection
 
     return GattoolConnection(controller).connect(hub_mac)
 
 
 def get_connection_gatt(controller='hci0', hub_mac=None):
-    from pylgbst.comms_gatt import GattConnection
+    from pylgbst.comms.cgatt import GattConnection
 
     return GattConnection(controller).connect(hub_mac)
 
 
 def get_connection_gattlib(controller='hci0', hub_mac=None):
-    from pylgbst.comms_gattlib import GattLibConnection
+    from pylgbst.comms.cgattlib import GattLibConnection
 
     return GattLibConnection(controller).connect(hub_mac)
 

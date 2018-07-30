@@ -4,7 +4,7 @@ import unittest
 import dbus
 from gatt import DeviceManager
 
-from pylgbst.comms_gatt import CustomDevice, GattConnection
+from pylgbst.comms.cgatt import CustomDevice, GattConnection
 from tests import log, str2hex
 
 
