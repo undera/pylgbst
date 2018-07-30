@@ -4,7 +4,7 @@ import unittest
 import dbus
 from gatt import DeviceManager
 
-from pylgbst.comms_gatt import CustomDevice
+from pylgbst.comms_gatt import CustomDevice, GattConnection
 from tests import log, str2hex
 
 
@@ -41,3 +41,7 @@ class TestGatt(unittest.TestCase):
               "dbus.Byte(0), dbus.Byte(0), dbus.Byte(0), dbus.Byte(0), dbus.Byte(16), dbus.Byte(0), dbus.Byte(0), " \
               "dbus.Byte(0), dbus.Byte(16)], signature=dbus.Signature('y'), variant_level=1)"
         obj.characteristic_value_updated(None, arr if sys.version_info[0] == 2 else bytes(arr, 'ascii'))
+
+    def test_conn(self):
+        obj = GattConnection()
+        obj.connect()

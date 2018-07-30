@@ -81,7 +81,10 @@ class GattConnection(Connection):
         self._iface = bt_iface_name
 
     def connect(self, hub_mac=None):
-        dev_manager = gatt.DeviceManager(adapter_name=self._iface)
+        try:
+            dev_manager = gatt.DeviceManager(adapter_name=self._iface)
+        except TypeError:
+            raise NotImplementedError("Gatt is not implemented for this platform")
         dman_thread = threading.Thread(target=dev_manager.run)
         dman_thread.setDaemon(True)
         log.debug('Starting DeviceManager...')
