@@ -57,4 +57,7 @@ def get_connection_auto(controller='hci0', hub_mac=None):
 
 def start_debug_server(iface="hci0", port=9090):
     server = DebugServer(get_connection_auto(iface))
-    server.start(port)
+    try:
+        server.start(port)
+    finally:
+        server.connection.disconnect()
