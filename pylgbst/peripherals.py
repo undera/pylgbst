@@ -14,7 +14,7 @@ log = logging.getLogger('peripherals')
 
 class Peripheral(object):
     """
-    :type parent: MoveHub
+    :type parent: pylgbst.movehub.MoveHub
     :type _incoming_port_data: queue.Queue
     """
 
@@ -110,6 +110,9 @@ class Peripheral(object):
         if not async:
             log.debug("Waiting for sync command work to finish...")
             while self.in_progress():
+                if not self.parent.connection.is_alive():
+                    log.debug("Connection is not alive anymore: %s", self.parent.connection)
+                    break
                 time.sleep(0.001)
             log.debug("Command has finished.")
 

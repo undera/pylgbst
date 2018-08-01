@@ -115,7 +115,7 @@ class FaceTracker(MoveHub):
         pyplot.ion()
         pyplot.show()
 
-        while thr.isAlive():
+        while thr.isAlive() and self.connection.is_alive():
             # bodies, weights = self._find_color()
             bodies, weights = self._find_faces()
 

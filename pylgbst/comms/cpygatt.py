@@ -54,6 +54,9 @@ class GattoolConnection(Connection):
     def set_notify_handler(self, handler):
         self._conn_hnd.subscribe(MOVE_HUB_HW_UUID_CHAR, handler)
 
+    def is_alive(self):
+        return True
+
 
 class BlueGigaConnection(GattoolConnection):
     def __init__(self):

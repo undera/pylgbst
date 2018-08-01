@@ -22,6 +22,10 @@ class Connection(object):
     def connect(self, hub_mac=None):
         pass
 
+    @abstractmethod
+    def is_alive(self):
+        pass
+
     def disconnect(self):
         pass
 
@@ -61,7 +65,7 @@ class DebugServer(object):
             conn, addr = self.sock.accept()
             if not self._running:
                 raise KeyboardInterrupt("Shutdown")
-            self.connection.requester.notification_sink = lambda x, y: self._notify(conn, x, y)
+            self.connection.set_notify_handler(lambda x, y: self._notify(conn, x, y))
             try:
                 self._handle_conn(conn)
             except KeyboardInterrupt:
@@ -69,7 +73,7 @@ class DebugServer(object):
             except BaseException:
                 log.error("Problem handling incoming connection: %s", traceback.format_exc())
             finally:
-                self.connection.requester.notification_sink = self._notify_dummy
+                self.connection.set_notify_handler(self._notify_dummy)
                 conn.close()
 
     def __del__(self):

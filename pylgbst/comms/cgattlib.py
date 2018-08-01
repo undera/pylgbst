@@ -1,8 +1,9 @@
 # noinspection PyMethodOverriding
 import logging
 import traceback
-from gattlib import DiscoveryService, GATTRequester
 from threading import Thread
+
+from gattlib import DiscoveryService, GATTRequester
 
 from pylgbst.comms import Connection, LEGO_MOVE_HUB
 from pylgbst.utilities import queue, str2hex
@@ -21,10 +22,10 @@ class Requester(GATTRequester):
         self.notification_sink = None
 
         self._notify_queue = queue.Queue()  # this queue is to minimize time spent in gattlib C code
-        thr = Thread(target=self._dispatch_notifications)
-        thr.setDaemon(True)
-        thr.setName("Notify queue dispatcher")
-        thr.start()
+        self.notify_thread = Thread(target=self._dispatch_notifications)
+        self.notify_thread.setDaemon(True)
+        self.notify_thread.setName("Notify queue dispatcher")
+        self.notify_thread.start()
 
     def on_notification(self, handle, data):
         # log.debug("requester notified, sink: %s", self.notification_sink)
@@ -89,3 +90,6 @@ class GattLibConnection(Connection):
     def write(self, handle, data):
         log.debug("Writing to %s: %s", handle, str2hex(data))
         return self.requester.write_by_handle(handle, data)
+
+    def is_alive(self):
+        return self.requester.notify_thread.isAlive()

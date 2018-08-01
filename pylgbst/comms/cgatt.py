@@ -79,21 +79,22 @@ class GattConnection(Connection):
         super(GattConnection, self).__init__()
         self._device = None
         self._iface = bt_iface_name
-
-    def connect(self, hub_mac=None):
         try:
-            dev_manager = gatt.DeviceManager(adapter_name=self._iface)
+            self._manager = gatt.DeviceManager(adapter_name=self._iface)
         except TypeError:
             raise NotImplementedError("Gatt is not implemented for this platform")
-        dman_thread = threading.Thread(target=dev_manager.run)
-        dman_thread.setDaemon(True)
+
+        self._manager_thread = threading.Thread(target=self._manager.run)
+        self._manager_thread.setDaemon(False)
         log.debug('Starting DeviceManager...')
-        dman_thread.start()
-        dev_manager.start_discovery()
+
+    def connect(self, hub_mac=None):
+        self._manager_thread.start()
+        self._manager.start_discovery()
 
         while not self._device:
             log.info("Discovering devices...")
-            devices = dev_manager.devices()
+            devices = self._manager.devices()
             log.debug("Devices: %s", devices)
 
             for dev in devices:
@@ -101,7 +102,7 @@ class GattConnection(Connection):
                 name = dev.alias()
                 if name == LEGO_MOVE_HUB or hub_mac == address:
                     logging.info("Found %s at %s", name, address)
-                    self._device = CustomDevice(address, dev_manager)
+                    self._device = CustomDevice(address, self._manager)
                     break
 
             if not self._device:
@@ -121,3 +122,6 @@ class GattConnection(Connection):
 
     def enable_notifications(self):
         self._device.enable_notifications()
+
+    def is_alive(self):
+        return self._manager_thread.isAlive()
