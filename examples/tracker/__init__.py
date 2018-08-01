@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import time
 import traceback
 from threading import Thread
@@ -42,7 +43,7 @@ class FaceTracker(MoveHub):
         bodies, rejects, weights = self.face_cascade.detectMultiScale3(self.cur_img, 1.5, 5, outputRejectLevels=True)
         return bodies, weights
 
-    def _find_heli(self):
+    def _find_color(self):
         # from https://www.pyimagesearch.com/2015/09/14/ball-tracking-with-opencv/
         # and https://thecodacus.com/opencv-object-tracking-colour-detection-python/#.W2DHFd_IQsM
 
@@ -50,13 +51,9 @@ class FaceTracker(MoveHub):
         hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
 
         try:
-            with open("/tmp/1.json") as fhd:
+            # having color values in file allows finding values easier
+            with open(os.path.join(os.path.dirname(__file__), "color.json")) as fhd:
                 data = json.loads(fhd.read())
-                level = int(time.time()) % 51
-                level *= 5
-                logging.info("%s", level)
-                # data[0][0] = level
-                # data[1][0] = level + 5
                 lower = tuple(data[0])
                 upper = tuple(data[1])
         except:
@@ -67,8 +64,8 @@ class FaceTracker(MoveHub):
         mask = cv2.erode(mask, None, iterations=2)
         mask = cv2.dilate(mask, None, iterations=2)
 
-        if not (int(time.time()) % 2):
-            self.cur_img = mask
+        # if not (int(time.time()) % 2):
+        #    self.cur_img = mask
 
         cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         cnts = cnts[0] if imutils.is_cv2() else cnts[1]
@@ -109,7 +106,8 @@ class FaceTracker(MoveHub):
 
         cur_face = (0, 0, 0, 0)
         while thr.isAlive():
-            bodies, weights = self._find_faces()
+            bodies, weights = self._find_color()
+            #bodies, weights = self._find_faces()
 
             if len(bodies):
                 logging.debug("Bodies: %s / Weights: %s", bodies, weights)
