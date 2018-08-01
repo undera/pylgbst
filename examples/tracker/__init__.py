@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import time
 import traceback
 from threading import Thread
 
@@ -28,14 +27,22 @@ class FaceTracker(MoveHub):
         # cap.set(cv2.CAP_PROP_XI_AUTO_WB, 1)
         # cap.set(cv2.CAP_PROP_XI_AEAG, 1)
 
+        size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        video = cv2.VideoWriter('output.avi', fourcc, fps, size)
+
         try:
             while True:
                 flag, img = cap.read()
                 self.cur_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 logging.debug("Got frame")
+                video.write(self.cur_img)
         finally:
             logging.info("Releasing cam...")
             cap.release()
+            video.release()
 
     face_cascade = cv2.CascadeClassifier('/usr/share/opencv/haarcascades/' + 'haarcascade_frontalface_default.xml')
 
@@ -89,7 +96,7 @@ class FaceTracker(MoveHub):
             vert = 0
 
         self.motor_external.constant(horz)
-        self.motor_AB.constant(-vert)
+        self.motor_A.constant(-vert)
 
     def main(self):
         thr = Thread(target=self.capture)
@@ -106,8 +113,8 @@ class FaceTracker(MoveHub):
 
         cur_face = (0, 0, 0, 0)
         while thr.isAlive():
-            bodies, weights = self._find_color()
-            #bodies, weights = self._find_faces()
+            # bodies, weights = self._find_color()
+            bodies, weights = self._find_faces()
 
             if len(bodies):
                 logging.debug("Bodies: %s / Weights: %s", bodies, weights)
@@ -149,5 +156,3 @@ if __name__ == '__main__':
         pass
         # conn.disconnect()
 
-# obj = A()
-# obj.main()
