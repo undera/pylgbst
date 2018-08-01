@@ -1,8 +1,11 @@
+import json
 import logging
+import time
 import traceback
 from threading import Thread
 
 import cv2
+import imutils as imutils
 from matplotlib import pyplot
 
 from pylgbst import get_connection_auto
@@ -29,10 +32,67 @@ class FaceTracker(MoveHub):
                 flag, img = cap.read()
                 self.cur_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 logging.debug("Got frame")
-
         finally:
             logging.info("Releasing cam...")
             cap.release()
+
+    face_cascade = cv2.CascadeClassifier('/usr/share/opencv/haarcascades/' + 'haarcascade_frontalface_default.xml')
+
+    def _find_faces(self):
+        bodies, rejects, weights = self.face_cascade.detectMultiScale3(self.cur_img, 1.5, 5, outputRejectLevels=True)
+        return bodies, weights
+
+    def _find_heli(self):
+        # from https://www.pyimagesearch.com/2015/09/14/ball-tracking-with-opencv/
+        # and https://thecodacus.com/opencv-object-tracking-colour-detection-python/#.W2DHFd_IQsM
+
+        blurred = cv2.GaussianBlur(self.cur_img, (11, 11), 0)
+        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+
+        try:
+            with open("/tmp/1.json") as fhd:
+                data = json.loads(fhd.read())
+                level = int(time.time()) % 51
+                level *= 5
+                logging.info("%s", level)
+                # data[0][0] = level
+                # data[1][0] = level + 5
+                lower = tuple(data[0])
+                upper = tuple(data[1])
+        except:
+            logging.debug("%s", traceback.format_exc())
+            lower = (100, 100, 100,)
+            upper = (130, 255, 255,)
+        mask = cv2.inRange(hsv, lower, upper)
+        mask = cv2.erode(mask, None, iterations=2)
+        mask = cv2.dilate(mask, None, iterations=2)
+
+        if not (int(time.time()) % 2):
+            self.cur_img = mask
+
+        cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = cnts[0] if imutils.is_cv2() else cnts[1]
+
+        return [cv2.boundingRect(c) for c in cnts], (0,) * len(cnts)
+
+    def _auto_pan(self, cur_face):
+        (x, y, w, h) = cur_face
+        height, width, channels = self.cur_img.shape
+
+        cam_center = (width / 2, height / 2)
+        face_center = (x + w / 2, y + h / 2)
+
+        horz = 1.5 * (face_center[0] - cam_center[0]) / float(width)
+        vert = 0.7 * (face_center[1] - cam_center[1]) / float(height)
+
+        logging.info("Horiz %.3f, vert %3f", horz, vert)
+        if abs(horz) < 0.1:
+            horz = 0
+        if abs(vert) < 0.15:
+            vert = 0
+
+        self.motor_external.constant(horz)
+        self.motor_AB.constant(-vert)
 
     def main(self):
         thr = Thread(target=self.capture)
@@ -47,53 +107,30 @@ class FaceTracker(MoveHub):
         pyplot.ion()
         pyplot.show()
 
-        face_cascade = cv2.CascadeClassifier('/usr/share/opencv/haarcascades/' + 'haarcascade_frontalface_default.xml')
-        # face_cascade = cv2.CascadeClassifier('/usr/share/opencv/haarcascades/' + 'haarcascade_frontalface_alt.xml')
-        # face_cascade = cv2.CascadeClassifier('/usr/share/opencv/haarcascades/' + 'haarcascade_frontalface_alt2.xml')
-
-        idle = 0
+        cur_face = (0, 0, 0, 0)
         while thr.isAlive():
-            bodies, rejects, weights = face_cascade.detectMultiScale3(self.cur_img, 1.5, 5, outputRejectLevels=True)
+            bodies, weights = self._find_faces()
 
             if len(bodies):
-                idle = 0
                 logging.debug("Bodies: %s / Weights: %s", bodies, weights)
-            elif idle >= 1:
-                logging.info("Stop motors because of idle")
+            else:
                 self.motor_external.stop()
                 self.motor_AB.stop()
-                idle = 0
-            else:
-                idle += 1
 
             items = []
             for n in range(0, len(bodies)):
-                (x, y, w, h) = bodies[n]
-                cv2.rectangle(self.cur_img, (x, y), (x + w, y + h), (255, 0, 0), 2)
                 items.append((bodies[n], weights[n]))
 
-            for item in sorted(items, key=lambda x: x[1], reverse=True):
-                (x, y, w, h) = item[0]
-                height, width, channels = self.cur_img.shape
-                cam_center = (width / 2, height / 2)
-                face_center = (x + w / 2, y + h / 2)
+            for item in sorted(items, key=lambda i: i[1], reverse=True):
+                cur_face = item[0]
 
-                horz = 1.5 * (face_center[0] - cam_center[0]) / float(width)
-                vert = 0.7 * (face_center[1] - cam_center[1]) / float(height)
-
-                logging.info("Horiz %s, vert %s, weight: %s", horz, vert, item[1])
-
-                if abs(horz) < 0.1:
-                    horz = 0
-                if abs(vert) < 0.1:
-                    vert = 0
-
-                self.motor_external.constant(horz)
-                self.motor_AB.constant(-vert)
+                self._auto_pan(cur_face)
                 break
 
+            (x, y, w, h) = cur_face
+            cv2.rectangle(self.cur_img, (x, y), (x + w, y + h), (255, 0, 0), 2)
+
             plt.set_array(self.cur_img)
-            # pyplot.draw()
             logging.debug("Updated frame")
             pyplot.pause(0.02)
 
