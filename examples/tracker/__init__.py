@@ -12,12 +12,19 @@ from pylgbst import get_connection_auto
 from pylgbst.comms import DebugServerConnection
 from pylgbst.movehub import MoveHub
 
+cascades_dir = '/usr/share/opencv/haarcascades'
+face_cascade = cv2.CascadeClassifier(cascades_dir + '/haarcascade_frontalface_default.xml')
+smile_cascade = cv2.CascadeClassifier(cascades_dir + '/haarcascade_smile.xml')
+
 
 class FaceTracker(MoveHub):
     def __init__(self, connection=None):
         super(FaceTracker, self).__init__(connection)
+        self._is_smile_on = False
         self.cur_img = None
         self.cur_face = None
+        self.cur_smile = None
+        self.smile_counter = 0
 
     def capture(self):
         logging.info("Starting cam...")
@@ -48,11 +55,56 @@ class FaceTracker(MoveHub):
             cap.release()
             video.release()
 
-    face_cascade = cv2.CascadeClassifier('/usr/share/opencv/haarcascades/' + 'haarcascade_frontalface_default.xml')
+    def _find_face(self):
+        bodies, rejects, weights = face_cascade.detectMultiScale3(self.cur_img, 1.5, 5, outputRejectLevels=True)
+        if len(bodies):
+            logging.debug("Bodies: %s / Weights: %s", bodies, weights)
+        else:
+            return None
 
-    def _find_faces(self):
-        bodies, rejects, weights = self.face_cascade.detectMultiScale3(self.cur_img, 1.5, 5, outputRejectLevels=True)
-        return bodies, weights
+        items = []
+        for n in range(0, len(bodies)):
+            items.append((bodies[n], weights[n]))
+
+        self.cur_face = None
+        for item in sorted(items, key=lambda i: i[1], reverse=True):
+            return item[0]
+
+        return bodies
+
+    def _find_smile(self, cur_face):
+        (x, y, w, h) = cur_face
+        roi_color = self.cur_img[y:y + h, x:x + w]
+        smiles = smile_cascade.detectMultiScale(roi_color, 1.5)
+        logging.debug("Smiles: %s", smiles)
+        if not len(smiles):
+            self.cur_smile = None
+            self.smile_counter -= 1
+        else:
+            for (ex, ey, ew, eh) in smiles:
+                self.cur_smile = (ex, ey, ew, eh)
+                cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
+                self.smile_counter += 1
+                break
+
+        logging.info("Smile counter: %s", self.smile_counter)
+        if self.smile_counter > 2:
+            self.smile_counter = 2
+            self._smile(True)
+
+        if self.smile_counter < 0:
+            self.smile_counter = 0
+            self._smile(False)
+
+    def _smile(self, on=True):
+        if on and not self._is_smile_on:
+            self._is_smile_on = True
+            self.motor_B.angled(-90, 0.5)
+
+        if not on and self._is_smile_on:
+            self._is_smile_on = False
+            self.motor_B.angled(90, 0.5)
+
 
     def _find_color(self):
         # from https://www.pyimagesearch.com/2015/09/14/ball-tracking-with-opencv/
@@ -116,25 +168,13 @@ class FaceTracker(MoveHub):
         pyplot.show()
 
         while thr.isAlive() and self.connection.is_alive():
-            # bodies, weights = self._find_color()
-            bodies, weights = self._find_faces()
-
-            if len(bodies):
-                logging.debug("Bodies: %s / Weights: %s", bodies, weights)
-            else:
+            self.cur_face = self._find_face()
+            if self.cur_face is None:
                 self.motor_external.stop()
                 self.motor_AB.stop()
-
-            items = []
-            for n in range(0, len(bodies)):
-                items.append((bodies[n], weights[n]))
-
-            self.cur_face = None
-            for item in sorted(items, key=lambda i: i[1], reverse=True):
-                self.cur_face = item[0]
-
+            else:
                 self._auto_pan(self.cur_face)
-                break
+                self._find_smile(self.cur_face)
 
             plt.set_array(self.cur_img)
             logging.debug("Updated frame")
@@ -156,4 +196,3 @@ if __name__ == '__main__':
     finally:
         pass
         # conn.disconnect()
-
