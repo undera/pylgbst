@@ -17,6 +17,7 @@ class FaceTracker(MoveHub):
     def __init__(self, connection=None):
         super(FaceTracker, self).__init__(connection)
         self.cur_img = None
+        self.cur_face = None
 
     def capture(self):
         logging.info("Starting cam...")
@@ -36,9 +37,12 @@ class FaceTracker(MoveHub):
         try:
             while True:
                 flag, img = cap.read()
+                if self.cur_face is not None:
+                    (x, y, w, h) = self.cur_face
+                    cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255,), 2)
+                video.write(img)
                 self.cur_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 logging.debug("Got frame")
-                video.write(self.cur_img)
         finally:
             logging.info("Releasing cam...")
             cap.release()
@@ -111,7 +115,6 @@ class FaceTracker(MoveHub):
         pyplot.ion()
         pyplot.show()
 
-        cur_face = (0, 0, 0, 0)
         while thr.isAlive():
             # bodies, weights = self._find_color()
             bodies, weights = self._find_faces()
@@ -126,14 +129,12 @@ class FaceTracker(MoveHub):
             for n in range(0, len(bodies)):
                 items.append((bodies[n], weights[n]))
 
+            self.cur_face = None
             for item in sorted(items, key=lambda i: i[1], reverse=True):
-                cur_face = item[0]
+                self.cur_face = item[0]
 
-                self._auto_pan(cur_face)
+                self._auto_pan(self.cur_face)
                 break
-
-            (x, y, w, h) = cur_face
-            cv2.rectangle(self.cur_img, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
             plt.set_array(self.cur_img)
             logging.debug("Updated frame")
