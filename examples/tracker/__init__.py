@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 import traceback
 from threading import Thread
 
@@ -10,6 +11,7 @@ from matplotlib import pyplot
 
 from pylgbst import get_connection_auto
 from pylgbst.comms import DebugServerConnection
+from pylgbst.constants import COLOR_RED, COLOR_BLUE, COLOR_YELLOW
 from pylgbst.movehub import MoveHub
 
 cascades_dir = '/usr/share/opencv/haarcascades'
@@ -46,7 +48,7 @@ class FaceTracker(MoveHub):
                 flag, img = cap.read()
                 if self.cur_face is not None:
                     (x, y, w, h) = self.cur_face
-                    cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255,), 2)
+                    cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255,), 1)
                 video.write(img)
                 self.cur_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 logging.debug("Got frame")
@@ -67,31 +69,39 @@ class FaceTracker(MoveHub):
             items.append((bodies[n], weights[n]))
 
         self.cur_face = None
-        for item in sorted(items, key=lambda i: i[1], reverse=True):
-            return item[0]
+        return self._reduce(bodies)
 
-        return bodies
+    def _reduce(self, values):
+        res = None
+        for x, y, w, h in values:
+            if res is None:
+                res = (x, y, w, h)
+            else:
+                new_xy = (min(x, res[0]), min(y, res[1]))
+                res = new_xy + (max(x + w, res[0] + res[2]) - new_xy[0], max(y + h, res[1] + res[3]) - new_xy[1])
+        return res
 
     def _find_smile(self, cur_face):
-        (x, y, w, h) = cur_face
-        roi_color = self.cur_img[y:y + h, x:x + w]
-        smiles = smile_cascade.detectMultiScale(roi_color, 1.5)
-        logging.debug("Smiles: %s", smiles)
-        if not len(smiles):
+        if cur_face is not None:
+            (x, y, w, h) = cur_face
+            roi_color = self.cur_img[y:y + h, x:x + w]
+            smile = self._reduce(smile_cascade.detectMultiScale(roi_color, 1.5, 15))
+        else:
+            smile = None
+
+        if not smile:
             self.cur_smile = None
             self.smile_counter -= 1
         else:
-            for (ex, ey, ew, eh) in smiles:
-                self.cur_smile = (ex, ey, ew, eh)
-                cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
-                self.smile_counter += 1
-                break
+            (ex, ey, ew, eh) = smile
+            self.cur_smile = (ex, ey, ew, eh)
+            cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 1)
+            self.smile_counter += 1
 
         logging.info("Smile counter: %s", self.smile_counter)
         if self.smile_counter > 2:
             self.smile_counter = 2
             self._smile(True)
-
         if self.smile_counter < 0:
             self.smile_counter = 0
             self._smile(False)
@@ -100,11 +110,12 @@ class FaceTracker(MoveHub):
         if on and not self._is_smile_on:
             self._is_smile_on = True
             self.motor_B.angled(-90, 0.5)
+            if self.led.last_color_set != COLOR_RED:
+                self.led.set_color(COLOR_RED)
 
         if not on and self._is_smile_on:
             self._is_smile_on = False
             self.motor_B.angled(90, 0.5)
-
 
     def _find_color(self):
         # from https://www.pyimagesearch.com/2015/09/14/ball-tracking-with-opencv/
@@ -119,21 +130,22 @@ class FaceTracker(MoveHub):
                 data = json.loads(fhd.read())
                 lower = tuple(data[0])
                 upper = tuple(data[1])
-        except:
+        except BaseException:
             logging.debug("%s", traceback.format_exc())
             lower = (100, 100, 100,)
             upper = (130, 255, 255,)
         mask = cv2.inRange(hsv, lower, upper)
-        mask = cv2.erode(mask, None, iterations=2)
-        mask = cv2.dilate(mask, None, iterations=2)
+        mask = cv2.erode(mask, None, iterations=5)
+        mask = cv2.dilate(mask, None, iterations=5)
 
-        # if not (int(time.time()) % 2):
+        #if not (int(time.time()) % 2):
         #    self.cur_img = mask
 
-        cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        ret, thresh = cv2.threshold(mask, 20, 255, 0)
+        cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         cnts = cnts[0] if imutils.is_cv2() else cnts[1]
 
-        return [cv2.boundingRect(c) for c in cnts], (0,) * len(cnts)
+        return self._reduce([cv2.boundingRect(c) for c in cnts])
 
     def _auto_pan(self, cur_face):
         (x, y, w, h) = cur_face
@@ -167,18 +179,30 @@ class FaceTracker(MoveHub):
         pyplot.ion()
         pyplot.show()
 
-        while thr.isAlive() and self.connection.is_alive():
-            self.cur_face = self._find_face()
-            if self.cur_face is None:
-                self.motor_external.stop()
-                self.motor_AB.stop()
-            else:
-                self._auto_pan(self.cur_face)
-                self._find_smile(self.cur_face)
+        try:
+            while thr.isAlive() and self.connection.is_alive():
+                self._process_picture(plt)
+        finally:
+            self._smile(False)
 
-            plt.set_array(self.cur_img)
-            logging.debug("Updated frame")
-            pyplot.pause(0.02)
+    def _process_picture(self, plt):
+        #self.cur_face = self._find_face()
+        self.cur_face = self._find_color()
+
+        if self.cur_face is None:
+            self.motor_external.stop()
+            self.motor_AB.stop()
+            if not self._is_smile_on and self.led.last_color_set != COLOR_BLUE:
+                self.led.set_color(COLOR_BLUE)
+        else:
+            if not self._is_smile_on and self.led.last_color_set != COLOR_YELLOW:
+                self.led.set_color(COLOR_YELLOW)
+
+            self._auto_pan(self.cur_face)
+            self._find_smile(self.cur_face)
+        plt.set_array(self.cur_img)
+        logging.debug("Updated frame")
+        pyplot.pause(0.02)
 
 
 if __name__ == '__main__':

@@ -122,7 +122,7 @@ class LED(Peripheral):
 
     def __init__(self, parent, port):
         super(LED, self).__init__(parent, port)
-        self._last_color_set = COLOR_NONE
+        self.last_color_set = COLOR_NONE
 
     def set_color(self, color, do_notify=True):
         if color == COLOR_NONE:
@@ -131,15 +131,16 @@ class LED(Peripheral):
         if color not in COLORS:
             raise ValueError("Color %s is not in list of available colors" % color)
 
-        self._last_color_set = color
+        self.last_color_set = color
         cmd = pack("<B", do_notify) + self.SOMETHING + pack("<B", color)
         self.started()
         self._write_to_hub(MSG_SET_PORT_VAL, cmd)
+        self._wait_sync(False)
 
     def finished(self):
         super(LED, self).finished()
-        log.debug("LED has changed color to %s", COLORS[self._last_color_set])
-        self._notify_subscribers(self._last_color_set)
+        log.debug("LED has changed color to %s", COLORS[self.last_color_set])
+        self._notify_subscribers(self.last_color_set)
 
     def subscribe(self, callback, mode=None, granularity=None, async=False):
         self._subscribers.add(callback)
