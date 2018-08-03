@@ -18,6 +18,8 @@ cascades_dir = '/usr/share/opencv/haarcascades'
 face_cascade = cv2.CascadeClassifier(cascades_dir + '/haarcascade_frontalface_default.xml')
 smile_cascade = cv2.CascadeClassifier(cascades_dir + '/haarcascade_smile.xml')
 
+LINE_THICKNESS = 2
+
 
 class FaceTracker(MoveHub):
     def __init__(self, connection=None):
@@ -41,14 +43,15 @@ class FaceTracker(MoveHub):
 
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
         fps = cap.get(cv2.CAP_PROP_FPS)
-        video = cv2.VideoWriter('output.avi', fourcc, fps, size)
+        video = cv2.VideoWriter('output_%d.avi' % int(time.time()), fourcc, fps, size)
 
         try:
             while True:
                 flag, img = cap.read()
                 if self.cur_face is not None:
                     (x, y, w, h) = self.cur_face
-                    cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255,), 1)
+                    if LINE_THICKNESS:
+                        cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255,), LINE_THICKNESS)
                 video.write(img)
                 self.cur_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 logging.debug("Got frame")
@@ -85,7 +88,7 @@ class FaceTracker(MoveHub):
         if cur_face is not None:
             (x, y, w, h) = cur_face
             roi_color = self.cur_img[y:y + h, x:x + w]
-            smile = self._reduce(smile_cascade.detectMultiScale(roi_color, 1.5, 15))
+            smile = self._reduce(smile_cascade.detectMultiScale(roi_color, 1.5, 20))
         else:
             smile = None
 
@@ -95,7 +98,8 @@ class FaceTracker(MoveHub):
         else:
             (ex, ey, ew, eh) = smile
             self.cur_smile = (ex, ey, ew, eh)
-            cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 1)
+            if LINE_THICKNESS:
+                cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), LINE_THICKNESS)
             self.smile_counter += 1
 
         logging.info("Smile counter: %s", self.smile_counter)
@@ -186,8 +190,8 @@ class FaceTracker(MoveHub):
             self._smile(False)
 
     def _process_picture(self, plt):
-        #self.cur_face = self._find_face()
-        self.cur_face = self._find_color()
+        self.cur_face = self._find_face()
+        #self.cur_face = self._find_color()
 
         if self.cur_face is None:
             self.motor_external.stop()
