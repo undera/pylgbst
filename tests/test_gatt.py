@@ -43,8 +43,8 @@ class TestGatt(unittest.TestCase):
         obj.characteristic_value_updated(None, arr if sys.version_info[0] == 2 else bytes(arr, 'ascii'))
 
     def test_conn(self):
-        obj = GattConnection()
         try:
+            obj = GattConnection()
             obj.connect()
         except AttributeError:
             pass
