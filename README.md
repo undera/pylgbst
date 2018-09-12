@@ -34,7 +34,7 @@ _Please note that this library requires one of Bluetooth backend libraries to be
 
 Install library like this: 
 ```bash
-pip install https://github.com/undera/pylgbst/archive/0.8.tar.gz
+pip install https://github.com/undera/pylgbst/archive/0.9.tar.gz
 ```
 
 Then instantiate MoveHub object and start invoking its methods. Following is example to just print peripherals detected on Hub:  
