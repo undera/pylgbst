@@ -1,4 +1,4 @@
-from pylgbst.comms_gatt import GattConnection# Python library to interact with Move Hub
+# Python library to interact with Move Hub
 
 _Move Hub is central controller block of [LEGO® Boost Robotics Set](https://www.lego.com/en-us/boost)._
 
