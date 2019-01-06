@@ -112,6 +112,7 @@ class GattConnection(Connection):
         return self
 
     def disconnect(self):
+        self._manager.stop()
         self._device.disconnect()
 
     def write(self, handle, data):
