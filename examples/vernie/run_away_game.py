@@ -11,7 +11,7 @@ def callback(color, distance):
     secs = (10 - distance + 1) / 10.0
     print("Distance is %.1f inches, I'm running back with %s%% speed!" % (distance, int(speed * 100)))
     if speed <= 1:
-        robot.motor_AB.timed(secs / 1, -speed, async=True)
+        robot.motor_AB.timed(secs / 1, -speed, is_async=True)
         robot.say("Ouch")
 
 

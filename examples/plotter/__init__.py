@@ -84,7 +84,7 @@ class Plotter(object):
     def finalize(self):
         if self.is_tool_down:
             self._tool_up()
-        self.both.stop(async=True)
+        self.both.stop(is_async=True)
 
     def _tool_down(self):
         self.is_tool_down = True

@@ -85,7 +85,7 @@ class GattConnection(Connection):
             raise NotImplementedError("Gatt is not implemented for this platform")
 
         self._manager_thread = threading.Thread(target=self._manager.run)
-        self._manager_thread.setDaemon(False)
+        self._manager_thread.setDaemon(True)
         log.debug('Starting DeviceManager...')
 
     def connect(self, hub_mac=None):

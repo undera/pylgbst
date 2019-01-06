@@ -53,7 +53,7 @@ class ColorSorter(MoveHub):
         self.color_distance_sensor.unsubscribe(self.on_color)
         if not self.motor_B.in_progress():
             self.move_to_bucket(COLOR_BLACK)
-        self.motor_AB.stop(async=True)
+        self.motor_AB.stop(is_async=True)
 
     def tick(self):
         res = False

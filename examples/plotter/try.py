@@ -182,7 +182,7 @@ def angles_experiment():
 
 
 class MotorMock(EncodedMotor):
-    def _wait_sync(self, async):
+    def _wait_sync(self, is_async):
         super(MotorMock, self)._wait_sync(True)
 
 

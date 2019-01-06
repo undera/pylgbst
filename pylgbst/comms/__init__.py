@@ -118,7 +118,7 @@ class DebugServer(object):
                 buf = buf[buf.index("\n") + 1:]
 
                 if line:
-                    log.info("Cmd line: %s", line)
+                    log.debug("Cmd line: %s", line)
                     try:
                         self._handle_cmd(json.loads(line))
                     except KeyboardInterrupt:

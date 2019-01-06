@@ -61,17 +61,17 @@ class Peripheral(object):
     def in_progress(self):
         return bool(self._working)
 
-    def subscribe(self, callback, mode, granularity=1, async=False):
+    def subscribe(self, callback, mode, granularity=1, is_async=False):
         self._port_subscription_mode = mode
         self.started()
         self._port_subscribe(self._port_subscription_mode, granularity, True)
 
-        self._wait_sync(async)  # having async=True leads to stuck notifications
+        self._wait_sync(is_async)  # having async=True leads to stuck notifications
 
         if callback:
             self._subscribers.add(callback)
 
-    def unsubscribe(self, callback=None, async=False):
+    def unsubscribe(self, callback=None, is_async=False):
         if callback in self._subscribers:
             self._subscribers.remove(callback)
 
@@ -80,7 +80,7 @@ class Peripheral(object):
         elif not self._subscribers:
             self.started()
             self._port_subscribe(self._port_subscription_mode, 0, False)
-            self._wait_sync(async)
+            self._wait_sync(is_async)
             self._port_subscription_mode = None
 
     def _notify_subscribers(self, *args, **kwargs):
@@ -106,8 +106,8 @@ class Peripheral(object):
                 log.warning("%s", traceback.format_exc())
                 log.warning("Failed to handle port data by %s: %s", self, str2hex(data))
 
-    def _wait_sync(self, async):
-        if not async:
+    def _wait_sync(self, is_async):
+        if not is_async:
             log.debug("Waiting for sync command work to finish...")
             while self.in_progress():
                 if not self.parent.connection.is_alive():
@@ -142,10 +142,10 @@ class LED(Peripheral):
         log.debug("LED has changed color to %s", COLORS[self.last_color_set])
         self._notify_subscribers(self.last_color_set)
 
-    def subscribe(self, callback, mode=None, granularity=None, async=False):
+    def subscribe(self, callback, mode=None, granularity=None, is_async=False):
         self._subscribers.add(callback)
 
-    def unsubscribe(self, callback=None, async=False):
+    def unsubscribe(self, callback=None, is_async=False):
         if callback in self._subscribers:
             self._subscribers.remove(callback)
 
@@ -202,7 +202,7 @@ class EncodedMotor(Peripheral):
 
         self._write_to_hub(MSG_SET_PORT_VAL, params)
 
-    def timed(self, seconds, speed_primary=1, speed_secondary=None, async=False):
+    def timed(self, seconds, speed_primary=1, speed_secondary=None, is_async=False):
         if speed_secondary is None:
             speed_secondary = speed_primary
 
@@ -210,9 +210,9 @@ class EncodedMotor(Peripheral):
 
         self.started()
         self._wrap_and_write(self.TIMED_SINGLE, params, speed_primary, speed_secondary)
-        self._wait_sync(async)
+        self._wait_sync(is_async)
 
-    def angled(self, angle, speed_primary=1, speed_secondary=None, async=False):
+    def angled(self, angle, speed_primary=1, speed_secondary=None, is_async=False):
         if speed_secondary is None:
             speed_secondary = speed_primary
 
@@ -226,26 +226,26 @@ class EncodedMotor(Peripheral):
 
         self.started()
         self._wrap_and_write(self.ANGLED_SINGLE, params, speed_primary, speed_secondary)
-        self._wait_sync(async)
+        self._wait_sync(is_async)
 
-    def constant(self, speed_primary=1, speed_secondary=None, async=False):
+    def constant(self, speed_primary=1, speed_secondary=None, is_async=False):
         if speed_secondary is None:
             speed_secondary = speed_primary
 
         self.started()
         self._wrap_and_write(self.CONSTANT_SINGLE, b"", speed_primary, speed_secondary)
-        self._wait_sync(async)
+        self._wait_sync(is_async)
 
-    def __some(self, speed_primary=1, speed_secondary=None, async=False):
+    def __some(self, speed_primary=1, speed_secondary=None, is_async=False):
         if speed_secondary is None:
             speed_secondary = speed_primary
 
         self.started()
         self._wrap_and_write(self.SOME_SINGLE, b"", speed_primary, speed_secondary)
-        self._wait_sync(async)
+        self._wait_sync(is_async)
 
-    def stop(self, async=False):
-        self.constant(0, async=async)
+    def stop(self, is_async=False):
+        self.constant(0, is_async=is_async)
 
     def handle_port_data(self, data):
         if self._port_subscription_mode == self.SENSOR_ANGLE:
@@ -261,7 +261,7 @@ class EncodedMotor(Peripheral):
         else:
             log.debug("Got motor sensor data while in unexpected mode: %s", self._port_subscription_mode)
 
-    def subscribe(self, callback, mode=SENSOR_ANGLE, granularity=1, async=False):
+    def subscribe(self, callback, mode=SENSOR_ANGLE, granularity=1, is_async=False):
         super(EncodedMotor, self).subscribe(callback, mode, granularity)
 
 
@@ -302,7 +302,7 @@ class TiltSensor(Peripheral):
         TRI_FRONT: "FRONT",
     }
 
-    def subscribe(self, callback, mode=MODE_3AXIS_SIMPLE, granularity=1, async=False):
+    def subscribe(self, callback, mode=MODE_3AXIS_SIMPLE, granularity=1, is_async=False):
         super(TiltSensor, self).subscribe(callback, mode, granularity)
 
     def handle_port_data(self, data):
@@ -350,7 +350,7 @@ class ColorDistanceSensor(Peripheral):
     def __init__(self, parent, port):
         super(ColorDistanceSensor, self).__init__(parent, port)
 
-    def subscribe(self, callback, mode=COLOR_DISTANCE_FLOAT, granularity=1, async=False):
+    def subscribe(self, callback, mode=COLOR_DISTANCE_FLOAT, granularity=1, is_async=False):
         super(ColorDistanceSensor, self).subscribe(callback, mode, granularity)
 
     def handle_port_data(self, data):
@@ -399,7 +399,7 @@ class Voltage(Peripheral):
         super(Voltage, self).__init__(parent, port)
         self.last_value = None
 
-    def subscribe(self, callback, mode=MODE1, granularity=1, async=False):
+    def subscribe(self, callback, mode=MODE1, granularity=1, is_async=False):
         super(Voltage, self).subscribe(callback, mode, granularity)
 
     # we know only voltage subscription from it. is it really battery or just onboard voltage?
@@ -423,7 +423,7 @@ class Amperage(Peripheral):
         super(Amperage, self).__init__(parent, port)
         self.last_value = None
 
-    def subscribe(self, callback, mode=MODE1, granularity=1, async=False):
+    def subscribe(self, callback, mode=MODE1, granularity=1, is_async=False):
         super(Amperage, self).subscribe(callback, mode, granularity)
 
     def handle_port_data(self, data):
@@ -440,15 +440,15 @@ class Button(Peripheral):
     def __init__(self, parent):
         super(Button, self).__init__(parent, 0)  # fake port 0
 
-    def subscribe(self, callback, mode=None, granularity=1, async=False):
+    def subscribe(self, callback, mode=None, granularity=1, is_async=False):
         self.started()
         self.parent.send(MSG_DEVICE_INFO, pack('<B', INFO_BUTTON_STATE) + pack('<B', INFO_ACTION_SUBSCRIBE))
-        self._wait_sync(async)
+        self._wait_sync(is_async)
 
         if callback:
             self._subscribers.add(callback)
 
-    def unsubscribe(self, callback=None, async=False):
+    def unsubscribe(self, callback=None, is_async=False):
         if callback in self._subscribers:
             self._subscribers.remove(callback)
 
