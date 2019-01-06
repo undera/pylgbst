@@ -192,3 +192,6 @@ class DebugServerConnection(Connection):
 
     def set_notify_handler(self, handler):
         self.notify_handler = handler
+
+    def is_alive(self):
+        return self.reader.isAlive()
