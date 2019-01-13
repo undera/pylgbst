@@ -257,6 +257,7 @@ You have following options to install as Bluetooth backend:
 - `pip install pygatt` - [pygatt](https://github.com/peplin/pygatt) lib, works on both Windows and Linux  
 - `pip install gatt` - [gatt](https://github.com/getsenic/gatt-python) lib, supports Linux, does not work on Windows
 - `pip install gattlib` - [gattlib](https://bitbucket.org/OscarAcena/pygattlib) - supports Linux, does not work on Windows, requires `sudo`
+- `pip install bluepy` - [bluepy](https://github.com/IanHarvey/bluepy) lib, supports Linux, including Raspbian, which allows connection to the hub from the Raspberry PI
 
 Running on Windows requires [Bluegiga BLED112 Bluetooth Smart Dongle](https://www.silabs.com/products/wireless/bluetooth/bluetooth-low-energy-modules/bled112-bluetooth-smart-dongle) hardware piece, because no other hardware currently works on Windows with Python+BLE.
 
@@ -272,6 +273,7 @@ There is optional parameter for `MoveHub` class constructor, accepting instance 
 - use `GattConnection()` - if you use Gatt Backend on Linux (`gatt` library prerequisite)
 - use `GattoolConnection()` - if you use GattTool Backend on Linux (`pygatt` library prerequisite)
 - use `GattLibConnection()` - if you use GattLib Backend on Linux (`gattlib` library prerequisite)
+- use `BluepyConnection()` - if you use Bluepy backend on Linux/Raspbian (`bluepy` library prerequisite)
 - pass instance of `DebugServerConnection` if you are using [Debug Server](#debug-server) (more details below).
 
 All the functions above have optional arguments to specify adapter name and MoveHub mac address. Please look function source code for details.
