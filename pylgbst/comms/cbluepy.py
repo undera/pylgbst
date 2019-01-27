@@ -3,7 +3,6 @@ import logging
 from threading import Thread
 import time
 from contextlib import contextmanager
-from mutex import mutex
 from enum import Enum
 
 from bluepy import btle
@@ -15,6 +14,7 @@ from pylgbst.utilities import str2hex, queue
 log = logging.getLogger('comms-bluepy')
 
 COMPLETE_LOCAL_NAME_ADTYPE = 9
+KILL_ON_DISPATCHER_EXCEPTION = False
 
 
 def _get_iface_number(controller):
@@ -66,6 +66,8 @@ class BluepyThreadedPeripheral(object):
                 self._peripheral.waitForNotifications(1.)
             except Exception as ex:
                 log.exception('Exception in call dispatcher thread', exc_info=ex)
+                if KILL_ON_DISPATCHER_EXCEPTION:
+                    exit(1)
 
     def write(self, handle, data):
         self._call_queue.put(lambda: self._peripheral.writeCharacteristic(handle, data))
