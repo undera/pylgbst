@@ -27,7 +27,7 @@ addons:
     - python3-dbus
     - python3-gi
 install:
-- pip install codecov nose-exclude gattlib pygatt gatt pexpect
+- pip install codecov nose-exclude gattlib pygatt gatt pexpect bluepy
 
 
 script: coverage run --source=. `which nosetests` tests --nocapture --exclude-dir=examples
