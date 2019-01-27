@@ -11,5 +11,6 @@ setup(name='pylgbst',
           'gatt': ["gatt"],
           'gattlib': ["gattlib"],
           'pygatt': ["pygatt"],
+          'bluepy': ["bluepy"],
       }
       )
