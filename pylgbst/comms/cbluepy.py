@@ -107,7 +107,7 @@ class BluepyConnection(Connection):
                 name = dev.getValueText(COMPLETE_LOCAL_NAME_ADTYPE)
                 log.debug("Found dev, name: {}, address: {}".format(name, address))
 
-                if name == LEGO_MOVE_HUB or hub_mac == address:
+                if (not hub_mac and name == LEGO_MOVE_HUB) or hub_mac == address:
                     logging.info("Found %s at %s", name, address)
                     self._peripheral = BluepyThreadedPeripheral(address, addressType, self._controller)
                     break
