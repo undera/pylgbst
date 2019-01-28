@@ -29,9 +29,15 @@ def get_connection_gattlib(controller='hci0', hub_mac=None):
 
     return GattLibConnection(controller).connect(hub_mac)
 
+def get_connection_bluepy(controller='hci0', hub_mac=None):
+    from pylgbst.comms.cbluepy import BluepyConnection
+
+    return BluepyConnection(controller).connect(hub_mac)
+
 
 def get_connection_auto(controller='hci0', hub_mac=None):
     fns = [
+        get_connection_bluepy,
         get_connection_bluegiga,
         get_connection_gatt,
         get_connection_gattool,
