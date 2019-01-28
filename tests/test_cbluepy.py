@@ -20,8 +20,7 @@ class PeripheralMock(object):
     def disconnect(self):
         pass
 
-
-bp_backend.KILL_ON_DISPATCHER_EXCEPTION = True
+bp_backend.PROPAGATE_DISPATCHER_EXCEPTION = True
 bp_backend.btle.Peripheral = lambda *args, **kwargs: PeripheralMock(*args, **kwargs)
 
 
@@ -52,9 +51,11 @@ class BluepyTestCase(unittest.TestCase):
         # Schedule some methods to async queue and give them some time to resolve
         tp.set_notify_handler(lambda: '')
         tp.write(123, 'qwe')
+
+        tp._dispatcher_thread.join(1)
+        self.assertEqual(tp._dispatcher_thread.is_alive(), True)
         tp.disconnect()
 
-        time.sleep(1)
+        tp._dispatcher_thread.join(2)
+        self.assertEqual(tp._dispatcher_thread.is_alive(), False)
 
-if __name__ == '__main__':
-    unittest.main()

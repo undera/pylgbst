@@ -1,6 +1,6 @@
 import re
 import logging
-from threading import Thread
+from threading import Thread, Event
 import time
 from contextlib import contextmanager
 from enum import Enum
@@ -14,7 +14,7 @@ from pylgbst.utilities import str2hex, queue
 log = logging.getLogger('comms-bluepy')
 
 COMPLETE_LOCAL_NAME_ADTYPE = 9
-KILL_ON_DISPATCHER_EXCEPTION = False
+PROPAGATE_DISPATCHER_EXCEPTION = False
 
 
 def _get_iface_number(controller):
@@ -47,6 +47,8 @@ class BluepyThreadedPeripheral(object):
         self._addr = addr
         self._addrType = addrType
         self._iface_number = _get_iface_number(controller)
+
+        self._disconnect_event = Event()
                 
         self._dispatcher_thread = Thread(target=self._dispatch_calls)
         self._dispatcher_thread.setDaemon(True)
@@ -55,19 +57,23 @@ class BluepyThreadedPeripheral(object):
 
     def _dispatch_calls(self):
         self._peripheral = btle.Peripheral(self._addr, self._addrType, self._iface_number)
-
-        while True:
-            try:
+        try:
+            while not self._disconnect_event.is_set():
                 try:
-                    method = self._call_queue.get(False)
-                    method()
-                except queue.Empty:
-                    pass
-                self._peripheral.waitForNotifications(1.)
-            except Exception as ex:
-                log.exception('Exception in call dispatcher thread', exc_info=ex)
-                if KILL_ON_DISPATCHER_EXCEPTION:
-                    exit(1)
+                    try:
+                        method = self._call_queue.get(False)
+                        method()
+                    except queue.Empty:
+                        pass
+                    self._peripheral.waitForNotifications(1.)
+                except Exception as ex:
+                    log.exception('Exception in call dispatcher thread', exc_info=ex)
+                    if PROPAGATE_DISPATCHER_EXCEPTION:
+                        log.error("Terminating dispatcher thread.")
+                        raise
+        finally:
+            self._peripheral.disconnect()
+
 
     def write(self, handle, data):
         self._call_queue.put(lambda: self._peripheral.writeCharacteristic(handle, data))
@@ -77,7 +83,7 @@ class BluepyThreadedPeripheral(object):
         self._call_queue.put(lambda: self._peripheral.withDelegate(delegate))
 
     def disconnect(self):
-        self._call_queue.put(lambda: self._peripheral.disconnect())
+        self._disconnect_event.set()
 
 
 class BluepyConnection(Connection):
