@@ -34,7 +34,7 @@ _Please note that this library requires one of Bluetooth backend libraries to be
 
 Install library like this: 
 ```bash
-pip install https://github.com/undera/pylgbst/archive/0.9.tar.gz
+pip install https://github.com/undera/pylgbst/archive/0.10.tar.gz
 ```
 
 Then instantiate MoveHub object and start invoking its methods. Following is example to just print peripherals detected on Hub:  
@@ -337,7 +337,8 @@ Then push green button on MoveHub, so permanent BLE connection will be establish
 
 ## Links
 
-- https://github.com/JorgePe/BOOSTreveng - source of protocol knowledge
+- https://github.com/JorgePe/BOOSTreveng - initial source of protocol knowledge
+- https://github.com/LEGO/lego-ble-wireless-protocol-docs - true docs of BLE protocol
 - https://github.com/spezifisch/sphero-python/blob/master/BB8joyDrive.py - example with another approach to bluetooth libs
 
 Some things around visual programming:
