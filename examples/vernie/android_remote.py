@@ -9,7 +9,7 @@ import logging
 import socket
 import time
 
-from . import Vernie
+from examples.vernie import Vernie
 from pylgbst.peripherals import ColorDistanceSensor
 
 host = ''
