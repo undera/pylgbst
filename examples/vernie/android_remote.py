@@ -2,14 +2,14 @@
 To use it, install this android app:
    https://play.google.com/store/apps/details?id=com.mscino.sensornode
 Then open app on phone and choose "Stream" => "Stream live data (XML)".
-Check the "Accelerometer" option and put your IP address into corresponding filed.
+Check the "Accelerometer" option and put your IP address into corresponding field.
 Specify port there as 8999, and enable streaming. Then run this script on computer.
 """
 import logging
 import socket
 import time
 
-from . import Vernie
+from examples.vernie import Vernie
 from pylgbst.peripherals import ColorDistanceSensor
 
 host = ''
