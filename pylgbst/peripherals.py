@@ -6,7 +6,7 @@ from struct import pack, unpack
 from threading import Thread
 
 from pylgbst.constants import PORTS, MSG_SENSOR_SUBSCRIBE, COLOR_NONE, COLOR_BLACK, COLORS, MSG_SET_PORT_VAL, PORT_AB, \
-    MSG_DEVICE_INFO, INFO_BUTTON_STATE, INFO_ACTION_SUBSCRIBE, INFO_ACTION_UNSUBSCRIBE
+    MSG_DEVICE_INFO
 from pylgbst.utilities import queue, str2hex, usbyte, ushort
 
 log = logging.getLogger('peripherals')
@@ -14,13 +14,13 @@ log = logging.getLogger('peripherals')
 
 class Peripheral(object):
     """
-    :type parent: pylgbst.movehub.MoveHub
+    :type parent: pylgbst.hub.MoveHub
     :type _incoming_port_data: queue.Queue
     """
 
     def __init__(self, parent, port):
         """
-        :type parent: pylgbst.movehub.MoveHub
+        :type parent: pylgbst.hub.MoveHub
         :type port: int
         """
         super(Peripheral, self).__init__()

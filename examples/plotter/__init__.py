@@ -13,7 +13,7 @@ class Plotter(object):
     def __init__(self, hub, base_speed=1.0):
         """
 
-        :type hub: pylgbst.movehub.MoveHub
+        :type hub: pylgbst.hub.MoveHub
         """
         self._hub = hub
         self.caret = self._hub.motor_A

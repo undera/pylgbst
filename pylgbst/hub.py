@@ -1,22 +1,60 @@
 import logging
 import time
-from struct import pack
 
 from pylgbst import get_connection_auto
 from pylgbst.constants import *
+from pylgbst.messages import *
 from pylgbst.peripherals import Button, EncodedMotor, ColorDistanceSensor, LED, TiltSensor, Voltage, Peripheral, \
     Amperage
 from pylgbst.utilities import str2hex, usbyte
 
-log = logging.getLogger('movehub')
+log = logging.getLogger('hub')
+
+
+class Hub(object):
+    """
+    :type connection: pylgbst.comms.Connection
+    """
+
+    def __init__(self, connection=None):
+        if not connection:
+            connection = get_connection_auto()
+        self.connection = connection
+        self.connection.set_notify_handler(self._notify)
+        self.connection.enable_notifications()
+
+    def send(self, msg):
+        """
+        :type msg: pylgbst.messages.Message
+        """
+        self.connection.write(MOVE_HUB_HARDWARE_HANDLE, msg)
+
+    def _notify(self, handle, data):
+        orig = data
+
+        if handle != MOVE_HUB_HARDWARE_HANDLE:
+            log.warning("Unsupported notification handle: 0x%s", handle)
+            return
+
+        log.debug("Notification on %s: %s", handle, str2hex(orig))
+
+        msg_type = usbyte(data, 2)
+
+        for msg_kind in (MsgHubProperties, MsgHubActions, MsgHubAlerts, MsgHubAttachedIO, MsgGenericError):
+            if msg_type == msg_kind.TYPE:
+                msg = msg_kind.decode(data)
+                log.debug("Decoded message: %r", msg)
+                return msg
+
+        log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
+
 
 ENABLE_NOTIFICATIONS_HANDLE = 0x000f
 ENABLE_NOTIFICATIONS_VALUE = b'\x01\x00'
 
 
-class MoveHub(object):
+class MoveHub(Hub):
     """
-    :type connection: pylgbst.comms.Connection
     :type devices: dict[int,Peripheral]
     :type led: LED
     :type tilt_sensor: TiltSensor
@@ -37,10 +75,7 @@ class MoveHub(object):
     DEV_STATUS_GROUP = 0x02
 
     def __init__(self, connection=None):
-        if not connection:
-            connection = get_connection_auto()
-
-        self.connection = connection
+        super(MoveHub, self).__init__(connection)
         self.info = {}
         self.devices = {}
 
@@ -58,18 +93,10 @@ class MoveHub(object):
         self.port_C = None
         self.port_D = None
 
-        self.connection.set_notify_handler(self._notify)
-
         self._wait_for_devices()
         self._report_status()
 
-    def send(self, msg_type, payload):
-        cmd = pack("<B", HUB_ID) + pack("<B", msg_type) + payload
-        self.connection.write(MOVE_HUB_HARDWARE_HANDLE, pack("<B", len(cmd) + 1) + cmd)
-
     def _wait_for_devices(self):
-        self.connection.enable_notifications()
-
         builtin_devices = ()
         for num in range(0, 60):
             builtin_devices = (self.led, self.motor_A, self.motor_B,

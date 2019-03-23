@@ -4,7 +4,7 @@ from time import sleep
 
 from pylgbst import *
 from pylgbst.comms import DebugServerConnection
-from pylgbst.movehub import MoveHub, COLORS, COLOR_BLACK
+from pylgbst.hub import MoveHub, COLORS, COLOR_BLACK
 from pylgbst.peripherals import EncodedMotor, TiltSensor, Amperage, Voltage
 
 log = logging.getLogger("demo")

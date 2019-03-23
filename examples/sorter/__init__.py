@@ -4,7 +4,7 @@ import traceback
 from pylgbst import get_connection_auto
 from pylgbst.comms import DebugServerConnection
 from pylgbst.constants import COLORS, COLOR_YELLOW, COLOR_BLUE, COLOR_CYAN, COLOR_RED, COLOR_BLACK
-from pylgbst.movehub import MoveHub
+from pylgbst.hub import MoveHub
 
 
 class ColorSorter(MoveHub):

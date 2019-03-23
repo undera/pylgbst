@@ -1,7 +1,7 @@
 from binascii import unhexlify
 
 from pylgbst.comms import Connection
-from pylgbst.movehub import MoveHub
+from pylgbst.hub import MoveHub, Hub
 from pylgbst.peripherals import *
 
 logging.basicConfig(level=logging.DEBUG)
@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger('test')
 
 
-class HubMock(MoveHub):
+class HubMock(Hub):
     # noinspection PyUnresolvedReferences
     def __init__(self, connection=None):
         """
@@ -39,11 +39,12 @@ class ConnectionMock(Connection):
         self.running = True
         self.finished = False
 
+        self.thr = Thread(target=self.notifier)
+        self.thr.setDaemon(True)
+
     def set_notify_handler(self, handler):
         self.notification_handler = handler
-        thr = Thread(target=self.notifier)
-        thr.setDaemon(True)
-        thr.start()
+        self.thr.start()
 
     def notifier(self):
         while self.running:
@@ -58,3 +59,7 @@ class ConnectionMock(Connection):
     def write(self, handle, data):
         log.debug("Writing to %s: %s", handle, str2hex(data))
         self.writes.append((handle, str2hex(data)))
+
+    def connect(self, hub_mac=None):
+        super(ConnectionMock, self).connect(hub_mac)
+        return self

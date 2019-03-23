@@ -12,7 +12,7 @@ from matplotlib import pyplot
 from pylgbst import get_connection_auto
 from pylgbst.comms import DebugServerConnection
 from pylgbst.constants import COLOR_RED, COLOR_BLUE, COLOR_YELLOW
-from pylgbst.movehub import MoveHub
+from pylgbst.hub import MoveHub
 
 cascades_dir = '/usr/share/opencv/haarcascades'
 face_cascade = cv2.CascadeClassifier(cascades_dir + '/haarcascade_frontalface_default.xml')

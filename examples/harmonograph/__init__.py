@@ -3,7 +3,7 @@ import traceback
 
 from pylgbst import get_connection_auto
 from pylgbst.comms import DebugServerConnection
-from pylgbst.movehub import MoveHub
+from pylgbst.hub import MoveHub
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)

@@ -1,7 +1,7 @@
 import time
 import unittest
 
-from pylgbst.movehub import MoveHub, MOVE_HUB_HARDWARE_HANDLE, PORT_LED, COLOR_RED
+from pylgbst.hub import MoveHub, MOVE_HUB_HARDWARE_HANDLE, PORT_LED, COLOR_RED
 from pylgbst.peripherals import LED, TiltSensor, COLORS
 from tests import log, HubMock, ConnectionMock, Thread
 

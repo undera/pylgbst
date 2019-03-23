@@ -8,7 +8,7 @@ import six
 from examples.plotter import Plotter
 from pylgbst import get_connection_auto
 from pylgbst.comms import DebugServerConnection
-from pylgbst.movehub import EncodedMotor, PORT_AB, PORT_C, PORT_A, PORT_B, MoveHub
+from pylgbst.hub import EncodedMotor, PORT_AB, PORT_C, PORT_A, PORT_B, MoveHub
 from tests import HubMock
 
 

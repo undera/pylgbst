@@ -1,14 +1,10 @@
-import re
 import logging
+import re
 from threading import Thread, Event
-import time
-from contextlib import contextmanager
-from enum import Enum
 
 from bluepy import btle
 
 from pylgbst.comms import Connection, LEGO_MOVE_HUB
-from pylgbst.constants import MOVE_HUB_HW_UUID_CHAR
 from pylgbst.utilities import str2hex, queue
 
 log = logging.getLogger('comms-bluepy')

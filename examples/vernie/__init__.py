@@ -7,7 +7,7 @@ import time
 
 from pylgbst import *
 from pylgbst.comms import DebugServerConnection
-from pylgbst.movehub import MoveHub
+from pylgbst.hub import MoveHub
 
 try:
     import gtts
