@@ -64,7 +64,7 @@ class MoveHub(object):
         self._report_status()
 
     def send(self, msg_type, payload):
-        cmd = pack("<B", PACKET_VER) + pack("<B", msg_type) + payload
+        cmd = pack("<B", HUB_ID) + pack("<B", msg_type) + payload
         self.connection.write(MOVE_HUB_HARDWARE_HANDLE, pack("<B", len(cmd) + 1) + cmd)
 
     def _wait_for_devices(self):
