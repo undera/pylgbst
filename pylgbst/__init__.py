@@ -7,6 +7,7 @@ log = logging.getLogger('pylgbst')
 
 
 def get_connection_bluegiga(controller=None, hub_mac=None):
+    del controller  # to prevent code analysis warning
     from pylgbst.comms.cpygatt import BlueGigaConnection
 
     return BlueGigaConnection().connect(hub_mac)
@@ -28,6 +29,7 @@ def get_connection_gattlib(controller='hci0', hub_mac=None):
     from pylgbst.comms.cgattlib import GattLibConnection
 
     return GattLibConnection(controller).connect(hub_mac)
+
 
 def get_connection_bluepy(controller='hci0', hub_mac=None):
     from pylgbst.comms.cbluepy import BluepyConnection

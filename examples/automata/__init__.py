@@ -1,7 +1,7 @@
 import time
 from collections import Counter
 
-from pylgbst.constants import COLORS, COLOR_NONE, COLOR_BLACK, COLOR_CYAN, COLOR_BLUE
+from pylgbst.constants import COLOR_NONE, COLOR_BLACK, COLOR_CYAN, COLOR_BLUE
 from pylgbst.movehub import MoveHub
 from pylgbst.peripherals import ColorDistanceSensor
 
@@ -47,12 +47,3 @@ class Automata(object):
     def backward(self):
         self.__hub.motor_AB.angled(830, -0.25)
         time.sleep(0.5)
-
-
-automata = Automata()
-
-for x in range(16):
-    automata.feed_tape()
-    print (x, COLORS[automata.get_color()])
-
-# time.sleep(1000)

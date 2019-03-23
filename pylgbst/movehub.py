@@ -244,3 +244,7 @@ class MoveHub(object):
             time.sleep(0.05)
 
         return self.info[info_type]
+
+    def __del__(self):
+        if self.connection and self.connection.is_alive():
+            self.connection.disconnect()
