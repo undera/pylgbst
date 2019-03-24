@@ -1,7 +1,7 @@
 from binascii import unhexlify
 
 from pylgbst.comms import Connection
-from pylgbst.hub import MoveHub, Hub
+from pylgbst.hub import MoveHub
 from pylgbst.peripherals import *
 
 logging.basicConfig(level=logging.DEBUG)
@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger('test')
 
 
-class HubMock(Hub):
+class HubMock(MoveHub):
     # noinspection PyUnresolvedReferences
     def __init__(self, connection=None):
         """

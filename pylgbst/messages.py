@@ -134,11 +134,56 @@ class MsgPortModeInfoRequest(Message):
     pass
 
 
-class MsgPortInputFmtSingle(Message):
+class MsgPortInputFmtSetupSingle(Message):
     TYPE = 0x41
     pass
 
 
-class MsgPortInputFmtCombined(Message):
+class MsgPortInputFmtSetupCombined(Message):
     TYPE = 0x42
+    pass
+
+
+class MsgPortInfo(Message):
+    TYPE = 0x43
+    pass
+
+
+class MsgPortModeInfo(Message):
+    TYPE = 0x44
+    pass
+
+
+class MsgPortValueSingle(Message):
+    TYPE = 0x45
+    pass
+
+
+class MsgPortValueCombined(Message):
+    TYPE = 0x46
+    pass
+
+
+class MsgPortInputFmtSingle(Message):
+    TYPE = 0x47
+    pass
+
+
+class MsgPortInputFmtCombined(Message):
+    TYPE = 0x48
+    pass
+
+
+class MsgVirtualPortSetup(Message):
+    TYPE = 0x61
+    pass
+
+
+class MsgPortOutput(Message):
+    TYPE = 0x81
+    pass
+
+
+class MsgPortOutputFeedback(Message):
+    TYPE = 0x82
     pass

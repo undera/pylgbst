@@ -40,17 +40,26 @@ class Hub(object):
 
         msg_type = usbyte(data, 2)
 
-        for msg_kind in (MsgHubProperties, MsgHubActions, MsgHubAlerts, MsgHubAttachedIO, MsgGenericError):
+        msg = self._get_upstream_msg(data)
+
+        if not msg:
+            log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
+
+    def _get_upstream_msg(self, data):
+        msg_type = usbyte(data, 2)
+        upstream_msgs = (
+            MsgHubProperties, MsgHubActions, MsgHubAlerts, MsgHubAttachedIO, MsgGenericError,
+            MsgPortInfo, MsgPortModeInfo,
+            MsgPortValueSingle, MsgPortValueCombined, MsgPortInputFmtSingle, MsgPortInputFmtCombined,
+            MsgPortOutputFeedback
+        )
+        msg = None
+        for msg_kind in upstream_msgs:
             if msg_type == msg_kind.TYPE:
                 msg = msg_kind.decode(data)
                 log.debug("Decoded message: %r", msg)
-                return msg
-
-        log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
-
-
-ENABLE_NOTIFICATIONS_HANDLE = 0x000f
-ENABLE_NOTIFICATIONS_VALUE = b'\x01\x00'
+                break
+        return msg
 
 
 class MoveHub(Hub):
