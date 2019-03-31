@@ -21,6 +21,8 @@ MOVE_HUB_HW_UUID_CHAR = '00001624-1212-efde-1623-785feabcd123'
 ENABLE_NOTIFICATIONS_HANDLE = 0x000f
 ENABLE_NOTIFICATIONS_VALUE = b'\x01\x00'
 
+MOVE_HUB_HARDWARE_HANDLE = 0x0E
+
 
 class Connection(object):
     def connect(self, hub_mac=None):

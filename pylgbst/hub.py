@@ -1,8 +1,6 @@
-import logging
 import time
 
 from pylgbst import get_connection_auto
-from pylgbst.constants import *
 from pylgbst.messages import *
 from pylgbst.peripherals import Button, EncodedMotor, ColorDistanceSensor, LED, TiltSensor, Voltage, Peripheral, \
     Current
@@ -16,6 +14,7 @@ class Hub(object):
     :type connection: pylgbst.comms.Connection
     :type peripherals: dict[int,Peripheral]
     """
+    HUB_HARDWARE_HANDLE = 0x0E
 
     def __init__(self, connection=None):
         if not connection:
@@ -29,12 +28,12 @@ class Hub(object):
         """
         :type msg: pylgbst.messages.Message
         """
-        self.connection.write(MOVE_HUB_HARDWARE_HANDLE, msg)
+        self.connection.write(self.HUB_HARDWARE_HANDLE, msg)
 
     def _notify(self, handle, data):
         orig = data
 
-        if handle != MOVE_HUB_HARDWARE_HANDLE:
+        if handle != self.HUB_HARDWARE_HANDLE:
             log.warning("Unsupported notification handle: 0x%s", handle)
             return
 
@@ -84,7 +83,7 @@ class MoveHub(Hub):
     DEV_STATUS_DETACHED = 0x00
     DEV_STATUS_DEVICE = 0x01
     DEV_STATUS_GROUP = 0x02
-
+    """
     PORTS = {
         PORT_A: "A",
         PORT_B: "B",
@@ -96,6 +95,7 @@ class MoveHub(Hub):
         PORT_AMPERAGE: "AMPERAGE",
         PORT_VOLTAGE: "VOLTAGE",
     }
+    """
 
     def __init__(self, connection=None):
         super(MoveHub, self).__init__(connection)

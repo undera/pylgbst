@@ -98,10 +98,29 @@ class MsgHubActions(Message):
     BUSY_INDICATION_ON = 0x05
     BUSY_INDICATION_OFF = 0x06
     SWITCH_OFF_IMMEDIATELY = 0x2F
+
     UPSTREAM_SHUTDOWN = 0x30
     UPSTREAM_DISCONNECT = 0x31
     UPSTREAM_BOOT_MODE = 0x32
-    pass
+
+    def __init__(self, action=None):
+        super(MsgHubActions, self).__init__()
+        if action is not None:
+            self.payload = chr(action)
+
+    @classmethod
+    def decode(cls, data):
+        msg = super(MsgHubActions, cls).decode(data)
+        action = usbyte(msg.payload, 0)
+        # TODO: make hub to disconnect if device says so
+        if action == cls.UPSTREAM_SHUTDOWN:
+            log.warning("Device will shut down")
+        elif action == cls.UPSTREAM_DISCONNECT:
+            log.warning("Device disconnects")
+        elif action == cls.UPSTREAM_BOOT_MODE:
+            log.warning("Device goes into boot mode")
+
+        return msg
 
 
 class MsgHubAlerts(Message):
