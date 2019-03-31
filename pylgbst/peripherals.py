@@ -5,7 +5,7 @@ import traceback
 from struct import pack, unpack
 from threading import Thread
 
-from pylgbst.constants import PORTS, MSG_SENSOR_SUBSCRIBE, COLOR_NONE, COLOR_BLACK, COLORS, MSG_SET_PORT_VAL, PORT_AB, \
+from pylgbst.constants import MSG_SENSOR_SUBSCRIBE, COLOR_NONE, COLOR_BLACK, COLORS, MSG_SET_PORT_VAL, PORT_AB, \
     MSG_DEVICE_INFO
 from pylgbst.utilities import queue, str2hex, usbyte, ushort
 
@@ -14,7 +14,7 @@ log = logging.getLogger('peripherals')
 
 class Peripheral(object):
     """
-    :type parent: pylgbst.hub.MoveHub
+    :type parent: pylgbst.hub.Hub
     :type _incoming_port_data: queue.Queue
     """
 
@@ -37,7 +37,7 @@ class Peripheral(object):
         thr.start()
 
     def __repr__(self):
-        return "%s on port %s" % (self.__class__.__name__, PORTS[self.port] if self.port in PORTS else self.port)
+        return "%s on port 0x%x" % (self.__class__.__name__, self.port)
 
     def _write_to_hub(self, msg_type, params):
         cmd = pack("<B", self.port) + params
@@ -150,7 +150,11 @@ class LED(Peripheral):
             self._subscribers.remove(callback)
 
 
-class EncodedMotor(Peripheral):
+class Motor(Peripheral):
+    pass  # TODO
+
+
+class EncodedMotor(Motor):
     TRAILER = b'\x64\x7f\x03'  # NOTE: \x64 is 100, might mean something; also trailer might be a sequence terminator
     # TODO: investigate sequence behavior, seen with zero values passed to angled mode
     # trailer is not required for all movement types
@@ -415,16 +419,16 @@ class Voltage(Peripheral):
         self._notify_subscribers(self.last_value)
 
 
-class Amperage(Peripheral):
+class Current(Peripheral):
     MODE1 = 0x00  # give less frequent notifications
     MODE2 = 0x01  # give more frequent notifications, maybe different value (cpu vs board?)
 
     def __init__(self, parent, port):
-        super(Amperage, self).__init__(parent, port)
+        super(Current, self).__init__(parent, port)
         self.last_value = None
 
     def subscribe(self, callback, mode=MODE1, granularity=1, is_async=False):
-        super(Amperage, self).subscribe(callback, mode, granularity)
+        super(Current, self).subscribe(callback, mode, granularity)
 
     def handle_port_data(self, data):
         val = ushort(data, 4)

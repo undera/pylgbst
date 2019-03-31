@@ -5,7 +5,7 @@ from time import sleep
 from pylgbst import *
 from pylgbst.comms import DebugServerConnection
 from pylgbst.hub import MoveHub, COLORS, COLOR_BLACK
-from pylgbst.peripherals import EncodedMotor, TiltSensor, Amperage, Voltage
+from pylgbst.peripherals import EncodedMotor, TiltSensor, Current, Voltage
 
 log = logging.getLogger("demo")
 
@@ -159,8 +159,8 @@ def demo_voltage(movehub):
     def callback2(value):
         log.info("Voltage: %s", value)
 
-    movehub.amperage.subscribe(callback1, mode=Amperage.MODE1, granularity=0)
-    movehub.amperage.subscribe(callback1, mode=Amperage.MODE1, granularity=1)
+    movehub.amperage.subscribe(callback1, mode=Current.MODE1, granularity=0)
+    movehub.amperage.subscribe(callback1, mode=Current.MODE1, granularity=1)
 
     movehub.voltage.subscribe(callback2, mode=Voltage.MODE1, granularity=0)
     movehub.voltage.subscribe(callback2, mode=Voltage.MODE1, granularity=1)

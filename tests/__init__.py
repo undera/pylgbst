@@ -47,7 +47,7 @@ class ConnectionMock(Connection):
         self.thr.start()
 
     def notifier(self):
-        while self.running:
+        while self.running or self.notifications:
             if self.notification_handler:
                 while self.notifications:
                     handle, data = self.notifications.pop(0)

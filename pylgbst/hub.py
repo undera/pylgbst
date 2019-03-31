@@ -5,7 +5,7 @@ from pylgbst import get_connection_auto
 from pylgbst.constants import *
 from pylgbst.messages import *
 from pylgbst.peripherals import Button, EncodedMotor, ColorDistanceSensor, LED, TiltSensor, Voltage, Peripheral, \
-    Amperage
+    Current
 from pylgbst.utilities import str2hex, usbyte
 
 log = logging.getLogger('hub')
@@ -14,6 +14,7 @@ log = logging.getLogger('hub')
 class Hub(object):
     """
     :type connection: pylgbst.comms.Connection
+    :type peripherals: dict[int,Peripheral]
     """
 
     def __init__(self, connection=None):
@@ -22,6 +23,7 @@ class Hub(object):
         self.connection = connection
         self.connection.set_notify_handler(self._notify)
         self.connection.enable_notifications()
+        self.peripherals = {}
 
     def send(self, msg):
         """
@@ -42,19 +44,20 @@ class Hub(object):
 
         msg = self._get_upstream_msg(data)
 
+        if isinstance(msg, MsgHubAttachedIO):
+            if msg.event == MsgHubAttachedIO.EVENT_DETACHED:
+                self.peripherals.pop(msg.port)  # TODO: shouldn't we cancel all pending things for this port?
+            else:
+                self.peripherals[msg.port] = msg.create_peripheral(self)
+
         if not msg:
             log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
 
     def _get_upstream_msg(self, data):
         msg_type = usbyte(data, 2)
-        upstream_msgs = (
-            MsgHubProperties, MsgHubActions, MsgHubAlerts, MsgHubAttachedIO, MsgGenericError,
-            MsgPortInfo, MsgPortModeInfo,
-            MsgPortValueSingle, MsgPortValueCombined, MsgPortInputFmtSingle, MsgPortInputFmtCombined,
-            MsgPortOutputFeedback
-        )
+
         msg = None
-        for msg_kind in upstream_msgs:
+        for msg_kind in UPSTREAM_MSGS:
             if msg_type == msg_kind.TYPE:
                 msg = msg_kind.decode(data)
                 log.debug("Decoded message: %r", msg)
@@ -64,11 +67,10 @@ class Hub(object):
 
 class MoveHub(Hub):
     """
-    :type devices: dict[int,Peripheral]
     :type led: LED
     :type tilt_sensor: TiltSensor
     :type button: Button
-    :type amperage: Amperage
+    :type amperage: Current
     :type voltage: Voltage
     :type color_distance_sensor: pylgbst.peripherals.ColorDistanceSensor
     :type port_C: Peripheral
@@ -83,10 +85,21 @@ class MoveHub(Hub):
     DEV_STATUS_DEVICE = 0x01
     DEV_STATUS_GROUP = 0x02
 
+    PORTS = {
+        PORT_A: "A",
+        PORT_B: "B",
+        PORT_AB: "AB",
+        PORT_C: "C",
+        PORT_D: "D",
+        PORT_LED: "LED",
+        PORT_TILT_SENSOR: "TILT_SENSOR",
+        PORT_AMPERAGE: "AMPERAGE",
+        PORT_VOLTAGE: "VOLTAGE",
+    }
+
     def __init__(self, connection=None):
         super(MoveHub, self).__init__(connection)
         self.info = {}
-        self.devices = {}
 
         # shorthand fields
         self.button = Button(self)
@@ -226,7 +239,7 @@ class MoveHub(Hub):
         elif dev_type == DEV_TILT_SENSOR:
             self.devices[port] = TiltSensor(self, port)
         elif dev_type == DEV_AMPERAGE:
-            self.devices[port] = Amperage(self, port)
+            self.devices[port] = Current(self, port)
         elif dev_type == DEV_VOLTAGE:
             self.devices[port] = Voltage(self, port)
         else:
