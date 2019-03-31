@@ -123,7 +123,7 @@ class MsgHubActions(Message):
         return msg
 
 
-class MsgHubAlerts(Message):
+class MsgHubAlert(Message):
     TYPE = 0x03
 
     LOW_VOLTAGE = 0x01
@@ -131,11 +131,42 @@ class MsgHubAlerts(Message):
     LOW_SIGNAL = 0x03
     OVER_POWER = 0x04
 
+    DESCR = {
+        LOW_VOLTAGE: "low voltage",
+        HIGH_CURRENT: "high current",
+        LOW_SIGNAL: "low signal",
+        OVER_POWER: "over power"
+    }
+
     UPD_ENABLE = 0x01
     UPD_DISABLE = 0x02
     UPD_REQUEST = 0x03
     UPSTREAM_UPDATE = 0x04
-    pass
+
+    def __init__(self, atype=None, operation=None):
+        super(MsgHubAlert, self).__init__()
+        self.atype = atype
+        self.status = None
+        if atype is not None:
+            self.payload = chr(atype) + chr(operation)
+
+    @classmethod
+    def decode(cls, data):
+        msg = super(MsgHubAlert, cls).decode(data)
+        assert isinstance(msg, MsgHubAlert)
+        assert usbyte(msg.payload, 1) == cls.UPSTREAM_UPDATE
+        # TODO: make this info visible to hub somehow?
+        msg.atype = usbyte(msg.payload, 0)
+        msg.status = usbyte(msg.payload, 2)
+
+        if not msg.is_ok():
+            log.warning("Alert: %s", msg.DESCR[msg.atype])
+        else:
+            log.info("Status is OK on: %s", msg.DESCR[msg.atype])
+        return msg
+
+    def is_ok(self):
+        return not self.status
 
 
 class MsgHubAttachedIO(Message):
@@ -282,7 +313,7 @@ class MsgPortOutputFeedback(Message):
 
 
 UPSTREAM_MSGS = (
-    MsgHubProperties, MsgHubActions, MsgHubAlerts, MsgHubAttachedIO, MsgGenericError,
+    MsgHubProperties, MsgHubActions, MsgHubAlert, MsgHubAttachedIO, MsgGenericError,
     MsgPortInfo, MsgPortModeInfo,
     MsgPortValueSingle, MsgPortValueCombined, MsgPortInputFmtSingle, MsgPortInputFmtCombined,
     MsgPortOutputFeedback

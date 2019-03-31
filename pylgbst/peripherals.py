@@ -24,7 +24,7 @@ class Peripheral(object):
         :type port: int
         """
         super(Peripheral, self).__init__()
-        self.parent = parent
+        self.hub = parent
         self.port = port
         self._working = False
         self._subscribers = set()
@@ -41,7 +41,7 @@ class Peripheral(object):
 
     def _write_to_hub(self, msg_type, params):
         cmd = pack("<B", self.port) + params
-        self.parent.send(msg_type, cmd)
+        self.hub.send(msg_type, cmd)
 
     def _port_subscribe(self, mode, granularity, enable):
         params = pack("<B", mode)
@@ -110,8 +110,8 @@ class Peripheral(object):
         if not is_async:
             log.debug("Waiting for sync command work to finish...")
             while self.in_progress():
-                if not self.parent.connection.is_alive():
-                    log.debug("Connection is not alive anymore: %s", self.parent.connection)
+                if not self.hub.connection.is_alive():
+                    log.debug("Connection is not alive anymore: %s", self.hub.connection)
                     break
                 time.sleep(0.001)
             log.debug("Command has finished.")
@@ -446,7 +446,7 @@ class Button(Peripheral):
 
     def subscribe(self, callback, mode=None, granularity=1, is_async=False):
         self.started()
-        self.parent.send(MSG_DEVICE_INFO, pack('<B', INFO_BUTTON_STATE) + pack('<B', INFO_ACTION_SUBSCRIBE))
+        self.hub.send(MSG_DEVICE_INFO, pack('<B', INFO_BUTTON_STATE) + pack('<B', INFO_ACTION_SUBSCRIBE))
         self._wait_sync(is_async)
 
         if callback:
@@ -457,7 +457,7 @@ class Button(Peripheral):
             self._subscribers.remove(callback)
 
         if not self._subscribers:
-            self.parent.send(MSG_DEVICE_INFO, pack('<B', INFO_BUTTON_STATE) + pack('<B', INFO_ACTION_UNSUBSCRIBE))
+            self.hub.send(MSG_DEVICE_INFO, pack('<B', INFO_BUTTON_STATE) + pack('<B', INFO_ACTION_UNSUBSCRIBE))
             # FIXME: will this require sync wait?
 
     def handle_port_data(self, data):
