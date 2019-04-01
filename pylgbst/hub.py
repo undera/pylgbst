@@ -24,6 +24,10 @@ class Hub(object):
         self.connection.enable_notifications()
         self.peripherals = {}
 
+    def __del__(self):
+        if self.connection and self.connection.is_alive():
+            self.connection.disconnect()
+
     def send(self, msg):
         """
         :type msg: pylgbst.messages.Message
@@ -39,18 +43,16 @@ class Hub(object):
 
         log.debug("Notification on %s: %s", handle, str2hex(orig))
 
-        msg_type = usbyte(data, 2)
-
         msg = self._get_upstream_msg(data)
 
         if isinstance(msg, MsgHubAttachedIO):
             if msg.event == MsgHubAttachedIO.EVENT_DETACHED:
-                self.peripherals.pop(msg.port)  # TODO: shouldn't we cancel all pending things for this port?
+                self.peripherals[msg.port].finished()
+                self.peripherals.pop(msg.port)
             else:
                 self.peripherals[msg.port] = msg.create_peripheral(self)
-
-        if not msg:
-            log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
+        else:
+            log.warning("Unhandled message: %s", msg)
 
     def _get_upstream_msg(self, data):
         msg_type = usbyte(data, 2)
@@ -61,7 +63,14 @@ class Hub(object):
                 msg = msg_kind.decode(data)
                 log.debug("Decoded message: %r", msg)
                 break
+        assert msg
         return msg
+
+    def disconnect(self):
+        self.send(MsgHubActions(MsgHubActions.DISCONNECT))
+
+    def switch_off(self):
+        self.send(MsgHubActions(MsgHubActions.SWITCH_OFF))
 
 
 class MoveHub(Hub):
@@ -80,10 +89,17 @@ class MoveHub(Hub):
     :type motor_external: EncodedMotor
     """
 
-    DEV_STATUS_DETACHED = 0x00
-    DEV_STATUS_DEVICE = 0x01
-    DEV_STATUS_GROUP = 0x02
-    """
+    # PORTS
+    PORT_C = 0x01
+    PORT_D = 0x02
+    PORT_LED = 0x32
+    PORT_A = 0x37
+    PORT_B = 0x38
+    PORT_AB = 0x39
+    PORT_TILT_SENSOR = 0x3A
+    PORT_AMPERAGE = 0x3B
+    PORT_VOLTAGE = 0x3C
+
     PORTS = {
         PORT_A: "A",
         PORT_B: "B",
@@ -95,7 +111,6 @@ class MoveHub(Hub):
         PORT_AMPERAGE: "AMPERAGE",
         PORT_VOLTAGE: "VOLTAGE",
     }
-    """
 
     def __init__(self, connection=None):
         super(MoveHub, self).__init__(connection)
@@ -203,73 +218,27 @@ class MoveHub(Hub):
         else:
             log.warning("Unhandled status value: 0x%x on port %s", status, PORTS[port])
 
-    def _handle_port_info(self, data):
-        port = usbyte(data, 3)
-        status = usbyte(data, 4)
-
-        if status == self.DEV_STATUS_DETACHED:
-            log.info("Detached %s", self.devices[port])
-            self.devices[port] = None
-        elif status == self.DEV_STATUS_DEVICE or status == self.DEV_STATUS_GROUP:
-            dev_type = usbyte(data, 5)
-            self._attach_device(dev_type, port)
-        else:
-            raise ValueError("Unhandled device status: %s", status)
-
-        self._update_field(port)
-        if self.devices[port] is None:
-            del self.devices[port]
-
-    def _attach_device(self, dev_type, port):
-        if port in PORTS and dev_type in DEVICE_TYPES:
-            log.info("Attached %s on port %s", DEVICE_TYPES[dev_type], PORTS[port])
-        else:
-            log.warning("Attached device 0x%x on port 0x%x", dev_type, port)
-
-        if dev_type == DEV_MOTOR:
-            self.devices[port] = EncodedMotor(self, port)
-        elif dev_type == DEV_IMOTOR:
-            self.motor_external = EncodedMotor(self, port)
-            self.devices[port] = self.motor_external
-        elif dev_type == DEV_DCS:
-            self.color_distance_sensor = ColorDistanceSensor(self, port)
-            self.devices[port] = self.color_distance_sensor
-        elif dev_type == DEV_LED:
-            self.devices[port] = LED(self, port)
-        elif dev_type == DEV_TILT_SENSOR:
-            self.devices[port] = TiltSensor(self, port)
-        elif dev_type == DEV_AMPERAGE:
-            self.devices[port] = Current(self, port)
-        elif dev_type == DEV_VOLTAGE:
-            self.devices[port] = Voltage(self, port)
-        else:
-            log.warning("Unhandled peripheral type 0x%x on port 0x%x", dev_type, port)
-            self.devices[port] = Peripheral(self, port)
-
     def _update_field(self, port):
-        if port == PORT_A:
-            self.motor_A = self.devices[port]
-        elif port == PORT_B:
-            self.motor_B = self.devices[port]
-        elif port == PORT_AB:
-            self.motor_AB = self.devices[port]
-        elif port == PORT_C:
-            self.port_C = self.devices[port]
-        elif port == PORT_D:
-            self.port_D = self.devices[port]
-        elif port == PORT_LED:
-            self.led = self.devices[port]
-        elif port == PORT_TILT_SENSOR:
-            self.tilt_sensor = self.devices[port]
-        elif port == PORT_AMPERAGE:
-            self.amperage = self.devices[port]
-        elif port == PORT_VOLTAGE:
-            self.voltage = self.devices[port]
+        if port == self.PORT_A:
+            self.motor_A = self.peripherals[port]
+        elif port == self.PORT_B:
+            self.motor_B = self.peripherals[port]
+        elif port == self.PORT_AB:
+            self.motor_AB = self.peripherals[port]
+        elif port == self.PORT_C:
+            self.port_C = self.peripherals[port]
+        elif port == self.PORT_D:
+            self.port_D = self.peripherals[port]
+        elif port == self.PORT_LED:
+            self.led = self.peripherals[port]
+        elif port == self.PORT_TILT_SENSOR:
+            self.tilt_sensor = self.peripherals[port]
+        elif port == self.PORT_AMPERAGE:
+            self.amperage = self.peripherals[port]
+        elif port == self.PORT_VOLTAGE:
+            self.voltage = self.peripherals[port]
         else:
-            log.warning("Unhandled port: %s", PORTS[port])
-
-    def shutdown(self):
-        self.send(MSG_DEVICE_SHUTDOWN, b'')
+            log.warning("Unhandled port: 0x%x", port)
 
     def _report_status(self):
         # TODO: add firmware version
@@ -293,7 +262,3 @@ class MoveHub(Hub):
             time.sleep(0.05)
 
         return self.info[info_type]
-
-    def __del__(self):
-        if self.connection and self.connection.is_alive():
-            self.connection.disconnect()

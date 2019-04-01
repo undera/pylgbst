@@ -314,7 +314,7 @@ class MsgPortOutputFeedback(Message):
 
 UPSTREAM_MSGS = (
     MsgHubProperties, MsgHubActions, MsgHubAlert, MsgHubAttachedIO, MsgGenericError,
-    MsgPortInfo, MsgPortModeInfo,
+    # MsgPortInfo, MsgPortModeInfo,
     MsgPortValueSingle, MsgPortValueCombined, MsgPortInputFmtSingle, MsgPortInputFmtCombined,
     MsgPortOutputFeedback
 )
