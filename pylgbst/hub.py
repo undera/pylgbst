@@ -23,6 +23,7 @@ class Hub(object):
         self.connection.set_notify_handler(self._notify)
         self.connection.enable_notifications()
         self.peripherals = {}
+        self._pairing = None
 
     def __del__(self):
         if self.connection and self.connection.is_alive():
@@ -32,7 +33,13 @@ class Hub(object):
         """
         :type msg: pylgbst.messages.Message
         """
+        log.debug("Send message: %r", msg)
         self.connection.write(self.HUB_HARDWARE_HANDLE, msg)
+        if msg.pair:
+            self._pairing = msg
+
+        while self._pairing:
+            log.debug("Waiting for pair message to answer %r", msg)
 
     def _notify(self, handle, data):
         orig = data
@@ -44,6 +51,9 @@ class Hub(object):
         log.debug("Notification on %s: %s", handle, str2hex(orig))
 
         msg = self._get_upstream_msg(data)
+        if self._pairing and self._pairing.pair(msg):
+            self._pairing = None
+
         self._handle_message(msg)
 
     def _get_upstream_msg(self, data):
@@ -132,10 +142,10 @@ class Hub(object):
         device.queue_port_data(data)
 
     def disconnect(self):
-        self.send(MsgHubActions(self.port))
+        self.send(MsgHubActions(MsgHubActions.DISCONNECT))
 
     def switch_off(self):
-        self.send(MsgHubActions(self.port))
+        self.send(MsgHubActions(MsgHubActions.SWITCH_OFF))
 
 
 class MoveHub(Hub):

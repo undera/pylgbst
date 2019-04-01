@@ -5,7 +5,7 @@ import traceback
 from struct import pack, unpack
 from threading import Thread
 
-from pylgbst.messages import MsgHubProperties, MsgPortOutput, MsgPortInputFmtSetupSingle
+from pylgbst.messages import MsgHubProperties, MsgPortOutput, MsgPortInputFmtSetupSingle, MsgPortOutputFeedback
 from pylgbst.utilities import queue, str2hex, usbyte, ushort
 
 log = logging.getLogger('peripherals')
@@ -51,9 +51,11 @@ class Peripheral(object):
         :type port: int
         """
         super(Peripheral, self).__init__()
+        self.do_buffer = False
         self.virtual_ports = ()
         self.hub = parent
         self.port = port
+        self.use_command_buffering = False
         self._working = False
         self._subscribers = set()
         self._port_subscription_mode = None
@@ -68,11 +70,17 @@ class Peripheral(object):
         return "%s on port 0x%x" % (self.__class__.__name__, self.port)
 
     def _port_subscribe(self, mode, granularity, enable):
-        params = pack("<B", mode)
-        params += pack("<H", granularity)
-        params += b'\x00\x00'  # maybe also bytes of granularity
-        params += pack("<?", bool(enable))
-        self._write_to_hub(MSG_SENSOR_SUBSCRIBE, params)
+        msg = MsgPortInputFmtSetupSingle(self.port, mode, granularity, enable)  # TODO: combined mode?
+        self.hub.send(msg)
+
+    def _send_to_port(self, msg):
+        assert type(msg) == MsgPortOutput
+        msg.do_buffer = self.do_buffer
+
+        self.hub.send(msg)
+
+        # if msg.do_feedback:
+        #    self._wait_sync(False)
 
     def started(self):
         log.debug("Peripheral Started: %s", self)
@@ -87,11 +95,7 @@ class Peripheral(object):
 
     def subscribe(self, callback, mode, granularity=1, is_async=False):
         self._port_subscription_mode = mode
-        self.started()
         self._port_subscribe(self._port_subscription_mode, granularity, True)
-
-        self._wait_sync(is_async)  # having async=True leads to stuck notifications
-
         if callback:
             self._subscribers.add(callback)
 
@@ -181,16 +185,12 @@ class LED(Peripheral):
 
         payload = pack("<B", self.MODE_INDEX) + pack("<B", color)
         msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
-        self.started()
-        self.hub.send(msg)
-        self._wait_sync(False)
+        self._send_to_port(msg)
 
     def set_color_rgb(self, red, green, blue):
         payload = pack("<B", self.MODE_RGB) + pack("<B", red) + pack("<B", green) + pack("<B", blue)
         msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
-        self.started()
-        self.hub.send(msg)
-        self._wait_sync(False)
+        self._send_to_port(msg)
 
 
 class Motor(Peripheral):

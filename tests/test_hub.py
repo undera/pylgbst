@@ -1,3 +1,4 @@
+import logging
 import time
 import unittest
 
@@ -10,12 +11,12 @@ from tests import ConnectionMock
 class GeneralTest(unittest.TestCase):
     def test_1(self):
         obj = Hub()
-        time.sleep(2)
+        time.sleep(1)
+        logging.warning("\n\n")
         for dev in obj.peripherals.values():
             if isinstance(dev, LED):
-                dev.set_color_rgb(0x30, 0x47, 0x55)
-                dev.set_color_rgb(0x30, 0x47, 0x55)
-                time.sleep(2)
+                dev.subscribe(lambda x: None, LED.MODE_RGB)
+                logging.warning("\n\n")
                 dev.set_color_index(COLOR_BLACK)
 
         time.sleep(3)

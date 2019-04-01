@@ -8,6 +8,7 @@ log = logging.getLogger('hub')
 
 class Message(object):
     TYPE = None
+    pair = None
 
     def __init__(self):
         self._payload = ""
@@ -251,7 +252,12 @@ class MsgPortInputFmtSetupSingle(Message):
 
     def __init__(self, port, mode, delta=1, update_enable=0):
         super(MsgPortInputFmtSetupSingle, self).__init__()
+        self.port = port
         self.payload = pack("<B", port) + pack("<B", mode) + pack("<I", delta) + pack("<B", update_enable)
+
+    def pair(self, msg):
+        if type(msg) == MsgPortInputFmtSingle and msg.port == self.port:
+            return True
 
 
 class MsgPortInputFmtSetupCombined(Message):
@@ -296,7 +302,20 @@ class MsgPortValueCombined(Message):
 
 class MsgPortInputFmtSingle(Message):
     TYPE = 0x47
-    pass
+
+    def __init__(self):
+        super(MsgPortInputFmtSingle, self).__init__()
+        self.port = None
+
+    @classmethod
+    def decode(cls, data):
+        msg = super(MsgPortInputFmtSingle, cls).decode(data)
+        assert type(msg) == MsgPortInputFmtSingle
+        msg.port = usbyte(msg.payload, 0)
+        msg.mode = usbyte(msg.payload, 1)
+        msg.delta_interval = usbyte(msg.payload, 2)
+        msg.enabled = usbyte(msg.payload, 6)
+        return msg
 
 
 class MsgPortInputFmtCombined(Message):
@@ -312,10 +331,8 @@ class MsgVirtualPortSetup(Message):
 class MsgPortOutput(Message):
     TYPE = 0x81
 
-    SC_BUFFER_NO_FEEDBACK = 0b00000000
-    SC_BUFFER_FEEDBACK = 0b00010000
-    SC_NO_BUFFER_FEEDBACK = 0b00000001
-    SC_NO_BUFFER_NO_FEEDBACK = 0b00010001
+    SC_NO_BUFFER = 0b00000001
+    SC_FEEDBACK = 0b00010000
 
     WRITE_DIRECT = 0x50
     WRITE_DIRECT_MODE_DATA = 0x51
@@ -323,13 +340,24 @@ class MsgPortOutput(Message):
     def __init__(self, port, subcommand, payload):
         super(MsgPortOutput, self).__init__()
         self.port = port
-        self.startup_completion_flags = self.SC_NO_BUFFER_FEEDBACK
+        self.do_buffer = False
+        self.do_feedback = True
         self.subcommand = subcommand
         self._payload = payload
 
     @property
     def payload(self):
-        return pack("<B", self.port) + pack("<B", self.startup_completion_flags) \
+        startup_completion_flags = 0
+        if not self.do_buffer:
+            startup_completion_flags |= self.SC_NO_BUFFER
+
+        if self.do_feedback:
+            startup_completion_flags |= self.SC_FEEDBACK
+
+        if self.do_feedback:
+            self.pair = lambda x: type(x) == MsgPortOutputFeedback and x.port == self.port
+
+        return pack("<B", self.port) + pack("<B", startup_completion_flags) \
                + pack("<B", self.subcommand) + self._payload
 
 
