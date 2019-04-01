@@ -16,7 +16,7 @@ def demo_led_colors(movehub):
     movehub.color_distance_sensor.subscribe(lambda x, y: None)
     for color in list(COLORS.keys())[1:] + [COLOR_BLACK]:
         log.info("Setting LED color to: %s", COLORS[color])
-        movehub.led.set_color(color)
+        movehub.led.set_color_index(color)
         sleep(1)
 
 

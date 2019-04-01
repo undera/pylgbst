@@ -1,7 +1,7 @@
+import dbus
 import sys
 import unittest
 
-import dbus
 from gatt import DeviceManager
 
 from pylgbst.comms.cgatt import CustomDevice, GattConnection

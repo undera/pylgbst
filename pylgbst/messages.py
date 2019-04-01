@@ -1,8 +1,7 @@
 import logging
 from struct import pack
 
-from pylgbst.peripherals import Peripheral, Motor, EncodedMotor, ColorDistanceSensor, LED, TiltSensor, Current, Voltage
-from pylgbst.utilities import usbyte, ushort, str2hex
+from pylgbst.utilities import usbyte, str2hex
 
 log = logging.getLogger('hub')
 
@@ -11,7 +10,7 @@ class Message(object):
     TYPE = None
 
     def __init__(self):
-        self.payload = ""
+        self._payload = ""
         self.hub_id = 0x00  # not used according to official doc
 
     def __str__(self):
@@ -37,6 +36,14 @@ class Message(object):
         msg = cls()
         msg.payload = data[3:]
         return msg
+
+    @property
+    def payload(self):
+        return self._payload
+
+    @payload.setter
+    def payload(self, value):
+        self._payload = value
 
     def __repr__(self):
         return self.__class__.__name__ + "(type=%x, payload=%s)" % (self.TYPE, str2hex(self.payload))
@@ -209,38 +216,6 @@ class MsgHubAttachedIO(Message):
         msg.payload = msg.payload[2:]
         return msg
 
-    def create_peripheral(self, hub):
-        assert self.event in (self.EVENT_ATTACHED, self.EVENT_ATTACHED_VIRTUAL)
-        port = self.port
-        dev_type = ushort(self.payload, 0)
-
-        if self.event == self.EVENT_ATTACHED:
-            # TODO: what to do with this info? it's useless, I guess
-            hw_revision = reversed([usbyte(self.payload, x) for x in range(2, 6)])
-            sw_revision = reversed([usbyte(self.payload, x) for x in range(6, 10)])
-        elif self.event == self.EVENT_ATTACHED_VIRTUAL:
-            # TODO: what to do with this info? pass to device?
-            joint_ports = (usbyte(self.payload, 2), usbyte(self.payload, 3))
-
-        if dev_type == self.DEV_MOTOR:
-            return Motor(hub, port)
-        elif dev_type in (self.DEV_MOTOR_EXTERNAL_TACHO, self.DEV_MOTOR_INTERNAL_TACHO):
-            return EncodedMotor(hub, port)
-        elif dev_type == self.DEV_VISION_SENSOR:
-            return ColorDistanceSensor(hub, port)
-        elif dev_type == self.DEV_RGB_LIGHT:
-            return LED(hub, port)
-        elif dev_type in (self.DEV_TILT_EXTERNAL, self.DEV_TILT_INTERNAL):
-            return TiltSensor(hub, port)
-        elif dev_type == self.DEV_CURRENT:
-            return Current(hub, port)
-        elif dev_type == self.DEV_VOLTAGE:
-            return Voltage(hub, port)
-        # TODO: support more types of peripherals
-        else:
-            log.warning("Unhandled peripheral type 0x%x on port 0x%x", dev_type, port)
-            return Peripheral(hub, port)
-
 
 class MsgGenericError(Message):
     TYPE = 0x05
@@ -254,12 +229,29 @@ class MsgPortInfoRequest(Message):
 
 class MsgPortModeInfoRequest(Message):
     TYPE = 0x22
-    pass
+
+    INFO_NAME = 0x00
+    INFO_RAW_RANGE = 0x01
+    INFO_PCT_RANGE = 0x02
+    INFO_SI_RANGE = 0x03  # no idea what 'SI' stands for
+    INFO_NAME_OF_VALUE = 0x04
+    INFO_MAPPING = 0x05
+    # INFO_INTERNAL = 0x06
+    INFO_MOTOR_BIAS = 0x07
+    INFO_CAPABILITY_BITS = 0x08
+    INFO_VALUE_FORMAT = 0x80
+
+    def __init__(self, port, mode, info_type):
+        super(MsgPortModeInfoRequest, self).__init__()
+        self.payload = pack("<B", port) + pack("<B", mode) + pack("<B", info_type)
 
 
 class MsgPortInputFmtSetupSingle(Message):
     TYPE = 0x41
-    pass
+
+    def __init__(self, port, mode, delta=1, update_enable=0):
+        super(MsgPortInputFmtSetupSingle, self).__init__()
+        self.payload = pack("<B", port) + pack("<B", mode) + pack("<I", delta) + pack("<B", update_enable)
 
 
 class MsgPortInputFmtSetupCombined(Message):
@@ -274,7 +266,22 @@ class MsgPortInfo(Message):
 
 class MsgPortModeInfo(Message):
     TYPE = 0x44
-    pass
+
+    def __init__(self):
+        super(MsgPortModeInfo, self).__init__()
+        self.port = None
+        self.mode = None
+        self.info_type = None  # @see MsgPortModeInfoRequest
+
+    @classmethod
+    def decode(cls, data):
+        msg = super(MsgPortModeInfo, cls).decode(data)
+        assert type(msg) == MsgPortModeInfo
+        msg.port = usbyte(msg.payload, 0)
+        msg.mode = usbyte(msg.payload, 1)
+        msg.info_type = usbyte(msg.payload, 2)
+        msg.payload = msg.payload[4:]
+        return msg
 
 
 class MsgPortValueSingle(Message):
@@ -304,17 +311,62 @@ class MsgVirtualPortSetup(Message):
 
 class MsgPortOutput(Message):
     TYPE = 0x81
-    pass
+
+    SC_BUFFER_NO_FEEDBACK = 0b00000000
+    SC_BUFFER_FEEDBACK = 0b00010000
+    SC_NO_BUFFER_FEEDBACK = 0b00000001
+    SC_NO_BUFFER_NO_FEEDBACK = 0b00010001
+
+    WRITE_DIRECT = 0x50
+    WRITE_DIRECT_MODE_DATA = 0x51
+
+    def __init__(self, port, subcommand, payload):
+        super(MsgPortOutput, self).__init__()
+        self.port = port
+        self.startup_completion_flags = self.SC_NO_BUFFER_FEEDBACK
+        self.subcommand = subcommand
+        self._payload = payload
+
+    @property
+    def payload(self):
+        return pack("<B", self.port) + pack("<B", self.startup_completion_flags) \
+               + pack("<B", self.subcommand) + self._payload
 
 
 class MsgPortOutputFeedback(Message):
     TYPE = 0x82
-    pass
+
+    def __init__(self):
+        super(MsgPortOutputFeedback, self).__init__()
+        self.port = None
+        self.status = None
+
+    @classmethod
+    def decode(cls, data):
+        msg = super(MsgPortOutputFeedback, cls).decode(data)
+        assert type(msg) == MsgPortOutputFeedback
+        assert len(msg.payload) == 2, "TODO: implement multi-port feedback message"
+        msg.port = usbyte(msg.payload, 0)
+        msg.status = usbyte(msg.payload, 1)
+        log.debug("Status: %s", bin(msg.status))
+        return msg
+
+    def is_in_progress(self):
+        return self.status & 0b0001
+
+    def is_completed(self):
+        return self.status & 0b0010
+
+    def is_discarded(self):
+        return self.status & 0b0100
+
+    def is_idle(self):
+        return self.status & 0b1000
 
 
 UPSTREAM_MSGS = (
     MsgHubProperties, MsgHubActions, MsgHubAlert, MsgHubAttachedIO, MsgGenericError,
-    # MsgPortInfo, MsgPortModeInfo,
+    MsgPortInfo, MsgPortModeInfo,
     MsgPortValueSingle, MsgPortValueCombined, MsgPortInputFmtSingle, MsgPortInputFmtCombined,
     MsgPortOutputFeedback
 )

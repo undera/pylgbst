@@ -3,8 +3,8 @@ import time
 from pylgbst import get_connection_auto
 from pylgbst.messages import *
 from pylgbst.peripherals import Button, EncodedMotor, ColorDistanceSensor, LED, TiltSensor, Voltage, Peripheral, \
-    Current
-from pylgbst.utilities import str2hex, usbyte
+    Current, Motor
+from pylgbst.utilities import str2hex, usbyte, ushort
 
 log = logging.getLogger('hub')
 
@@ -44,15 +44,7 @@ class Hub(object):
         log.debug("Notification on %s: %s", handle, str2hex(orig))
 
         msg = self._get_upstream_msg(data)
-
-        if isinstance(msg, MsgHubAttachedIO):
-            if msg.event == MsgHubAttachedIO.EVENT_DETACHED:
-                self.peripherals[msg.port].finished()
-                self.peripherals.pop(msg.port)
-            else:
-                self.peripherals[msg.port] = msg.create_peripheral(self)
-        else:
-            log.warning("Unhandled message: %s", msg)
+        self._handle_message(msg)
 
     def _get_upstream_msg(self, data):
         msg_type = usbyte(data, 2)
@@ -66,11 +58,84 @@ class Hub(object):
         assert msg
         return msg
 
+    def _handle_message(self, msg):
+        if type(msg) == MsgHubAttachedIO:
+            self._handle_device_change(msg)
+        elif type(msg) == MsgPortOutputFeedback:
+            self.peripherals[msg.port].notify_feedback(msg)
+        elif type(msg) in (MsgPortValueSingle, MsgPortValueCombined):
+            self._handle_sensor_data(msg)
+        elif type(msg) == MsgGenericError:
+            raise ValueError()
+            log.warning("Command error: %s", str2hex(data[3:]))
+            port = usbyte(data, 3)
+            self.peripherals[port].finished()
+        else:
+            log.warning("Unhandled message: %r", msg)
+
+        pass
+        """
+        elif msg_type == MSG_SENSOR_SUBSCRIBE_ACK:
+            port = usbyte(data, 3)
+            log.debug("Sensor subscribe ack on port %s", PORTS[port])
+            self.devices[port].finished()
+        elif msg_type == MSG_DEVICE_INFO:
+            self._handle_device_info(data)
+        else:
+            log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
+        """
+
+    def _handle_device_change(self, msg):
+        if msg.event == MsgHubAttachedIO.EVENT_DETACHED:
+            self.peripherals[msg.port].finished()
+            self.peripherals.pop(msg.port)
+            return
+
+        assert msg.event in (msg.EVENT_ATTACHED, msg.EVENT_ATTACHED_VIRTUAL)
+        port = msg.port
+        dev_type = ushort(msg.payload, 0)
+
+        if dev_type == msg.DEV_MOTOR:
+            self.peripherals[port] = Motor(self, port)
+        elif dev_type in (msg.DEV_MOTOR_EXTERNAL_TACHO, msg.DEV_MOTOR_INTERNAL_TACHO):
+            self.peripherals[port] = EncodedMotor(self, port)
+        elif dev_type == msg.DEV_VISION_SENSOR:
+            self.peripherals[port] = ColorDistanceSensor(self, port)
+        elif dev_type == msg.DEV_RGB_LIGHT:
+            self.peripherals[port] = LED(self, port)
+        elif dev_type in (msg.DEV_TILT_EXTERNAL, msg.DEV_TILT_INTERNAL):
+            self.peripherals[port] = TiltSensor(self, port)
+        elif dev_type == msg.DEV_CURRENT:
+            self.peripherals[port] = Current(self, port)
+        elif dev_type == msg.DEV_VOLTAGE:
+            self.peripherals[port] = Voltage(self, port)
+        # TODO: support more types of peripherals
+        else:
+            log.warning("Unhandled peripheral type 0x%x on port 0x%x", dev_type, port)
+            self.peripherals[port] = Peripheral(self, port)
+
+        if msg.event == msg.EVENT_ATTACHED:
+            # TODO: what to do with this info? it's useless, I guess
+            hw_revision = reversed([usbyte(msg.payload, x) for x in range(2, 6)])
+            sw_revision = reversed([usbyte(msg.payload, x) for x in range(6, 10)])
+        elif msg.event == msg.EVENT_ATTACHED_VIRTUAL:
+            # TODO: what to do with this info? pass to device?
+            self.peripherals[port].virtual_ports = (usbyte(msg.payload, 2), usbyte(msg.payload, 3))
+
+    def _handle_sensor_data(self, data):
+        port = usbyte(data, 3)
+        if port not in self.devices:
+            log.warning("Notification on port with no device: %s", PORTS[port])
+            return
+
+        device = self.devices[port]
+        device.queue_port_data(data)
+
     def disconnect(self):
-        self.send(MsgHubActions(MsgHubActions.DISCONNECT))
+        self.send(MsgHubActions(self.port))
 
     def switch_off(self):
-        self.send(MsgHubActions(MsgHubActions.SWITCH_OFF))
+        self.send(MsgHubActions(self.port))
 
 
 class MoveHub(Hub):
@@ -112,6 +177,7 @@ class MoveHub(Hub):
         PORT_VOLTAGE: "VOLTAGE",
     }
 
+    # noinspection PyTypeChecker
     def __init__(self, connection=None):
         super(MoveHub, self).__init__(connection)
         self.info = {}
@@ -146,39 +212,6 @@ class MoveHub(Hub):
         log.warning("Got only these devices: %s", builtin_devices)
         raise RuntimeError("Failed to obtain all builtin devices")
 
-    def _notify(self, handle, data):
-        orig = data
-
-        if handle != MOVE_HUB_HARDWARE_HANDLE:
-            log.warning("Unsupported notification handle: 0x%s", handle)
-            return
-
-        log.debug("Notification on %s: %s", handle, str2hex(orig))
-
-        msg_type = usbyte(data, 2)
-
-        if msg_type == MSG_PORT_INFO:
-            self._handle_port_info(data)
-        elif msg_type == MSG_PORT_STATUS:
-            self._handle_port_status(data)
-        elif msg_type == MSG_SENSOR_DATA:
-            self._handle_sensor_data(data)
-        elif msg_type == MSG_SENSOR_SUBSCRIBE_ACK:
-            port = usbyte(data, 3)
-            log.debug("Sensor subscribe ack on port %s", PORTS[port])
-            self.devices[port].finished()
-        elif msg_type == MSG_PORT_CMD_ERROR:
-            log.warning("Command error: %s", str2hex(data[3:]))
-            port = usbyte(data, 3)
-            self.devices[port].finished()
-        elif msg_type == MSG_DEVICE_SHUTDOWN:
-            log.warning("Device reported shutdown: %s", str2hex(data))
-            raise KeyboardInterrupt("Device shutdown")
-        elif msg_type == MSG_DEVICE_INFO:
-            self._handle_device_info(data)
-        else:
-            log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
-
     def _handle_device_info(self, data):
         kind = usbyte(data, 3)
         if kind == 2:
@@ -189,56 +222,30 @@ class MoveHub(Hub):
         else:
             log.warning("Unhandled device info: %s", str2hex(data))
 
-    def _handle_sensor_data(self, data):
-        port = usbyte(data, 3)
-        if port not in self.devices:
-            log.warning("Notification on port with no device: %s", PORTS[port])
-            return
-
-        device = self.devices[port]
-        device.queue_port_data(data)
-
-    def _handle_port_status(self, data):
-        port = usbyte(data, 3)
-        status = usbyte(data, 4)
-
-        if status == STATUS_STARTED:
-            self.devices[port].started()
-        elif status == STATUS_FINISHED:
-            self.devices[port].finished()
-        elif status == STATUS_CONFLICT:
-            log.warning("Command conflict on port %s", PORTS[port])
-            self.devices[port].finished()
-        elif status == STATUS_INPROGRESS:
-            log.warning("Another command is in progress on port %s", PORTS[port])
-            self.devices[port].finished()
-        elif status == STATUS_INTERRUPTED:
-            log.warning("Command interrupted on port %s", PORTS[port])
-            self.devices[port].finished()
-        else:
-            log.warning("Unhandled status value: 0x%x on port %s", status, PORTS[port])
-
-    def _update_field(self, port):
-        if port == self.PORT_A:
-            self.motor_A = self.peripherals[port]
-        elif port == self.PORT_B:
-            self.motor_B = self.peripherals[port]
-        elif port == self.PORT_AB:
-            self.motor_AB = self.peripherals[port]
-        elif port == self.PORT_C:
-            self.port_C = self.peripherals[port]
-        elif port == self.PORT_D:
-            self.port_D = self.peripherals[port]
-        elif port == self.PORT_LED:
-            self.led = self.peripherals[port]
-        elif port == self.PORT_TILT_SENSOR:
-            self.tilt_sensor = self.peripherals[port]
-        elif port == self.PORT_AMPERAGE:
-            self.amperage = self.peripherals[port]
-        elif port == self.PORT_VOLTAGE:
-            self.voltage = self.peripherals[port]
-        else:
-            log.warning("Unhandled port: 0x%x", port)
+    # noinspection PyTypeChecker
+    def _handle_message(self, msg):
+        if type(msg) == MsgHubAttachedIO:
+            port = msg.port
+            if port == self.PORT_A:
+                self.motor_A = self.peripherals[port]
+            elif port == self.PORT_B:
+                self.motor_B = self.peripherals[port]
+            elif port == self.PORT_AB:
+                self.motor_AB = self.peripherals[port]
+            elif port == self.PORT_C:
+                self.port_C = self.peripherals[port]
+            elif port == self.PORT_D:
+                self.port_D = self.peripherals[port]
+            elif port == self.PORT_LED:
+                self.led = self.peripherals[port]
+            elif port == self.PORT_TILT_SENSOR:
+                self.tilt_sensor = self.peripherals[port]
+            elif port == self.PORT_AMPERAGE:
+                self.amperage = self.peripherals[port]
+            elif port == self.PORT_VOLTAGE:
+                self.voltage = self.peripherals[port]
+            else:
+                log.warning("Unhandled port: 0x%x", port)
 
     def _report_status(self):
         # TODO: add firmware version

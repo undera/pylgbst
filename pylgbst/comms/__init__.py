@@ -10,7 +10,7 @@ from abc import abstractmethod
 from binascii import unhexlify
 from threading import Thread
 
-from pylgbst.constants import MSG_DEVICE_SHUTDOWN
+from pylgbst.messages import MsgHubActions
 from pylgbst.utilities import str2hex
 
 log = logging.getLogger('comms')
@@ -102,7 +102,7 @@ class DebugServer(object):
         self._check_shutdown(data)
 
     def _check_shutdown(self, data):
-        if data[5] == MSG_DEVICE_SHUTDOWN:
+        if data[5] == MsgHubActions.TYPE:
             log.warning("Device shutdown")
             self._running = False
 

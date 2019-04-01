@@ -5,11 +5,38 @@ import traceback
 from struct import pack, unpack
 from threading import Thread
 
-from pylgbst.constants import MSG_SENSOR_SUBSCRIBE, COLOR_NONE, COLOR_BLACK, COLORS, MSG_SET_PORT_VAL, PORT_AB, \
-    MSG_DEVICE_INFO
+from pylgbst.messages import MsgHubProperties, MsgPortOutput, MsgPortInputFmtSetupSingle
 from pylgbst.utilities import queue, str2hex, usbyte, ushort
 
 log = logging.getLogger('peripherals')
+
+# COLORS
+COLOR_BLACK = 0x00
+COLOR_PINK = 0x01
+COLOR_PURPLE = 0x02
+COLOR_BLUE = 0x03
+COLOR_LIGHTBLUE = 0x04
+COLOR_CYAN = 0x05
+COLOR_GREEN = 0x06
+COLOR_YELLOW = 0x07
+COLOR_ORANGE = 0x09
+COLOR_RED = 0x09
+COLOR_WHITE = 0x0a
+COLOR_NONE = 0xFF
+COLORS = {
+    COLOR_BLACK: "BLACK",
+    COLOR_PINK: "PINK",
+    COLOR_PURPLE: "PURPLE",
+    COLOR_BLUE: "BLUE",
+    COLOR_LIGHTBLUE: "LIGHTBLUE",
+    COLOR_CYAN: "CYAN",
+    COLOR_GREEN: "GREEN",
+    COLOR_YELLOW: "YELLOW",
+    COLOR_ORANGE: "ORANGE",
+    COLOR_RED: "RED",
+    COLOR_WHITE: "WHITE",
+    COLOR_NONE: "NONE"
+}
 
 
 class Peripheral(object):
@@ -24,6 +51,7 @@ class Peripheral(object):
         :type port: int
         """
         super(Peripheral, self).__init__()
+        self.virtual_ports = ()
         self.hub = parent
         self.port = port
         self._working = False
@@ -38,10 +66,6 @@ class Peripheral(object):
 
     def __repr__(self):
         return "%s on port 0x%x" % (self.__class__.__name__, self.port)
-
-    def _write_to_hub(self, msg_type, params):
-        cmd = pack("<B", self.port) + params
-        self.hub.send(msg_type, cmd)
 
     def _port_subscribe(self, mode, granularity, enable):
         params = pack("<B", mode)
@@ -116,38 +140,57 @@ class Peripheral(object):
                 time.sleep(0.001)
             log.debug("Command has finished.")
 
+    def notify_feedback(self, msg):
+        """
+        :type msg: pylgbst.messages.MsgPortOutputFeedback
+        """
+        if msg.is_completed():
+            self.finished()
+
+        return  # FIXME
+        if msg.status == STATUS_STARTED:
+            self.peripherals[port].started()
+        elif status == STATUS_FINISHED:
+            self.peripherals[port].finished()
+        elif status == STATUS_CONFLICT:
+            log.warning("Command conflict on port %s", PORTS[port])
+            self.peripherals[port].finished()
+        elif status == STATUS_INPROGRESS:
+            log.warning("Another command is in progress on port %s", PORTS[port])
+            self.peripherals[port].finished()
+        elif status == STATUS_INTERRUPTED:
+            log.warning("Command interrupted on port %s", PORTS[port])
+            self.peripherals[port].finished()
+        else:
+            log.warning("Unhandled status value: 0x%x on port %s", status, PORTS[port])
+
 
 class LED(Peripheral):
-    SOMETHING = b'\x51\x00'
+    MODE_INDEX = 0x00
+    MODE_RGB = 0x01
 
     def __init__(self, parent, port):
         super(LED, self).__init__(parent, port)
-        self.last_color_set = COLOR_NONE
 
-    def set_color(self, color, do_notify=True):
+    def set_color_index(self, color):
         if color == COLOR_NONE:
             color = COLOR_BLACK
 
         if color not in COLORS:
             raise ValueError("Color %s is not in list of available colors" % color)
 
-        self.last_color_set = color
-        cmd = pack("<B", do_notify) + self.SOMETHING + pack("<B", color)
+        payload = pack("<B", self.MODE_INDEX) + pack("<B", color)
+        msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
         self.started()
-        self._write_to_hub(MSG_SET_PORT_VAL, cmd)
+        self.hub.send(msg)
         self._wait_sync(False)
 
-    def finished(self):
-        super(LED, self).finished()
-        log.debug("LED has changed color to %s", COLORS[self.last_color_set])
-        self._notify_subscribers(self.last_color_set)
-
-    def subscribe(self, callback, mode=None, granularity=None, is_async=False):
-        self._subscribers.add(callback)
-
-    def unsubscribe(self, callback=None, is_async=False):
-        if callback in self._subscribers:
-            self._subscribers.remove(callback)
+    def set_color_rgb(self, red, green, blue):
+        payload = pack("<B", self.MODE_RGB) + pack("<B", red) + pack("<B", green) + pack("<B", blue)
+        msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
+        self.started()
+        self.hub.send(msg)
+        self._wait_sync(False)
 
 
 class Motor(Peripheral):
@@ -187,7 +230,7 @@ class EncodedMotor(Motor):
         return int(absolute)
 
     def _wrap_and_write(self, mtype, params, speed_primary, speed_secondary):
-        if self.port == PORT_AB:
+        if self.virtual_ports:
             mtype += 1  # de-facto rule
 
         abs_primary = self._speed_abs(speed_primary)
@@ -199,12 +242,12 @@ class EncodedMotor(Motor):
         params = pack("<B", self.MOVEMENT_TYPE) + pack("<B", mtype) + params
 
         params += pack("<b", abs_primary)
-        if self.port == PORT_AB:
+        if self.virtual_ports:
             params += pack("<b", abs_secondary)
 
         params += self.TRAILER
 
-        self._write_to_hub(MSG_SET_PORT_VAL, params)
+        self._write_to_hub(params)
 
     def timed(self, seconds, speed_primary=1, speed_secondary=None, is_async=False):
         if speed_secondary is None:
@@ -446,7 +489,7 @@ class Button(Peripheral):
 
     def subscribe(self, callback, mode=None, granularity=1, is_async=False):
         self.started()
-        self.hub.send(MSG_DEVICE_INFO, pack('<B', INFO_BUTTON_STATE) + pack('<B', INFO_ACTION_SUBSCRIBE))
+        self.hub.send(MsgHubProperties(MsgHubProperties.BUTTON, MsgHubProperties.UPD_ENABLE))
         self._wait_sync(is_async)
 
         if callback:
@@ -457,7 +500,7 @@ class Button(Peripheral):
             self._subscribers.remove(callback)
 
         if not self._subscribers:
-            self.hub.send(MSG_DEVICE_INFO, pack('<B', INFO_BUTTON_STATE) + pack('<B', INFO_ACTION_UNSUBSCRIBE))
+            self.hub.send(MsgHubProperties(MsgHubProperties.BUTTON, MsgHubProperties.UPD_DISABLE))
             # FIXME: will this require sync wait?
 
     def handle_port_data(self, data):

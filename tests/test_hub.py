@@ -1,8 +1,9 @@
 import time
 import unittest
 
-from pylgbst.hub import Hub
-from pylgbst.messages import MsgHubProperties, MsgHubActions, MsgHubAlert
+from pylgbst.hub import Hub, LED, MsgPortModeInfoRequest
+from pylgbst.messages import MsgHubActions, MsgHubAlert, MsgPortOutput
+from pylgbst.peripherals import COLOR_RED, COLOR_BLACK
 from tests import ConnectionMock
 
 
@@ -10,11 +11,14 @@ class GeneralTest(unittest.TestCase):
     def test_1(self):
         obj = Hub()
         time.sleep(2)
-        # obj.send(MsgHubProperties(MsgHubProperties.RSSI, MsgHubProperties.UPD_ENABLE))
-        obj.send(MsgHubAlert(MsgHubAlert.LOW_VOLTAGE, MsgHubAlert.UPD_REQUEST))
-        time.sleep(1)
-        obj.send(MsgHubAlert(MsgHubAlert.LOW_SIGNAL, MsgHubAlert.UPD_REQUEST))
-        time.sleep(300)
+        for dev in obj.peripherals.values():
+            if isinstance(dev, LED):
+                dev.set_color_rgb(0x30, 0x47, 0x55)
+                dev.set_color_rgb(0x30, 0x47, 0x55)
+                time.sleep(2)
+                dev.set_color_index(COLOR_BLACK)
+
+        time.sleep(3)
 
     def test_hub_properties(self):
         # TODO: test it
@@ -38,9 +42,9 @@ class GeneralTest(unittest.TestCase):
     def test_hub_actions(self):
         conn = ConnectionMock().connect()
         hub = Hub(conn)
-        hub.send(MsgHubActions(MsgHubActions.BUSY_INDICATION_ON))
-        hub.send(MsgHubActions(MsgHubActions.BUSY_INDICATION_OFF))
-        hub.send(MsgHubActions(MsgHubActions.DISCONNECT))
+        hub.send(MsgHubActions(self.port))
+        hub.send(MsgHubActions(self.port))
+        hub.send(MsgHubActions(self.port))
         conn.notifications.append((14, '04000230'))
         conn.notifications.append((14, '04000231'))
         conn.notifications.append((14, '04000232'))
@@ -50,10 +54,10 @@ class GeneralTest(unittest.TestCase):
     def test_hub_alerts(self):
         conn = ConnectionMock().connect()
         hub = Hub(conn)
-        hub.send(MsgHubAlert(MsgHubAlert.LOW_VOLTAGE, MsgHubAlert.UPD_REQUEST))
+        hub.send(MsgHubAlert(self.port))
         conn.notifications.append((14, '0600030104ff'))
         time.sleep(1)
-        hub.send(MsgHubAlert(MsgHubAlert.LOW_SIGNAL, MsgHubAlert.UPD_REQUEST))
+        hub.send(MsgHubAlert(self.port))
         conn.notifications.append((14, '060003030400'))
         time.sleep(1)
         conn.running = False

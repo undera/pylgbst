@@ -1,5 +1,4 @@
 import unittest
-import time
 
 import pylgbst.comms.cbluepy as bp_backend
 
@@ -20,6 +19,7 @@ class PeripheralMock(object):
     def disconnect(self):
         pass
 
+
 bp_backend.PROPAGATE_DISPATCHER_EXCEPTION = True
 bp_backend.btle.Peripheral = lambda *args, **kwargs: PeripheralMock(*args, **kwargs)
 
@@ -37,6 +37,7 @@ class BluepyTestCase(unittest.TestCase):
     def test_delegate(self):
         def _handler(handle, data):
             _handler.called = True
+
         delegate = bp_backend.BluepyDelegate(_handler)
         delegate.handleNotification(123, 'qwe')
         self.assertEqual(_handler.called, True)
@@ -58,4 +59,3 @@ class BluepyTestCase(unittest.TestCase):
 
         tp._dispatcher_thread.join(2)
         self.assertEqual(tp._dispatcher_thread.is_alive(), False)
-
