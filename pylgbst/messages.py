@@ -87,6 +87,8 @@ class MsgHubProperties(Message):
         self.parameters = parameters
 
     def payload(self):
+        if self.operation == self.UPD_REQUEST:
+            self.needs_reply = True
         return pack("<B", self.property) + pack("<B", self.operation) + self.parameters
 
     @classmethod
@@ -97,6 +99,10 @@ class MsgHubProperties(Message):
         msg.operation = usbyte(data, 4)
         msg.payload = data[5:]
         return msg
+
+    def is_reply(self, msg):
+        return isinstance(msg, MsgHubProperties) \
+               and msg.operation == self.UPSTREAM_UPDATE and msg.property == self.property
 
 
 class MsgHubActions(Message):
@@ -260,6 +266,7 @@ class MsgPortInputFmtSetupSingle(Message):
         super(MsgPortInputFmtSetupSingle, self).__init__()
         self.port = port
         self.payload = pack("<B", port) + pack("<B", mode) + pack("<I", delta) + pack("<B", update_enable)
+        self.needs_reply = True
 
     def is_reply(self, msg):
         if type(msg) == MsgPortInputFmtSingle and msg.port == self.port:
@@ -378,6 +385,7 @@ class MsgPortOutput(Message):
 
         if self.do_feedback:
             startup_completion_flags |= self.SC_FEEDBACK
+            self.needs_reply = True
 
         return pack("<B", self.port) + pack("<B", startup_completion_flags) \
                + pack("<B", self.subcommand) + self._payload
