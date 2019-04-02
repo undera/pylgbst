@@ -18,6 +18,28 @@ class GeneralTest(unittest.TestCase):
         hub.led.set_color_index(COLOR_RED)
         self.assertEqual("0800813211510009", hub.writes[1][1])
 
+    def test_capabilities(self):
+        conn = ConnectionMock()
+        conn.notifications.append('0f00 04 01 0125000000001000000010')
+        conn.notifications.append('0f00 04 02 0126000000001000000010')
+        conn.notifications.append('0f00 04 37 0127000100000001000000')
+        conn.notifications.append('0f00 04 38 0127000100000001000000')
+        conn.notifications.append('0900 04 39 0227003738')
+        conn.notifications.append('0f00 04 32 0117000100000001000000')
+        conn.notifications.append('0f00 04 3a 0128000000000100000001')
+        conn.notifications.append('0f00 04 3b 0115000200000002000000')
+        conn.notifications.append('0f00 04 3c 0114000200000002000000')
+        hub = MoveHub(conn.connect())
+        hub.wait_for_devices()
+
+        conn.inject_notification('1200 0101064c45474f204d6f766520487562', 0.1)
+        conn.inject_notification('0600010c06fe', 0.2)
+        conn.inject_notification('060001060600', 0.3)
+        conn.inject_notification('0600030104ff', 0.4)
+
+        hub.report_status()
+        conn.wait_notifications_handled()
+
     def test_tilt_sensor(self):
         hub = HubMock()
         hub.notify_mock.append('0f00 04 3a 0128000000000100000001')
@@ -63,30 +85,6 @@ class GeneralTest(unittest.TestCase):
         conn.notifications.append('050082390a')
         hub.motor_AB.angled(90)
         self.assertEqual("0f018139110c5a0000006464647f03", conn.writes[1][1])
-
-    def test_capabilities(self):
-        conn = ConnectionMock()
-        conn.notifications.append('0f00 04 01 0125000000001000000010')
-        conn.notifications.append('0f00 04 02 0126000000001000000010')
-        conn.notifications.append('0f00 04 37 0127000100000001000000')
-        conn.notifications.append('0f00 04 38 0127000100000001000000')
-        conn.notifications.append('0900 04 39 0227003738')
-        conn.notifications.append('0f00 04 32 0117000100000001000000')
-        conn.notifications.append('0f00 04 3a 0128000000000100000001')
-        conn.notifications.append('0f00 04 3b 0115000200000002000000')
-        conn.notifications.append('0f00 04 3c 0114000200000002000000')
-        # conn.notifications.append('0f00 8202 01')
-        # conn.notifications.append('0f00 8202 0a')
-
-        conn.inject_notification('1200 0101 06 4c45474f204d6f766520487562', 0.1)
-        conn.inject_notification('1200 0108 06 4c45474f204d6f766520487562', 0.2)
-        conn.inject_notification('0900 47 3c 0227003738', 0.3)
-        conn.inject_notification('0600 45 3c 020d', 0.4)
-        conn.inject_notification('0900 47 3c 0227003738', 0.5)
-        hub = MoveHub(conn.connect())
-        # hub.wait_for_devices()
-        # demo_all(hub)
-        conn.wait_notifications_handled()
 
     def test_color_sensor(self):
         hub = HubMock()

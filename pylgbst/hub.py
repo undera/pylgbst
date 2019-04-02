@@ -1,8 +1,9 @@
+import logging
 import time
 
 from pylgbst import get_connection_auto
-from pylgbst.messages import *
-from pylgbst.messages import Message
+from pylgbst.messages import DownstreamMsg, UPSTREAM_MSGS, MsgHubAttachedIO, MsgPortOutputFeedback, MsgPortValueSingle, \
+    MsgPortValueCombined, MsgGenericError, MsgHubProperties, MsgHubAlert
 from pylgbst.peripherals import Button, EncodedMotor, ColorDistanceSensor, LED, TiltSensor, Voltage, Peripheral, \
     Current, Motor
 from pylgbst.utilities import str2hex, usbyte, ushort
@@ -75,7 +76,7 @@ class Hub(object):
         if self._sent_msg.is_reply(msg):
             log.debug("Found matching upstream msg: %r", msg)
             self._sent_msg = msg  # FIXME: weird piggyback of UpstreamMsg via field of DownstreamMsg
-        elif type(msg) != DownstreamMsg:
+        elif type(self._sent_msg) != DownstreamMsg:
             log.debug("Upstream msg is not reply we need: %r", msg)
 
         self._handle_message(msg)
@@ -99,9 +100,7 @@ class Hub(object):
         elif type(msg) in (MsgPortValueSingle, MsgPortValueCombined):
             self._handle_sensor_data(msg)
         elif type(msg) == MsgGenericError:
-            log.warning("Command error: %r", msg)
-            if self._sent_msg and msg.port == self._sent_msg.port:
-                self._sent_msg = msg
+            log.warning("Command error: %s", msg.message())
         else:
             log.warning("Unhandled message: %r", msg)
 
@@ -120,7 +119,6 @@ class Hub(object):
     def _handle_device_change(self, msg):
         if msg.event == MsgHubAttachedIO.EVENT_DETACHED:
             log.debug("Detaching peripheral: %s", self.peripherals[msg.port])
-            self.peripherals[msg.port].finished()
             self.peripherals.pop(msg.port)
             return
 
@@ -231,8 +229,6 @@ class MoveHub(Hub):
         self.port_C = None
         self.port_D = None
 
-        self._report_status()
-
     def wait_for_devices(self):
         required_devices = ()
         for num in range(0, 60):
@@ -275,7 +271,7 @@ class MoveHub(Hub):
             elif type(self.peripherals[port]) == EncodedMotor and port not in (self.PORT_A, self.PORT_B, self.PORT_AB):
                 self.motor_external = self.peripherals[port]
 
-    def _report_status(self):
+    def report_status(self):
         # TODO: add firmware version
         name = self.send(MsgHubProperties(MsgHubProperties.ADVERTISE_NAME, MsgHubProperties.UPD_REQUEST))
         mac = self.send(MsgHubProperties(MsgHubProperties.HW_NETW_ID, MsgHubProperties.UPD_REQUEST))

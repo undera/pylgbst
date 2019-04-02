@@ -280,7 +280,42 @@ class MsgGenericError(UpstreamMsg):  # TODO: decode it
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#generic-error-messages
     """
     TYPE = 0x05
-    pass
+
+    ERR_ACK = 0x01  # ACK
+    ERR_MACK = 0x02  # MACK
+    ERR_BUFFER_OVERFLOW = 0x03  # Buffer Overflow
+    ERR_TIMEOUT = 0x04  # Timeout
+    ERR_WRONG_COMMAND = 0x05  # Command NOT recognized
+    ERR_WRONG_PARAMS = 0x06  # Invalid use (e.g. parameter error(s)
+    ERR_OVERCURRENT = 0x07
+    ERR_INTERNAL = 0x08
+
+    DESCR = {
+        ERR_ACK: "ACK",
+        ERR_MACK: "MACK",
+        ERR_BUFFER_OVERFLOW: "Buffer Overflow",
+        ERR_TIMEOUT: "Timeout",
+        ERR_WRONG_COMMAND: "Command NOT recognized",
+        ERR_WRONG_PARAMS: "Invalid use (e.g. parameter error(s)",
+        ERR_OVERCURRENT: "Overcurrent",
+        ERR_INTERNAL: "Internal ERROR",
+    }
+
+    def __init__(self):
+        super(MsgGenericError, self).__init__()
+        self.cmd = None
+        self.err = None
+
+    @classmethod
+    def decode(cls, data):
+        msg = super(MsgGenericError, cls).decode(data)
+        assert isinstance(msg, MsgGenericError)
+        msg.cmd = msg._byte()
+        msg.err = msg._byte()
+        return msg
+
+    def message(self):
+        return "Command 0x%x caused error 0x%x: %s" % (self.cmd, self.err, self.DESCR[self.err])
 
 
 class MsgPortInfoRequest(DownstreamMsg):
@@ -509,7 +544,7 @@ class MsgVirtualPortSetup(DownstreamMsg):
     """
     TYPE = 0x61
 
-    CMD_DISCONNECT = 0x01
+    CMD_DISCONNECT = 0x00
     CMD_CONNECT = 0x01
 
     def __init__(self, cmd, port):
