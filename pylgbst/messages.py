@@ -129,7 +129,7 @@ class MsgHubProperties(DownstreamMsg, UpstreamMsg):
                and msg.operation == self.UPSTREAM_UPDATE and msg.property == self.property
 
 
-class MsgHubActions(DownstreamMsg, UpstreamMsg):
+class MsgHubAction(DownstreamMsg, UpstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#hub-actions
     """
@@ -148,17 +148,26 @@ class MsgHubActions(DownstreamMsg, UpstreamMsg):
     UPSTREAM_BOOT_MODE = 0x32
 
     def __init__(self, action=None):
-        super(MsgHubActions, self).__init__()
+        super(MsgHubAction, self).__init__()
         self.action = action
 
     def __str__(self):
         self.payload = chr(self.action)
-        return super(MsgHubActions, self).__str__()
+        self.needs_reply = self.action in (self.DISCONNECT, self.SWITCH_OFF)
+        return super(MsgHubAction, self).__str__()
+
+    def is_reply(self, msg):
+        assert isinstance(msg, MsgHubAction)
+        if self.action == self.DISCONNECT and msg.action == self.UPSTREAM_DISCONNECT:
+            return True
+
+        if self.action == self.SWITCH_OFF and msg.action == self.UPSTREAM_SHUTDOWN:
+            return True
 
     @classmethod
     def decode(cls, data):
-        msg = super(MsgHubActions, cls).decode(data)
-        assert isinstance(msg, MsgHubActions)
+        msg = super(MsgHubAction, cls).decode(data)
+        assert isinstance(msg, MsgHubAction)
         msg.action = msg._byte()
 
         # TODO: make hub to disconnect if device says so
@@ -223,7 +232,7 @@ class MsgHubAlert(DownstreamMsg, UpstreamMsg):
 
     def is_reply(self, msg):
         return isinstance(msg, MsgHubAlert) \
-               and msg.operation == self.UPSTREAM_UPDATE and msg.atype == self.operation
+               and msg.operation == self.UPSTREAM_UPDATE and msg.atype == self.atype
 
 
 class MsgHubAttachedIO(UpstreamMsg):
@@ -266,7 +275,7 @@ class MsgHubAttachedIO(UpstreamMsg):
         return msg
 
 
-class MsgGenericError(UpstreamMsg):
+class MsgGenericError(UpstreamMsg):  # TODO: decode it
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#generic-error-messages
     """
@@ -581,7 +590,7 @@ class MsgPortOutputFeedback(Message):
 
 
 UPSTREAM_MSGS = (
-    MsgHubProperties, MsgHubActions, MsgHubAlert, MsgHubAttachedIO, MsgGenericError,
+    MsgHubProperties, MsgHubAction, MsgHubAlert, MsgHubAttachedIO, MsgGenericError,
     MsgPortInfo, MsgPortModeInfo,
     MsgPortValueSingle, MsgPortValueCombined, MsgPortInputFmtSingle, MsgPortInputFmtCombined,
     MsgPortOutputFeedback

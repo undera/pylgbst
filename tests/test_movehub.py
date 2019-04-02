@@ -3,20 +3,12 @@ import unittest
 
 from pylgbst.hub import MoveHub
 from pylgbst.peripherals import LED, TiltSensor, COLORS, COLOR_RED
-from tests import log, HubMock, ConnectionMock, Thread
+from tests import log, HubMock, ConnectionMock
 
 HANDLE = MoveHub.HUB_HARDWARE_HANDLE
 
 
 class GeneralTest(unittest.TestCase):
-    def _wait_notifications_handled(self, hub):
-        hub.connection.running = False
-        for _ in range(1, 180):
-            time.sleep(1)
-            log.debug("Waiting for notifications to process...")
-            if hub.connection.finished:
-                log.debug("Done waiting for notifications to process")
-                break
 
     def test_led(self):
         hub = HubMock()
@@ -35,23 +27,23 @@ class GeneralTest(unittest.TestCase):
             else:
                 log.debug("Tilt: %s %s %s", param1, param2, param3)
 
-        self._inject_notification(hub, '0a00 47 3a 090100000001', 1)
+        hub.connection.inject_notification(hub, '0a00 47 3a 090100000001', 1)
         hub.tilt_sensor.subscribe(callback)
         hub.notify_mock.append((HANDLE, "0500453a05"))
         hub.notify_mock.append((HANDLE, "0a00473a010100000001"))
         time.sleep(1)
-        self._inject_notification(hub, '0a00 47 3a 090100000001', 1)
+        hub.connection.inject_notification(hub, '0a00 47 3a 090100000001', 1)
         hub.tilt_sensor.subscribe(callback, TiltSensor.MODE_2AXIS_SIMPLE)
 
         hub.notify_mock.append((HANDLE, "0500453a09"))
         time.sleep(1)
 
-        self._inject_notification(hub, '0a00 47 3a 090100000001', 1)
+        hub.connection.inject_notification(hub, '0a00 47 3a 090100000001', 1)
         hub.tilt_sensor.subscribe(callback, TiltSensor.MODE_2AXIS_FULL)
         hub.notify_mock.append((HANDLE, "0600453a04fe"))
         time.sleep(1)
 
-        self._inject_notification(hub, '0a00 47 3a 090100000001', 1)
+        hub.connection.inject_notification(hub, '0a00 47 3a 090100000001', 1)
         hub.tilt_sensor.unsubscribe(callback)
         self._wait_notifications_handled(hub)
         # TODO: assert
@@ -84,11 +76,11 @@ class GeneralTest(unittest.TestCase):
         conn.notifications.append((14, '0f00 8202 01'))
         conn.notifications.append((14, '0f00 8202 0a'))
 
-        self._inject_notification(conn, '1200 0101 06 4c45474f204d6f766520487562', 1)
-        self._inject_notification(conn, '1200 0108 06 4c45474f204d6f766520487562', 2)
-        self._inject_notification(conn, '0900 47 3c 0227003738', 3)
-        self._inject_notification(conn, '0600 45 3c 020d', 4)
-        self._inject_notification(conn, '0900 47 3c 0227003738', 5)
+        conn.inject_notification('1200 0101 06 4c45474f204d6f766520487562', 1)
+        conn.inject_notification('1200 0108 06 4c45474f204d6f766520487562', 2)
+        conn.inject_notification('0900 47 3c 0227003738', 3)
+        conn.inject_notification('0600 45 3c 020d', 4)
+        conn.inject_notification('0900 47 3c 0227003738', 5)
         hub = MoveHub(conn.connect())
         hub.wait_for_devices()
         # demo_all(hub)
@@ -104,13 +96,13 @@ class GeneralTest(unittest.TestCase):
             name = COLORS[color] if color is not None else 'NONE'
             log.info("Color: %s %s %s", name, unk1, unk2)
 
-        self._inject_notification(hub, '0a00 4701090100000001', 1)
+        hub.connection.inject_notification(hub, '0a00 4701090100000001', 1)
         hub.color_distance_sensor.subscribe(callback)
 
         hub.notify_mock.append((HANDLE, "08004501ff0aff00"))
         time.sleep(1)
         # TODO: assert
-        self._inject_notification(hub, '0a00 4701090100000001', 1)
+        hub.connection.inject_notification(hub, '0a00 4701090100000001', 1)
         hub.color_distance_sensor.unsubscribe(callback)
         self._wait_notifications_handled(hub)
 
@@ -130,13 +122,3 @@ class GeneralTest(unittest.TestCase):
         # TODO: assert
         hub.button.unsubscribe(callback)
         self._wait_notifications_handled(hub)
-
-    def _inject_notification(self, hub, notify, pause):
-        def inject():
-            time.sleep(pause)
-            if isinstance(hub, ConnectionMock):
-                hub.notifications.append((HANDLE, notify))
-            else:
-                hub.notify_mock.append((HANDLE, notify))
-
-        Thread(target=inject).start()

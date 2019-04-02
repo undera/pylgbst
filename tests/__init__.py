@@ -48,8 +48,9 @@ class ConnectionMock(Connection):
         while self.running or self.notifications:
             if self.notification_handler:
                 while self.notifications:
-                    handle, data = self.notifications.pop(0)
-                    self.notification_handler(handle, unhexlify(data.replace(' ', '')))
+                    data = self.notifications.pop(0)
+                    s = unhexlify(data.replace(' ', ''))
+                    self.notification_handler(MoveHub.HUB_HARDWARE_HANDLE, bytes(s))
             time.sleep(0.1)
 
         self.finished = True
@@ -61,3 +62,22 @@ class ConnectionMock(Connection):
     def connect(self, hub_mac=None):
         super(ConnectionMock, self).connect(hub_mac)
         return self
+
+    def is_alive(self):
+        return not self.finished
+
+    def inject_notification(self, payload, pause):
+        def inject():
+            time.sleep(pause)
+            self.notifications.append(payload)
+
+        Thread(target=inject).start()
+
+    def wait_notifications_handled(self):
+        self.running = False
+        for _ in range(1, 180):
+            time.sleep(0.1)
+            log.debug("Waiting for notifications to process...")
+            if self.finished:
+                log.debug("Done waiting for notifications to process")
+                break

@@ -40,8 +40,18 @@ class Hub(object):
         self.connection.write(self.HUB_HARDWARE_HANDLE, msg)
         self._sent_msg = msg
 
+        start = time.time()
         while self._sent_msg.needs_reply:
-            log.debug("Waiting for pair message to answer %r", msg)
+            spent = time.time() - start
+            if spent > 10.0:
+                log.debug("Waiting for pair message to answer %r", msg)
+                time.sleep(1.0)
+            elif spent > 1.0:
+                log.debug("Waiting for pair message to answer %r", msg)
+                time.sleep(0.1)
+            elif spent > 0.1:
+                log.debug("Waiting for pair message to answer %r", msg)
+                time.sleep(0.01)
 
         return self._sent_msg
 
@@ -57,11 +67,14 @@ class Hub(object):
         msg = self._get_upstream_msg(data)
         if self._sent_msg.is_reply(msg):
             self._sent_msg = msg
+        else:
+            log.debug("Upstream msg is not reply we need: %r", msg)
 
         self._handle_message(msg)
 
     def _get_upstream_msg(self, data):
-        msg = UpstreamMsg.decode(data)
+        msg_type = usbyte(data, 2)
+        msg = None
         for msg_kind in UPSTREAM_MSGS:
             if msg_type == msg_kind.TYPE:
                 msg = msg_kind.decode(data)
@@ -146,10 +159,10 @@ class Hub(object):
         device.queue_port_data(msg)
 
     def disconnect(self):
-        self.send(MsgHubActions(MsgHubActions.DISCONNECT))
+        self.send(MsgHubAction(MsgHubAction.DISCONNECT))
 
     def switch_off(self):
-        self.send(MsgHubActions(MsgHubActions.SWITCH_OFF))
+        self.send(MsgHubAction(MsgHubAction.SWITCH_OFF))
 
 
 class MoveHub(Hub):
@@ -256,28 +269,14 @@ class MoveHub(Hub):
 
     def _report_status(self):
         # TODO: add firmware version
-        log.info("%s by %s", self.info_get(MsgHubProperties.ADVERTISE_NAME),
-                 self.info_get(MsgHubProperties.MANUFACTURER))
+        name = self.send(MsgHubProperties(MsgHubProperties.ADVERTISE_NAME, MsgHubProperties.UPD_REQUEST))
+        mac = self.send(MsgHubProperties(MsgHubProperties.HW_NETW_ID, MsgHubProperties.UPD_REQUEST))
+        log.info("%s on %s", name, mac)
+
+        voltage = self.send(MsgHubProperties(MsgHubProperties.VOLTAGE, MsgHubProperties.UPD_REQUEST))
+        log.info("Voltage: %s", voltage)
 
         voltage = self.send(MsgHubAlert(MsgHubAlert.LOW_VOLTAGE, MsgHubAlert.UPD_REQUEST))
         assert isinstance(voltage, MsgHubAlert)
         if not voltage.is_ok():
             log.warning("Low voltage, check power source (maybe replace battery)")
-
-    def info_get(self, info_type):
-        self.info[info_type] = None
-        resp = self.send(MsgHubProperties(info_type, MsgHubProperties.UPD_REQUEST))
-        while self.info[info_type] is None:  # FIXME: will hang forever on error
-            time.sleep(0.05)
-
-        return self.info[info_type]
-
-    def _handle_device_info(self, data):
-        kind = usbyte(data, 3)
-        if kind == 2:
-            self.button.handle_port_data(data)
-
-        if usbyte(data, 4) == 0x06:
-            self.info[kind] = data[5:]
-        else:
-            log.warning("Unhandled device info: %s", str2hex(data))
