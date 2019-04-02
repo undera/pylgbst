@@ -36,24 +36,31 @@ class Hub(object):
         """
         :type msg: pylgbst.messages.DownstreamMsg
         """
+        self._wait_for_reply(None)
+
         log.debug("Send message: %r", msg)
         self.connection.write(self.HUB_HARDWARE_HANDLE, msg)
         self._sent_msg = msg
 
+        self._wait_for_reply(msg)
+
+        resp = self._sent_msg
+        self._sent_msg = DownstreamMsg()
+        return resp
+
+    def _wait_for_reply(self, msg):
         start = time.time()
-        while self._sent_msg.needs_reply:
+        while isinstance(self._sent_msg, DownstreamMsg) and self._sent_msg.needs_reply:
             spent = time.time() - start
             if spent > 10.0:
-                log.debug("Waiting for pair message to answer %r", msg)
+                log.debug("Waiting %.2f for pair message to answer %r", spent, msg)
                 time.sleep(1.0)
             elif spent > 1.0:
-                log.debug("Waiting for pair message to answer %r", msg)
+                log.debug("Waiting %.2f for pair message to answer %r", spent, msg)
                 time.sleep(0.1)
             elif spent > 0.1:
-                log.debug("Waiting for pair message to answer %r", msg)
+                log.debug("Waiting %.2f for pair message to answer %r", spent, msg)
                 time.sleep(0.01)
-
-        return self._sent_msg
 
     def _notify(self, handle, data):
         orig = data
@@ -66,8 +73,9 @@ class Hub(object):
 
         msg = self._get_upstream_msg(data)
         if self._sent_msg.is_reply(msg):
-            self._sent_msg = msg
-        else:
+            log.debug("Found matching upstream msg: %r", msg)
+            self._sent_msg = msg  # FIXME: weird piggyback of UpstreamMsg via field of DownstreamMsg
+        elif type(msg) != DownstreamMsg:
             log.debug("Upstream msg is not reply we need: %r", msg)
 
         self._handle_message(msg)
@@ -232,7 +240,7 @@ class MoveHub(Hub):
                                 self.led, self.tilt_sensor,
                                 self.amperage, self.voltage)
             if all(required_devices):
-                log.debug("All devices are present: ", required_devices)
+                log.debug("All devices are present: %s", required_devices)
                 return
             log.debug("Waiting for builtin devices to appear: %s", required_devices)
             time.sleep(0.1)

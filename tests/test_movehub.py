@@ -12,9 +12,11 @@ class GeneralTest(unittest.TestCase):
 
     def test_led(self):
         hub = HubMock()
-        led = LED(hub, 0x01)
-        led.set_color_index(COLOR_RED)
-        self.assertEqual("0801813201510009", hub.writes[1][1])
+        hub.led = LED(hub, MoveHub.PORT_LED)
+        hub.peripherals[MoveHub.PORT_LED] = hub.led
+        hub.connection.inject_notification("0500 82 320a", 0.1)
+        hub.led.set_color_index(COLOR_RED)
+        self.assertEqual("0800813211510009", hub.writes[1][1])
 
     def test_tilt_sensor(self):
         hub = HubMock()
@@ -50,39 +52,39 @@ class GeneralTest(unittest.TestCase):
 
     def test_motor(self):
         conn = ConnectionMock()
-        conn.notifications.append((14, '0900 04 39 0227003738'))
+        conn.notifications.append('0900 04 39 0227003738')
         hub = HubMock(conn)
         time.sleep(0.1)
 
-        conn.notifications.append((14, '050082390a'))
+        conn.notifications.append('050082390a')
         hub.motor_AB.timed(1.5)
         self.assertEqual("0d018139110adc056464647f03", conn.writes[0][1])
 
-        conn.notifications.append((14, '050082390a'))
+        conn.notifications.append('050082390a')
         hub.motor_AB.angled(90)
         self.assertEqual("0f018139110c5a0000006464647f03", conn.writes[1][1])
 
     def test_capabilities(self):
         conn = ConnectionMock()
-        conn.notifications.append((14, '0f00 04 01 0125000000001000000010'))
-        conn.notifications.append((14, '0f00 04 02 0126000000001000000010'))
-        conn.notifications.append((14, '0f00 04 37 0127000100000001000000'))
-        conn.notifications.append((14, '0f00 04 38 0127000100000001000000'))
-        conn.notifications.append((14, '0900 04 39 0227003738'))
-        conn.notifications.append((14, '0f00 04 32 0117000100000001000000'))
-        conn.notifications.append((14, '0f00 04 3a 0128000000000100000001'))
-        conn.notifications.append((14, '0f00 04 3b 0115000200000002000000'))
-        conn.notifications.append((14, '0f00 04 3c 0114000200000002000000'))
-        conn.notifications.append((14, '0f00 8202 01'))
-        conn.notifications.append((14, '0f00 8202 0a'))
+        conn.notifications.append('0f00 04 01 0125000000001000000010')
+        conn.notifications.append('0f00 04 02 0126000000001000000010')
+        conn.notifications.append('0f00 04 37 0127000100000001000000')
+        conn.notifications.append('0f00 04 38 0127000100000001000000')
+        conn.notifications.append('0900 04 39 0227003738')
+        conn.notifications.append('0f00 04 32 0117000100000001000000')
+        conn.notifications.append('0f00 04 3a 0128000000000100000001')
+        conn.notifications.append('0f00 04 3b 0115000200000002000000')
+        conn.notifications.append('0f00 04 3c 0114000200000002000000')
+        # conn.notifications.append('0f00 8202 01')
+        # conn.notifications.append('0f00 8202 0a')
 
-        conn.inject_notification('1200 0101 06 4c45474f204d6f766520487562', 1)
-        conn.inject_notification('1200 0108 06 4c45474f204d6f766520487562', 2)
-        conn.inject_notification('0900 47 3c 0227003738', 3)
-        conn.inject_notification('0600 45 3c 020d', 4)
-        conn.inject_notification('0900 47 3c 0227003738', 5)
+        conn.inject_notification('1200 0101 06 4c45474f204d6f766520487562', 0.1)
+        conn.inject_notification('1200 0108 06 4c45474f204d6f766520487562', 0.2)
+        conn.inject_notification('0900 47 3c 0227003738', 0.3)
+        conn.inject_notification('0600 45 3c 020d', 0.4)
+        conn.inject_notification('0900 47 3c 0227003738', 0.5)
         hub = MoveHub(conn.connect())
-        hub.wait_for_devices()
+        # hub.wait_for_devices()
         # demo_all(hub)
         conn.wait_notifications_handled()
 

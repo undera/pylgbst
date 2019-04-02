@@ -413,11 +413,10 @@ class Voltage(Peripheral):
     # moderate 9v ~= 3840
     # good 7.5v ~= 3892
     # liion 5v ~= 2100
-    def handle_port_data(self, data):
-        val = ushort(data, 4)
+    def handle_port_data(self, msg):
+        data = msg.payload
+        val = ushort(data, 0)
         self.last_value = val / 4096.0
-        if self.last_value < 0.2:
-            log.warning("Battery low! %s%%", int(100 * self.last_value))
         self._notify_subscribers(self.last_value)
 
 

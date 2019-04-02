@@ -478,7 +478,9 @@ class MsgPortInputFmtSingle(UpstreamMsg):
         msg.port = msg._byte()
         msg.mode = msg._byte()
         msg.delta_interval = msg._long()
-        msg.enabled = msg._byte()
+        if len(msg.payload):
+            msg.enabled = msg._byte()
+
         return msg
 
 
@@ -558,7 +560,7 @@ class MsgPortOutput(DownstreamMsg):
         return isinstance(msg, MsgPortOutputFeedback) and msg.port == self.port
 
 
-class MsgPortOutputFeedback(Message):
+class MsgPortOutputFeedback(UpstreamMsg):
     TYPE = 0x82
 
     def __init__(self):
