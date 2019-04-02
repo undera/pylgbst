@@ -14,7 +14,7 @@ class GeneralTest(unittest.TestCase):
         hub = HubMock()
         hub.led = LED(hub, MoveHub.PORT_LED)
         hub.peripherals[MoveHub.PORT_LED] = hub.led
-        hub.connection.inject_notification("0500 82 320a", 0.1)
+        hub.connection.notification_delayed("0500 82 320a", 0.1)
         hub.led.set_color_index(COLOR_RED)
         self.assertEqual("0800813211510009", hub.writes[1][1])
 
@@ -32,10 +32,10 @@ class GeneralTest(unittest.TestCase):
         hub = MoveHub(conn.connect())
         hub.wait_for_devices()
 
-        conn.inject_notification('1200 0101064c45474f204d6f766520487562', 0.1)
-        conn.inject_notification('0600010c06fe', 0.2)
-        conn.inject_notification('060001060600', 0.3)
-        conn.inject_notification('0600030104ff', 0.4)
+        conn.notification_delayed('1200 0101064c45474f204d6f766520487562', 0.1)
+        conn.notification_delayed('0600010c06fe', 0.2)
+        conn.notification_delayed('060001060600', 0.3)
+        conn.notification_delayed('0600030104ff', 0.4)
 
         hub.report_status()
         conn.wait_notifications_handled()
@@ -51,23 +51,23 @@ class GeneralTest(unittest.TestCase):
             else:
                 log.debug("Tilt: %s %s %s", param1, param2, param3)
 
-        hub.connection.inject_notification('0a00 47 3a 090100000001', 1)
+        hub.connection.notification_delayed('0a00 47 3a 090100000001', 0.1)
         hub.tilt_sensor.subscribe(callback)
         hub.notify_mock.append("0500453a05")
         hub.notify_mock.append("0a00473a010100000001")
         time.sleep(1)
-        hub.connection.inject_notification('0a00 47 3a 090100000001', 1)
+        hub.connection.notification_delayed('0a00 47 3a 090100000001', 0.1)
         hub.tilt_sensor.subscribe(callback, TiltSensor.MODE_2AXIS_SIMPLE)
 
         hub.notify_mock.append("0500453a09")
         time.sleep(1)
 
-        hub.connection.inject_notification('0a00 47 3a 090100000001', 1)
+        hub.connection.notification_delayed('0a00 47 3a 090100000001', 0.1)
         hub.tilt_sensor.subscribe(callback, TiltSensor.MODE_2AXIS_FULL)
         hub.notify_mock.append("0600453a04fe")
         time.sleep(1)
 
-        hub.connection.inject_notification('0a00 47 3a 090100000001', 1)
+        hub.connection.notification_delayed('0a00 47 3a 090100000001', 0.1)
         hub.tilt_sensor.unsubscribe(callback)
         hub.connection.wait_notifications_handled()
         # TODO: assert
@@ -95,13 +95,13 @@ class GeneralTest(unittest.TestCase):
             name = COLORS[color] if color is not None else 'NONE'
             log.info("Color: %s %s %s", name, unk1, unk2)
 
-        hub.connection.inject_notification('0a00 4701090100000001', 1)
+        hub.connection.notification_delayed('0a00 4701090100000001', 0.1)
         hub.color_distance_sensor.subscribe(callback)
 
         hub.notify_mock.append("08004501ff0aff00")
         time.sleep(1)
         # TODO: assert
-        hub.connection.inject_notification('0a00 4701090100000001', 1)
+        hub.connection.notification_delayed('0a00 4701090100000001', 0.1)
         hub.color_distance_sensor.unsubscribe(callback)
         hub.connection.wait_notifications_handled()
 

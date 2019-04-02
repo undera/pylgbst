@@ -1,14 +1,30 @@
 import unittest
 
 from pylgbst.hub import Hub
-from pylgbst.messages import MsgHubAction, MsgHubAlert
+from pylgbst.messages import MsgHubAction, MsgHubAlert, MsgHubProperties
+from pylgbst.utilities import usbyte
 from tests import ConnectionMock
 
 
 class GeneralTest(unittest.TestCase):
     def test_hub_properties(self):
-        # TODO: test it
-        pass
+        conn = ConnectionMock().connect()
+        hub = Hub(conn)
+
+        conn.notification_delayed('060001060600', 0.1)
+        msg = MsgHubProperties(MsgHubProperties.VOLTAGE_PERC, MsgHubProperties.UPD_REQUEST)
+        resp = hub.send(msg)
+        assert isinstance(resp, MsgHubProperties)
+        self.assertEqual(1, len(resp.parameters))
+        self.assertEqual(0, usbyte(resp.parameters, 0))
+
+        conn.notification_delayed('12000101064c45474f204d6f766520487562', 0.1)
+        msg = MsgHubProperties(MsgHubProperties.ADVERTISE_NAME, MsgHubProperties.UPD_REQUEST)
+        resp = hub.send(msg)
+        assert isinstance(resp, MsgHubProperties)
+        self.assertEqual("LEGO Move Hub", resp.parameters)
+
+        conn.wait_notifications_handled()
 
     def test_device_attached(self):
         conn = ConnectionMock().connect()
@@ -38,8 +54,8 @@ class GeneralTest(unittest.TestCase):
     def test_hub_alerts(self):
         conn = ConnectionMock().connect()
         hub = Hub(conn)
-        conn.inject_notification('0600 03 0104ff', 1)
+        conn.notification_delayed('0600 03 0104ff', 1)
         hub.send(MsgHubAlert(MsgHubAlert.LOW_VOLTAGE, MsgHubAlert.UPD_REQUEST))
-        conn.inject_notification('0600 03 030400', 1)
+        conn.notification_delayed('0600 03 030400', 1)
         hub.send(MsgHubAlert(MsgHubAlert.LOW_SIGNAL, MsgHubAlert.UPD_REQUEST))
         conn.wait_notifications_handled()

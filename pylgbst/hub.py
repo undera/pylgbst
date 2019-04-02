@@ -274,11 +274,12 @@ class MoveHub(Hub):
     def report_status(self):
         # TODO: add firmware version
         name = self.send(MsgHubProperties(MsgHubProperties.ADVERTISE_NAME, MsgHubProperties.UPD_REQUEST))
-        mac = self.send(MsgHubProperties(MsgHubProperties.HW_NETW_ID, MsgHubProperties.UPD_REQUEST))
-        log.info("%s on %s", name, mac)
+        mac = self.send(MsgHubProperties(MsgHubProperties.PRIMARY_MAC, MsgHubProperties.UPD_REQUEST))
+        log.info("%s on %s", name.payload, str2hex(mac.payload))
 
-        voltage = self.send(MsgHubProperties(MsgHubProperties.VOLTAGE, MsgHubProperties.UPD_REQUEST))
-        log.info("Voltage: %s", voltage)
+        voltage = self.send(MsgHubProperties(MsgHubProperties.VOLTAGE_PERC, MsgHubProperties.UPD_REQUEST))
+        assert isinstance(voltage, MsgHubProperties)
+        log.info("Voltage: %s%%", usbyte(voltage.parameters, 0))
 
         voltage = self.send(MsgHubAlert(MsgHubAlert.LOW_VOLTAGE, MsgHubAlert.UPD_REQUEST))
         assert isinstance(voltage, MsgHubAlert)

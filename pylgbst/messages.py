@@ -85,7 +85,7 @@ class MsgHubProperties(DownstreamMsg, UpstreamMsg):
     FW_VERSION = 0x03
     HW_VERSION = 0x04
     RSSI = 0x05
-    VOLTAGE = 0x06
+    VOLTAGE_PERC = 0x06
     BATTERY_TYPE = 0x07
     MANUFACTURER = 0x08
     RADIO_FW_VERSION = 0x09
@@ -122,6 +122,7 @@ class MsgHubProperties(DownstreamMsg, UpstreamMsg):
         assert isinstance(msg, MsgHubProperties)
         msg.property = msg._byte()
         msg.operation = msg._byte()
+        msg.parameters = msg.payload
         return msg
 
     def is_reply(self, msg):

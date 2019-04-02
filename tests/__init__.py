@@ -62,13 +62,16 @@ class ConnectionMock(Connection):
         self.writes.append((handle, str2hex(data)))
 
     def connect(self, hub_mac=None):
+        """
+        :rtype: ConnectionMock
+        """
         super(ConnectionMock, self).connect(hub_mac)
         return self
 
     def is_alive(self):
         return not self.finished
 
-    def inject_notification(self, payload, pause):
+    def notification_delayed(self, payload, pause):
         def inject():
             time.sleep(pause)
             self.notifications.append(payload)
