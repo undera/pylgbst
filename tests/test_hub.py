@@ -9,18 +9,6 @@ from tests import ConnectionMock
 
 
 class GeneralTest(unittest.TestCase):
-    def test_1(self):
-        obj = Hub()
-        time.sleep(1)
-        logging.warning("\n\n")
-        for dev in obj.peripherals.values():
-            if isinstance(dev, LED):
-                dev.subscribe(lambda x: None, LED.MODE_RGB)
-                logging.warning("\n\n")
-                dev.set_color_index(COLOR_BLACK)
-
-        time.sleep(3)
-
     def test_hub_properties(self):
         # TODO: test it
         pass

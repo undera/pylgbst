@@ -1,3 +1,4 @@
+import time
 from binascii import unhexlify
 
 from pylgbst.comms import Connection

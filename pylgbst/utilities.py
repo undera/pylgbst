@@ -22,9 +22,10 @@ def ushort(seq, index):
     return unpack("<H", seq[index:index + 2])[0]
 
 
-def uint(seq, index):
+def usint(seq, index):
     return unpack("<I", seq[index:index + 4])[0]
 
 
 def str2hex(data):  # we need it for python 2+3 compatibility
-    return binascii.hexlify(bytes(data)).decode("utf8")
+    s = bytes(data)
+    return binascii.hexlify(s).decode("utf8")

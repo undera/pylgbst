@@ -2,6 +2,7 @@ import time
 
 from pylgbst import get_connection_auto
 from pylgbst.messages import *
+from pylgbst.messages import Message
 from pylgbst.peripherals import Button, EncodedMotor, ColorDistanceSensor, LED, TiltSensor, Voltage, Peripheral, \
     Current, Motor
 from pylgbst.utilities import str2hex, usbyte, ushort
@@ -13,13 +14,13 @@ class Hub(object):
     """
     :type connection: pylgbst.comms.Connection
     :type peripherals: dict[int,Peripheral]
-    :type _sent_msg: pylgbst.messages.Message
+    :type _sent_msg: pylgbst.messages.DownstreamMsg
     """
     HUB_HARDWARE_HANDLE = 0x0E
 
     def __init__(self, connection=None):
         self.peripherals = {}
-        self._sent_msg = Message()
+        self._sent_msg = DownstreamMsg()
 
         if not connection:
             connection = get_connection_auto()
@@ -33,7 +34,7 @@ class Hub(object):
 
     def send(self, msg):
         """
-        :type msg: pylgbst.messages.Message
+        :type msg: pylgbst.messages.DownstreamMsg
         """
         log.debug("Send message: %r", msg)
         self.connection.write(self.HUB_HARDWARE_HANDLE, msg)
@@ -60,9 +61,7 @@ class Hub(object):
         self._handle_message(msg)
 
     def _get_upstream_msg(self, data):
-        msg_type = usbyte(data, 2)
-
-        msg = None
+        msg = UpstreamMsg.decode(data)
         for msg_kind in UPSTREAM_MSGS:
             if msg_type == msg_kind.TYPE:
                 msg = msg_kind.decode(data)
@@ -211,6 +210,8 @@ class MoveHub(Hub):
         self.port_C = None
         self.port_D = None
 
+        self._report_status()
+
     def wait_for_devices(self):
         required_devices = ()
         for num in range(0, 60):
@@ -223,16 +224,6 @@ class MoveHub(Hub):
             log.debug("Waiting for builtin devices to appear: %s", required_devices)
             time.sleep(0.1)
         log.warning("Got only these devices: %s", required_devices)
-
-    def _handle_device_info(self, data):
-        kind = usbyte(data, 3)
-        if kind == 2:
-            self.button.handle_port_data(data)
-
-        if usbyte(data, 4) == 0x06:
-            self.info[kind] = data[5:]
-        else:
-            log.warning("Unhandled device info: %s", str2hex(data))
 
     # noinspection PyTypeChecker
     def _handle_message(self, msg):
@@ -268,16 +259,10 @@ class MoveHub(Hub):
         log.info("%s by %s", self.info_get(MsgHubProperties.ADVERTISE_NAME),
                  self.info_get(MsgHubProperties.MANUFACTURER))
 
-        self.__voltage = 0
-
-        def on_voltage(value):
-            self.__voltage = value
-
-        self.voltage.subscribe(on_voltage, granularity=0)
-        while not self.__voltage:
-            time.sleep(0.05)
-        self.voltage.unsubscribe(on_voltage)
-        log.info("Voltage: %d%%", self.__voltage * 100)
+        voltage = self.send(MsgHubAlert(MsgHubAlert.LOW_VOLTAGE, MsgHubAlert.UPD_REQUEST))
+        assert isinstance(voltage, MsgHubAlert)
+        if not voltage.is_ok():
+            log.warning("Low voltage, check power source (maybe replace battery)")
 
     def info_get(self, info_type):
         self.info[info_type] = None
@@ -286,3 +271,13 @@ class MoveHub(Hub):
             time.sleep(0.05)
 
         return self.info[info_type]
+
+    def _handle_device_info(self, data):
+        kind = usbyte(data, 3)
+        if kind == 2:
+            self.button.handle_port_data(data)
+
+        if usbyte(data, 4) == 0x06:
+            self.info[kind] = data[5:]
+        else:
+            log.warning("Unhandled device info: %s", str2hex(data))
