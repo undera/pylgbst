@@ -18,7 +18,7 @@ class GeneralTest(unittest.TestCase):
 
     def test_tilt_sensor(self):
         hub = HubMock()
-        hub.notify_mock.append((HANDLE, '0f00 04 3a 0128000000000100000001'))
+        hub.notify_mock.append('0f00 04 3a 0128000000000100000001')
         time.sleep(1)
 
         def callback(param1, param2=None, param3=None):
@@ -27,25 +27,25 @@ class GeneralTest(unittest.TestCase):
             else:
                 log.debug("Tilt: %s %s %s", param1, param2, param3)
 
-        hub.connection.inject_notification(hub, '0a00 47 3a 090100000001', 1)
+        hub.connection.inject_notification('0a00 47 3a 090100000001', 1)
         hub.tilt_sensor.subscribe(callback)
-        hub.notify_mock.append((HANDLE, "0500453a05"))
-        hub.notify_mock.append((HANDLE, "0a00473a010100000001"))
+        hub.notify_mock.append("0500453a05")
+        hub.notify_mock.append("0a00473a010100000001")
         time.sleep(1)
-        hub.connection.inject_notification(hub, '0a00 47 3a 090100000001', 1)
+        hub.connection.inject_notification('0a00 47 3a 090100000001', 1)
         hub.tilt_sensor.subscribe(callback, TiltSensor.MODE_2AXIS_SIMPLE)
 
-        hub.notify_mock.append((HANDLE, "0500453a09"))
+        hub.notify_mock.append("0500453a09")
         time.sleep(1)
 
-        hub.connection.inject_notification(hub, '0a00 47 3a 090100000001', 1)
+        hub.connection.inject_notification('0a00 47 3a 090100000001', 1)
         hub.tilt_sensor.subscribe(callback, TiltSensor.MODE_2AXIS_FULL)
-        hub.notify_mock.append((HANDLE, "0600453a04fe"))
+        hub.notify_mock.append("0600453a04fe")
         time.sleep(1)
 
-        hub.connection.inject_notification(hub, '0a00 47 3a 090100000001', 1)
+        hub.connection.inject_notification('0a00 47 3a 090100000001', 1)
         hub.tilt_sensor.unsubscribe(callback)
-        self._wait_notifications_handled(hub)
+        hub.connection.wait_notifications_handled()
         # TODO: assert
 
     def test_motor(self):
@@ -84,27 +84,26 @@ class GeneralTest(unittest.TestCase):
         hub = MoveHub(conn.connect())
         hub.wait_for_devices()
         # demo_all(hub)
-        self._wait_notifications_handled(hub)
+        conn.wait_notifications_handled()
 
     def test_color_sensor(self):
-        #
         hub = HubMock()
-        hub.notify_mock.append((HANDLE, '0f00 04 01 0125000000001000000010'))
+        hub.notify_mock.append('0f00 04 01 0125000000001000000010')
         time.sleep(1)
 
         def callback(color, unk1, unk2=None):
             name = COLORS[color] if color is not None else 'NONE'
             log.info("Color: %s %s %s", name, unk1, unk2)
 
-        hub.connection.inject_notification(hub, '0a00 4701090100000001', 1)
+        hub.connection.inject_notification('0a00 4701090100000001', 1)
         hub.color_distance_sensor.subscribe(callback)
 
-        hub.notify_mock.append((HANDLE, "08004501ff0aff00"))
+        hub.notify_mock.append("08004501ff0aff00")
         time.sleep(1)
         # TODO: assert
-        hub.connection.inject_notification(hub, '0a00 4701090100000001', 1)
+        hub.connection.inject_notification('0a00 4701090100000001', 1)
         hub.color_distance_sensor.unsubscribe(callback)
-        self._wait_notifications_handled(hub)
+        hub.connection.wait_notifications_handled()
 
     def test_button(self):
         hub = HubMock()
@@ -113,12 +112,12 @@ class GeneralTest(unittest.TestCase):
         def callback(pressed):
             log.info("Pressed: %s", pressed)
 
-        hub.notify_mock.append((HANDLE, "060001020600"))
+        hub.notify_mock.append("060001020600")
         hub.button.subscribe(callback)
 
-        hub.notify_mock.append((HANDLE, "060001020601"))
-        hub.notify_mock.append((HANDLE, "060001020600"))
+        hub.notify_mock.append("060001020601")
+        hub.notify_mock.append("060001020600")
         time.sleep(1)
         # TODO: assert
         hub.button.unsubscribe(callback)
-        self._wait_notifications_handled(hub)
+        hub.connection.wait_notifications_handled()

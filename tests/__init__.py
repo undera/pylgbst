@@ -11,12 +11,14 @@ log = logging.getLogger('test')
 
 
 class HubMock(MoveHub):
+    """
+    :type connection: ConnectionMock
+    """
+
     # noinspection PyUnresolvedReferences
-    def __init__(self, connection=None):
-        """
-        :type connection: ConnectionMock
-        """
-        super(HubMock, self).__init__(connection if connection else ConnectionMock())
+    def __init__(self, conn=None):
+        super(HubMock, self).__init__(conn if conn else ConnectionMock())
+        self.connection = self.connection
         self.notify_mock = self.connection.notifications
         self.writes = self.connection.writes
 

@@ -1,4 +1,3 @@
-import time
 import unittest
 
 from pylgbst.hub import Hub
