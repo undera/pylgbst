@@ -1,10 +1,8 @@
 import time
 import unittest
 
-from pylgbst.constants import COLOR_RED
-
 from pylgbst.hub import MoveHub
-from pylgbst.peripherals import LED, TiltSensor, COLORS
+from pylgbst.peripherals import LED, TiltSensor, COLORS, COLOR_RED
 from tests import log, HubMock, ConnectionMock, Thread
 
 HANDLE = MoveHub.HUB_HARDWARE_HANDLE
@@ -24,7 +22,7 @@ class GeneralTest(unittest.TestCase):
         hub = HubMock()
         led = LED(hub, 0x01)
         led.set_color_index(COLOR_RED)
-        self.assertEqual("0801813201510009", hub.writes[0][1])
+        self.assertEqual("0801813201510009", hub.writes[1][1])
 
     def test_tilt_sensor(self):
         hub = HubMock()
@@ -91,14 +89,15 @@ class GeneralTest(unittest.TestCase):
         self._inject_notification(conn, '0900 47 3c 0227003738', 3)
         self._inject_notification(conn, '0600 45 3c 020d', 4)
         self._inject_notification(conn, '0900 47 3c 0227003738', 5)
-        hub = MoveHub(conn)
+        hub = MoveHub(conn.connect())
+        hub.wait_for_devices()
         # demo_all(hub)
         self._wait_notifications_handled(hub)
 
     def test_color_sensor(self):
         #
         hub = HubMock()
-        hub.notify_mock.append((HANDLE, '0f00 04010125000000001000000010'))
+        hub.notify_mock.append((HANDLE, '0f00 04 01 0125000000001000000010'))
         time.sleep(1)
 
         def callback(color, unk1, unk2=None):

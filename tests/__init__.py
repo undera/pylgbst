@@ -19,9 +19,6 @@ class HubMock(MoveHub):
         self.notify_mock = self.connection.notifications
         self.writes = self.connection.writes
 
-    def _wait_for_devices(self):
-        pass
-
     def _report_status(self):
         pass
 

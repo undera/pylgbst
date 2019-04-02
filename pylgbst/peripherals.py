@@ -5,7 +5,7 @@ import traceback
 from struct import pack, unpack
 from threading import Thread
 
-from pylgbst.messages import MsgHubProperties, MsgPortOutput, MsgPortInputFmtSetupSingle, MsgPortOutputFeedback
+from pylgbst.messages import MsgHubProperties, MsgPortOutput, MsgPortInputFmtSetupSingle
 from pylgbst.utilities import queue, str2hex, usbyte, ushort
 
 log = logging.getLogger('peripherals')
@@ -47,7 +47,7 @@ class Peripheral(object):
 
     def __init__(self, parent, port):
         """
-        :type parent: pylgbst.hub.MoveHub
+        :type parent: pylgbst.hub.Hub
         :type port: int
         """
         super(Peripheral, self).__init__()
@@ -76,11 +76,7 @@ class Peripheral(object):
     def _send_to_port(self, msg):
         assert type(msg) == MsgPortOutput
         msg.do_buffer = self.do_buffer
-
         self.hub.send(msg)
-
-        # if msg.do_feedback:
-        #    self._wait_sync(False)
 
     def started(self):
         log.debug("Peripheral Started: %s", self)
@@ -194,10 +190,6 @@ class LED(Peripheral):
 
 
 class Motor(Peripheral):
-    pass  # TODO
-
-
-class EncodedMotor(Motor):
     TRAILER = b'\x64\x7f\x03'  # NOTE: \x64 is 100, might mean something; also trailer might be a sequence terminator
     # TODO: investigate sequence behavior, seen with zero values passed to angled mode
     # trailer is not required for all movement types
@@ -211,11 +203,6 @@ class EncodedMotor(Motor):
     TIMED_GROUP = 0x0A
     ANGLED_SINGLE = 0x0B
     ANGLED_GROUP = 0x0C
-
-    # MOTORS
-    SENSOR_SOMETHING1 = 0x00  # TODO: understand it
-    SENSOR_SPEED = 0x01
-    SENSOR_ANGLE = 0x02
 
     def _speed_abs(self, relative):
         if relative < -1:
@@ -247,7 +234,7 @@ class EncodedMotor(Motor):
 
         params += self.TRAILER
 
-        self._write_to_hub(params)
+        self._send_to_port(params)
 
     def timed(self, seconds, speed_primary=1, speed_secondary=None, is_async=False):
         if speed_secondary is None:
@@ -293,6 +280,13 @@ class EncodedMotor(Motor):
 
     def stop(self, is_async=False):
         self.constant(0, is_async=is_async)
+
+
+class EncodedMotor(Motor):
+    # MOTORS
+    SENSOR_SOMETHING1 = 0x00  # TODO: understand it
+    SENSOR_SPEED = 0x01
+    SENSOR_ANGLE = 0x02
 
     def handle_port_data(self, data):
         if self._port_subscription_mode == self.SENSOR_ANGLE:
@@ -400,30 +394,31 @@ class ColorDistanceSensor(Peripheral):
     def subscribe(self, callback, mode=COLOR_DISTANCE_FLOAT, granularity=1, is_async=False):
         super(ColorDistanceSensor, self).subscribe(callback, mode, granularity)
 
-    def handle_port_data(self, data):
+    def handle_port_data(self, msg):
+        data = msg.payload
         if self._port_subscription_mode == self.COLOR_DISTANCE_FLOAT:
-            color = usbyte(data, 4)
-            distance = usbyte(data, 5)
-            partial = usbyte(data, 7)
+            color = usbyte(data, 0)
+            distance = usbyte(data, 1)
+            partial = usbyte(data, 3)
             if partial:
                 distance += 1.0 / partial
             self._notify_subscribers(color, float(distance))
         elif self._port_subscription_mode == self.COLOR_ONLY:
-            color = usbyte(data, 4)
+            color = usbyte(data, 0)
             self._notify_subscribers(color)
         elif self._port_subscription_mode == self.DISTANCE_INCHES:
-            distance = usbyte(data, 4)
+            distance = usbyte(data, 0)
             self._notify_subscribers(distance)
         elif self._port_subscription_mode == self.DISTANCE_HOW_CLOSE:
-            distance = usbyte(data, 4)
+            distance = usbyte(data, 0)
             self._notify_subscribers(distance)
         elif self._port_subscription_mode == self.DISTANCE_SUBINCH_HOW_CLOSE:
-            distance = usbyte(data, 4)
+            distance = usbyte(data, 0)
             self._notify_subscribers(distance)
         elif self._port_subscription_mode == self.OFF1 or self._port_subscription_mode == self.OFF2:
             log.info("Turned off led on %s", self)
         elif self._port_subscription_mode == self.COUNT_2INCH:
-            count = unpack("<L", data[4:8])[0]  # is it all 4 bytes or just 2?
+            count = unpack("<L", data[0:4])[0]  # is it all 4 bytes or just 2?
             self._notify_subscribers(count)
         elif self._port_subscription_mode == self.STREAM_3_VALUES:
             # TODO: understand better meaning of these 3 values

@@ -8,11 +8,11 @@ log = logging.getLogger('hub')
 
 class Message(object):
     TYPE = None
-    pair = None
 
     def __init__(self):
         self._payload = ""
         self.hub_id = 0x00  # not used according to official doc
+        self.needs_reply = False
 
     def __str__(self):
         """
@@ -48,6 +48,9 @@ class Message(object):
 
     def __repr__(self):
         return self.__class__.__name__ + "(type=%x, payload=%s)" % (self.TYPE, str2hex(self.payload))
+
+    def is_reply(self, msg):
+        return False
 
 
 class MsgHubProperties(Message):
@@ -223,9 +226,12 @@ class MsgGenericError(Message):
     pass
 
 
-class MsgPortInfoRequest(Message):
+class MsgPortInfoRequest(Message):  # This is sync request for value on port
     TYPE = 0x21
-    pass
+
+    def is_reply(self, msg):
+        if type(msg) in (MsgPortValueSingle, MsgPortValueCombined) and msg.port == self.port:
+            return True
 
 
 class MsgPortModeInfoRequest(Message):
@@ -255,14 +261,22 @@ class MsgPortInputFmtSetupSingle(Message):
         self.port = port
         self.payload = pack("<B", port) + pack("<B", mode) + pack("<I", delta) + pack("<B", update_enable)
 
-    def pair(self, msg):
+    def is_reply(self, msg):
         if type(msg) == MsgPortInputFmtSingle and msg.port == self.port:
             return True
 
 
 class MsgPortInputFmtSetupCombined(Message):
     TYPE = 0x42
-    pass
+
+    def __init__(self, port, mode, delta=1, update_enable=0):
+        super(MsgPortInputFmtSetupCombined, self).__init__()
+        self.port = port
+        self.payload = pack("<B", port) + pack("<B", mode) + pack("<I", delta) + pack("<B", update_enable)
+
+    def is_reply(self, msg):
+        if type(msg) == MsgPortInputFmtSetupCombined and msg.port == self.port:
+            return True
 
 
 class MsgPortInfo(Message):
@@ -292,10 +306,21 @@ class MsgPortModeInfo(Message):
 
 class MsgPortValueSingle(Message):
     TYPE = 0x45
-    pass
+
+    def __init__(self):
+        super(MsgPortValueSingle, self).__init__()
+        self.port = None
+
+    @classmethod
+    def decode(cls, data):
+        msg = super(MsgPortValueSingle, cls).decode(data)
+        assert type(msg) == MsgPortValueSingle
+        msg.port = usbyte(msg.payload, 0)
+        msg.payload = msg.payload[1:]
+        return msg
 
 
-class MsgPortValueCombined(Message):
+class MsgPortValueCombined(Message):  # TODO
     TYPE = 0x46
     pass
 
@@ -354,11 +379,11 @@ class MsgPortOutput(Message):
         if self.do_feedback:
             startup_completion_flags |= self.SC_FEEDBACK
 
-        if self.do_feedback:
-            self.pair = lambda x: type(x) == MsgPortOutputFeedback and x.port == self.port
-
         return pack("<B", self.port) + pack("<B", startup_completion_flags) \
                + pack("<B", self.subcommand) + self._payload
+
+    def is_reply(self, msg):
+        return type(msg) == MsgPortOutputFeedback and msg.port == self.port
 
 
 class MsgPortOutputFeedback(Message):
