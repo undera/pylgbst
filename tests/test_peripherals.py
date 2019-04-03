@@ -1,9 +1,9 @@
 import time
 import unittest
 
-from pylgbst.hub import MoveHub, Hub
-from pylgbst.peripherals import LED, TiltSensor, COLORS, COLOR_RED, Button, Current, Voltage, ColorDistanceSensor
-from tests import log, HubMock, ConnectionMock
+from pylgbst.hub import MoveHub
+from pylgbst.peripherals import LED, TiltSensor, COLOR_RED, Button, Current, Voltage, ColorDistanceSensor
+from tests import HubMock, ConnectionMock
 
 
 class PeripheralsTest(unittest.TestCase):
@@ -93,35 +93,37 @@ class PeripheralsTest(unittest.TestCase):
 
     def test_tilt_sensor(self):
         hub = HubMock()
-        hub.notify_mock.append('0f00 04 3a 0128000000000100000001')
-        time.sleep(1)
+        sensor = TiltSensor(hub, MoveHub.PORT_TILT_SENSOR)
+        hub.peripherals[MoveHub.PORT_TILT_SENSOR] = sensor
 
-        def callback(param1, param2=None, param3=None):
-            if param2 is None:
-                log.debug("Tilt: %s", TiltSensor.DUO_STATES[param1])
-            else:
-                log.debug("Tilt: %s %s %s", param1, param2, param3)
+        vals = []
 
-        hub.connection.notification_delayed('0a00 47 3a 090100000001', 0.1)
-        hub.tilt_sensor.subscribe(callback)
-        hub.notify_mock.append("0500453a05")
-        hub.notify_mock.append("0a00473a010100000001")
-        time.sleep(1)
-        hub.connection.notification_delayed('0a00 47 3a 090100000001', 0.1)
-        hub.tilt_sensor.subscribe(callback, TiltSensor.MODE_2AXIS_SIMPLE)
-
-        hub.notify_mock.append("0500453a09")
-        time.sleep(1)
+        def callback(*args):
+            vals.append(args)
 
         hub.connection.notification_delayed('0a00 47 3a 090100000001', 0.1)
-        hub.tilt_sensor.subscribe(callback, TiltSensor.MODE_2AXIS_FULL)
-        hub.notify_mock.append("0600453a04fe")
-        time.sleep(1)
+        sensor.subscribe(callback)
+        hub.connection.notification_delayed("0500453a05")
+        time.sleep(0.1)
+        hub.connection.notification_delayed('0a00 47 3a 090100000000', 0.1)
+        sensor.unsubscribe(callback)
 
         hub.connection.notification_delayed('0a00 47 3a 090100000001', 0.1)
-        hub.tilt_sensor.unsubscribe(callback)
+        sensor.subscribe(callback, TiltSensor.MODE_2AXIS_SIMPLE)
+        hub.connection.notification_delayed("0500453a09")
+        time.sleep(0.1)
+        hub.connection.notification_delayed('0a00 47 3a 090100000000', 0.1)
+        sensor.unsubscribe(callback)
+
+        hub.connection.notification_delayed('0a00 47 3a 090100000001', 0.1)
+        sensor.subscribe(callback, TiltSensor.MODE_2AXIS_FULL)
+        hub.connection.notification_delayed("0600453a04fe")
+        time.sleep(0.1)
+        hub.connection.notification_delayed('0a00 47 3a 090100000000', 0.1)
+        sensor.unsubscribe(callback)
+
         hub.connection.wait_notifications_handled()
-        # TODO: assert
+        self.assertEqual([(5,), (9,), (4, -2)], vals)
 
     def test_motor(self):
         conn = ConnectionMock()
