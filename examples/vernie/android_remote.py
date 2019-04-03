@@ -85,7 +85,7 @@ try:
         sa = round(c + b / divider, 1)
         sb = round(c - b / divider, 1)
         logging.info("SpeedA=%s, SpeedB=%s", sa, sb)
-        robot.motor_AB.constant(sa, sb)
+        robot.motor_AB.start_speed(sa, sb)
         # time.sleep(0.5)
 finally:
     robot.motor_AB.stop()

@@ -86,11 +86,11 @@ def try_speeds():
     speeds = [x * 1.0 / 10.0 for x in range(1, 11)]
     for s in speeds:
         logging.info("%s", s)
-        plotter.both.constant(s, -s)
+        plotter.both.start_speed(s, -s)
         time.sleep(1)
     for s in reversed(speeds):
         logging.info("%s", s)
-        plotter.both.constant(-s, s)
+        plotter.both.start_speed(-s, s)
         time.sleep(1)
 
 

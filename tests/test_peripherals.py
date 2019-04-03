@@ -131,7 +131,7 @@ class PeripheralsTest(unittest.TestCase):
         hub.peripherals[MoveHub.PORT_C] = motor
 
         hub.connection.notification_delayed('050082010a', 0.1)
-        motor.constant(0.25)
+        motor.start_speed(0.25)
         self.assertEqual("0800810111510119", hub.writes[1][1])
 
         hub.connection.notification_delayed('050082010a', 0.1)

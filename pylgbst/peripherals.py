@@ -207,12 +207,14 @@ class Motor(Peripheral):
         msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, params)
         self._send_to_port(msg)
 
-        # params += self.TRAILER
-        # TRAILER = b'\x64\x7f\x03'  # NOTE: \x64 is 100, might mean something; also trailer might be a sequence terminator
-        # TODO: investigate sequence behavior, seen with zero values passed to angled mode
-        # trailer is not required for all movement types
+    def _send_cmd(self, subcmd, params):
+        if self.virtual_ports:
+            subcmd += 1  # de-facto rule
 
-    def constant(self, speed_primary=1.0, speed_secondary=None):
+        msg = MsgPortOutput(self.port, subcmd, params)
+        self._send_to_port(msg)
+
+    def start_speed(self, speed_primary=1.0, speed_secondary=None):
         if speed_secondary is None:
             speed_secondary = speed_primary
 
@@ -224,7 +226,7 @@ class Motor(Peripheral):
         self._write_direct_mode(self.SUBCMD_START_POWER, params)
 
     def stop(self):
-        self.constant(0)
+        self.start_speed(0)
 
     def hold_speed(self, speed_primary=1.0, speed_secondary=None, max_power=1.0, use_profile=0b00):
         """
@@ -238,7 +240,10 @@ class Motor(Peripheral):
         if self.virtual_ports:
             params += pack("<b", self._speed_abs(speed_secondary))
 
-        self._write_direct_mode(self.SUBCMD_START_POWER, params)
+        params += pack("<B", int(100 * max_power))
+        params += pack("<B", use_profile)
+
+        self._send_cmd(self.SUBCMD_START_POWER, params)
 
     def timed(self, seconds, speed_primary=1.0, speed_secondary=None):
         if speed_secondary is None:

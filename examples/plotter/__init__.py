@@ -42,7 +42,7 @@ class Plotter(object):
         self._hub.color_distance_sensor.subscribe(self._on_distance, mode=ColorDistanceSensor.COLOR_DISTANCE_FLOAT)
         self.caret.timed(0.5, 1)
         try:
-            self.caret.constant(-1)
+            self.caret.start_speed(-1)
             count = 0
             max_tries = 50
             while self._marker_color not in (COLOR_RED, COLOR_CYAN) and count < max_tries:
@@ -191,7 +191,7 @@ class Plotter(object):
             spa = speed_a * self.base_speed
             spb = -speed_b * self.base_speed * self.MOTOR_RATIO
             logging.info("Motor speeds: %.3f / %.3f", spa, spb)
-            self.both.constant(spa, spb)
+            self.both.start_speed(spa, spb)
             time.sleep(dur)
 
     def spiral(self, rounds, growth):
@@ -215,7 +215,7 @@ class Plotter(object):
         for speed_a, speed_b, dur in speeds:
             spa = speed_a * self.base_speed
             spb = -speed_b * self.base_speed * self.MOTOR_RATIO
-            self.both.constant(spa, spb)
+            self.both.start_speed(spa, spb)
             logging.info("Motor speeds: %.3f / %.3f", spa, spb)
             time.sleep(dur)
 

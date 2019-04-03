@@ -165,8 +165,8 @@ class FaceTracker(MoveHub):
         if abs(vert) < 0.15:
             vert = 0
 
-        self.motor_external.constant(horz)
-        self.motor_A.constant(-vert)
+        self.motor_external.start_speed(horz)
+        self.motor_A.start_speed(-vert)
 
     def main(self):
         thr = Thread(target=self.capture)
