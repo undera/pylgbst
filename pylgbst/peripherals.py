@@ -444,8 +444,8 @@ class Current(Peripheral):
     def subscribe(self, callback, mode=MODE1, granularity=1):
         super(Current, self).subscribe(callback, mode, granularity)
 
-    def handle_port_data(self, data):
-        val = ushort(data, 4)
+    def handle_port_data(self, msg):
+        val = ushort(msg.payload, 0)
         self.last_value = val / 4096.0
         self._notify_subscribers(self.last_value)
 

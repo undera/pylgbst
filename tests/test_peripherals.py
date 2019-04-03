@@ -2,7 +2,7 @@ import time
 import unittest
 
 from pylgbst.hub import MoveHub, Hub
-from pylgbst.peripherals import LED, TiltSensor, COLORS, COLOR_RED, Button
+from pylgbst.peripherals import LED, TiltSensor, COLORS, COLOR_RED, Button, Current, Voltage
 from tests import log, HubMock, ConnectionMock
 
 
@@ -42,10 +42,54 @@ class PeripheralsTest(unittest.TestCase):
         self.assertEqual("0800813211510009", hub.writes[1][1])
 
     def test_current(self):
-        pass  # TODO
+        hub = HubMock()
+        time.sleep(0.1)
+        current = Current(hub, MoveHub.PORT_CURRENT)
+        hub.peripherals[MoveHub.PORT_CURRENT] = current
+
+        vals = []
+
+        def callback(val):
+            vals.append(val)
+
+        hub.connection.notification_delayed("0a00473b000100000001", 0.1)
+        current.subscribe(callback)
+
+        hub.connection.notification_delayed("0600453ba400", 0.1)
+        time.sleep(0.2)
+
+        hub.connection.notification_delayed("0a00473b000000000000", 0.1)
+        current.unsubscribe(callback)
+        hub.connection.wait_notifications_handled()
+
+        self.assertEqual([0.0400390625], vals)
+        self.assertEqual("0a00413b000100000001", hub.writes[1][1])
+        self.assertEqual("0a00413b000000000000", hub.writes[2][1])
 
     def test_voltage(self):
-        pass  # TODO
+        hub = HubMock()
+        time.sleep(0.1)
+        voltage = Voltage(hub, MoveHub.PORT_VOLTAGE)
+        hub.peripherals[MoveHub.PORT_VOLTAGE] = voltage
+
+        vals = []
+
+        def callback(val):
+            vals.append(val)
+
+        hub.connection.notification_delayed("0a00473c000100000001", 0.1)
+        voltage.subscribe(callback)
+
+        hub.connection.notification_delayed("0600453c9907", 0.1)
+        time.sleep(0.2)
+
+        hub.connection.notification_delayed("0a00473c000000000000", 0.1)
+        voltage.unsubscribe(callback)
+        hub.connection.wait_notifications_handled()
+
+        self.assertEqual([0.474853515625], vals)
+        self.assertEqual("0a00413c000100000001", hub.writes[1][1])
+        self.assertEqual("0a00413c000000000000", hub.writes[2][1])
 
     def test_tilt_sensor(self):
         hub = HubMock()

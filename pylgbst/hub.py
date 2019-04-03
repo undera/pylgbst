@@ -1,12 +1,8 @@
-import logging
 import time
 
 from pylgbst import get_connection_auto
-from pylgbst.messages import DownstreamMsg, UPSTREAM_MSGS, MsgHubAttachedIO, MsgPortOutputFeedback, MsgPortValueSingle, \
-    MsgPortValueCombined, MsgGenericError, MsgHubProperties, MsgHubAlert, MsgHubAction, MsgPortInputFmtSingle, \
-    MsgPortInputFmtCombined
-from pylgbst.peripherals import Button, EncodedMotor, ColorDistanceSensor, LED, TiltSensor, Voltage, Peripheral, \
-    Current, Motor
+from pylgbst.messages import *
+from pylgbst.peripherals import *
 from pylgbst.utilities import str2hex, usbyte, ushort
 
 log = logging.getLogger('hub')
@@ -161,7 +157,6 @@ class Hub(object):
             hw_revision = reversed([usbyte(msg.payload, x) for x in range(2, 6)])
             sw_revision = reversed([usbyte(msg.payload, x) for x in range(6, 10)])
         elif msg.event == msg.EVENT_ATTACHED_VIRTUAL:
-            # TODO: what to do with this info? pass to device?
             self.peripherals[port].virtual_ports = (usbyte(msg.payload, 2), usbyte(msg.payload, 3))
 
     def _handle_sensor_data(self, msg):
@@ -185,7 +180,7 @@ class MoveHub(Hub):
     :type led: LED
     :type tilt_sensor: TiltSensor
     :type button: Button
-    :type amperage: Current
+    :type current: Current
     :type voltage: Voltage
     :type color_distance_sensor: pylgbst.peripherals.ColorDistanceSensor
     :type port_C: Peripheral
@@ -204,7 +199,7 @@ class MoveHub(Hub):
     PORT_B = 0x38
     PORT_AB = 0x39
     PORT_TILT_SENSOR = 0x3A
-    PORT_AMPERAGE = 0x3B
+    PORT_CURRENT = 0x3B
     PORT_VOLTAGE = 0x3C
 
     PORTS = {
@@ -215,7 +210,7 @@ class MoveHub(Hub):
         PORT_D: "D",
         PORT_LED: "LED",
         PORT_TILT_SENSOR: "TILT_SENSOR",
-        PORT_AMPERAGE: "AMPERAGE",
+        PORT_CURRENT: "AMPERAGE",
         PORT_VOLTAGE: "VOLTAGE",
     }
 
@@ -227,7 +222,7 @@ class MoveHub(Hub):
         # shorthand fields
         self.button = Button(self)
         self.led = None
-        self.amperage = None
+        self.current = None
         self.voltage = None
         self.motor_A = None
         self.motor_B = None
@@ -244,7 +239,7 @@ class MoveHub(Hub):
     def _wait_for_devices(self, get_dev_set=None):
         if not get_dev_set:
             get_dev_set = lambda: (self.motor_A, self.motor_B, self.motor_AB, self.led, self.tilt_sensor,
-                                   self.amperage, self.voltage)
+                                   self.current, self.voltage)
         for num in range(0, 60):
             devices = get_dev_set()
             if all(devices):
@@ -288,8 +283,8 @@ class MoveHub(Hub):
                 self.led = self.peripherals[port]
             elif port == self.PORT_TILT_SENSOR:
                 self.tilt_sensor = self.peripherals[port]
-            elif port == self.PORT_AMPERAGE:
-                self.amperage = self.peripherals[port]
+            elif port == self.PORT_CURRENT:
+                self.current = self.peripherals[port]
             elif port == self.PORT_VOLTAGE:
                 self.voltage = self.peripherals[port]
 
