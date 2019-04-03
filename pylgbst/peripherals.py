@@ -250,16 +250,17 @@ class EncodedMotor(Motor):
     SENSOR_SPEED = 0x01
     SENSOR_ANGLE = 0x02
 
-    def handle_port_data(self, data):
+    def handle_port_data(self, msg):
+        data = msg.payload
         if self._port_subscription_mode == self.SENSOR_ANGLE:
-            rotation = unpack("<l", data[4:8])[0]
+            rotation = unpack("<l", data[0:4])[0]
             self._notify_subscribers(rotation)
         elif self._port_subscription_mode == self.SENSOR_SOMETHING1:
             # TODO: understand what it means
-            rotation = usbyte(data, 4)
+            rotation = usbyte(data, 0)
             self._notify_subscribers(rotation)
         elif self._port_subscription_mode == self.SENSOR_SPEED:
-            rotation = unpack("<b", data[4])[0]
+            rotation = unpack("<b", data[0])[0]
             self._notify_subscribers(rotation)
         else:
             log.debug("Got motor sensor data while in unexpected mode: %s", self._port_subscription_mode)
