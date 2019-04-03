@@ -72,6 +72,13 @@ class GeneralTest(unittest.TestCase):
         hub.send(MsgHubAlert(MsgHubAlert.LOW_SIGNAL, MsgHubAlert.UPD_REQUEST))
         conn.wait_notifications_handled()
 
+    def test_error(self):
+        conn = ConnectionMock().connect()
+        hub = Hub(conn)
+        conn.notification_delayed("0500056105", 0.1)
+        time.sleep(0.2)
+        conn.wait_notifications_handled()
+
     def test_disconnect_off(self):
         conn = ConnectionMock().connect()
         hub = Hub(conn)
