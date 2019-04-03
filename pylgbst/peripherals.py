@@ -226,7 +226,21 @@ class Motor(Peripheral):
     def stop(self):
         self.constant(0)
 
-    def timed(self, seconds, speed_primary=1, speed_secondary=None):
+    def hold_speed(self, speed_primary=1.0, speed_secondary=None, max_power=1.0, use_profile=0b00):
+        """
+        https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startspeed-speed-maxpower-useprofile-0x07
+        """
+        if speed_secondary is None:
+            speed_secondary = speed_primary
+
+        params = b""
+        params += pack("<b", self._speed_abs(speed_primary))
+        if self.virtual_ports:
+            params += pack("<b", self._speed_abs(speed_secondary))
+
+        self._write_direct_mode(self.SUBCMD_START_POWER, params)
+
+    def timed(self, seconds, speed_primary=1.0, speed_secondary=None):
         if speed_secondary is None:
             speed_secondary = speed_primary
 

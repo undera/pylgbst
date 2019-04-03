@@ -130,8 +130,15 @@ class PeripheralsTest(unittest.TestCase):
         motor = EncodedMotor(hub, MoveHub.PORT_C)
         hub.peripherals[MoveHub.PORT_C] = motor
 
-        motor.timed(1.5)
-        motor.angled(90)
+        hub.connection.notification_delayed('050082010a', 0.1)
+        motor.constant(0.25)
+        self.assertEqual("0800810111510119", hub.writes[1][1])
+
+        hub.connection.notification_delayed('050082010a', 0.1)
+        motor.stop()
+        self.assertEqual("0800810111510100", hub.writes[2][1])
+
+        hub.connection.wait_notifications_handled()
 
     def test_motor_sensor(self):
         hub = HubMock()
