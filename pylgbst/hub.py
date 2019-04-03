@@ -3,7 +3,7 @@ import time
 
 from pylgbst import get_connection_auto
 from pylgbst.messages import DownstreamMsg, UPSTREAM_MSGS, MsgHubAttachedIO, MsgPortOutputFeedback, MsgPortValueSingle, \
-    MsgPortValueCombined, MsgGenericError, MsgHubProperties, MsgHubAlert
+    MsgPortValueCombined, MsgGenericError, MsgHubProperties, MsgHubAlert, MsgHubAction
 from pylgbst.peripherals import Button, EncodedMotor, ColorDistanceSensor, LED, TiltSensor, Voltage, Peripheral, \
     Current, Motor
 from pylgbst.utilities import str2hex, usbyte, ushort
@@ -20,8 +20,15 @@ class Hub(object):
     HUB_HARDWARE_HANDLE = 0x0E
 
     def __init__(self, connection=None):
+        self._msg_handlers = []
         self.peripherals = {}
         self._sent_msg = DownstreamMsg()
+
+        self.add_message_handler(MsgHubAttachedIO, self._handle_device_change)
+        self.add_message_handler(MsgPortOutputFeedback, self._handle_port_output)
+        self.add_message_handler(MsgPortValueSingle, self._handle_sensor_data)
+        self.add_message_handler(MsgPortValueCombined, self._handle_sensor_data)
+        self.add_message_handler(MsgGenericError, self._handle_error)
 
         if not connection:
             connection = get_connection_auto()
@@ -51,10 +58,10 @@ class Hub(object):
 
     def _wait_for_reply(self, msg):
         start = time.time()
-        while isinstance(self._sent_msg, DownstreamMsg) and self._sent_msg.needs_reply:
+        while isinstance(self._sent_msg, DownstreamMsg) and self._sent_msg.needs_reply and self.connection.is_alive():
             spent = time.time() - start
             if spent > 10.0:
-                log.debug("Waiting %.2f for pair message to answer %r", spent, msg)
+                log.info("Waiting %.2f for pair message to answer %r", spent, msg)
                 time.sleep(1.0)
             elif spent > 1.0:
                 log.debug("Waiting %.2f for pair message to answer %r", spent, msg)
@@ -64,22 +71,23 @@ class Hub(object):
                 time.sleep(0.01)
 
     def _notify(self, handle, data):
-        orig = data
+        log.debug("Notification on %s: %s", handle, str2hex(data))
 
-        if handle != self.HUB_HARDWARE_HANDLE:
-            log.warning("Unsupported notification handle: 0x%s", handle)
-            return
-
-        log.debug("Notification on %s: %s", handle, str2hex(orig))
-
-        msg = self._get_upstream_msg(data)
+        msg = self._get_upstream_msg(data)  # block in case there is pending outgoing msg
         if self._sent_msg.is_reply(msg):
             log.debug("Found matching upstream msg: %r", msg)
             self._sent_msg = msg  # FIXME: weird piggyback of UpstreamMsg via field of DownstreamMsg
         elif type(self._sent_msg) != DownstreamMsg:
             log.debug("Upstream msg is not reply we need: %r", msg)
 
-        self._handle_message(msg)
+        found = False
+        for msg_class, handler in self._msg_handlers:
+            if isinstance(msg, msg_class):
+                found = True
+                handler(msg)
+
+        if not found:
+            log.debug("Did not find handler for message: %r", msg)
 
     def _get_upstream_msg(self, data):
         msg_type = usbyte(data, 2)
@@ -92,29 +100,11 @@ class Hub(object):
         assert msg
         return msg
 
-    def _handle_message(self, msg):
-        if type(msg) == MsgHubAttachedIO:
-            self._handle_device_change(msg)
-        elif type(msg) == MsgPortOutputFeedback:
-            self.peripherals[msg.port].notify_feedback(msg)
-        elif type(msg) in (MsgPortValueSingle, MsgPortValueCombined):
-            self._handle_sensor_data(msg)
-        elif type(msg) == MsgGenericError:
-            log.warning("Command error: %s", msg.message())
-        else:
-            log.warning("Unhandled message: %r", msg)
+    def _handle_error(self, msg):
+        log.warning("Command error: %s", msg.message())
 
-        pass
-        """
-        elif msg_type == MSG_SENSOR_SUBSCRIBE_ACK:
-            port = usbyte(data, 3)
-            log.debug("Sensor subscribe ack on port %s", PORTS[port])
-            self.devices[port].finished()
-        elif msg_type == MSG_DEVICE_INFO:
-            self._handle_device_info(data)
-        else:
-            log.warning("Unhandled msg type 0x%x: %s", msg_type, str2hex(orig))
-        """
+    def _handle_port_output(self, msg):
+        self.peripherals[msg.port].notify_feedback(msg)
 
     def _handle_device_change(self, msg):
         if msg.event == MsgHubAttachedIO.EVENT_DETACHED:
@@ -140,8 +130,9 @@ class Hub(object):
             self.peripherals[port] = Current(self, port)
         elif dev_type == msg.DEV_VOLTAGE:
             self.peripherals[port] = Voltage(self, port)
-        # TODO: support more types of peripherals
         else:
+            # TODO: support more types of peripherals from
+            # https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#io-type-id
             log.warning("Unhandled peripheral type 0x%x on port 0x%x", dev_type, port)
             self.peripherals[port] = Peripheral(self, port)
 
@@ -169,6 +160,9 @@ class Hub(object):
 
     def switch_off(self):
         self.send(MsgHubAction(MsgHubAction.SWITCH_OFF))
+
+    def add_message_handler(self, classname, callable):
+        self._msg_handlers.append((classname, callable))
 
 
 class MoveHub(Hub):
@@ -229,23 +223,23 @@ class MoveHub(Hub):
         self.port_C = None
         self.port_D = None
 
-    def wait_for_devices(self):
-        required_devices = ()
+    def wait_for_devices(self, get_dev_set=None):
+        if not get_dev_set:
+            get_dev_set = lambda: (self.motor_A, self.motor_B, self.motor_AB, self.led, self.tilt_sensor,
+                                   self.amperage, self.voltage)
         for num in range(0, 60):
-            required_devices = (self.motor_A, self.motor_B, self.motor_AB,
-                                self.led, self.tilt_sensor,
-                                self.amperage, self.voltage)
-            if all(required_devices):
-                log.debug("All devices are present: %s", required_devices)
+            devices = get_dev_set()
+            if all(devices):
+                log.debug("All devices are present: %s", devices)
                 return
-            log.debug("Waiting for builtin devices to appear: %s", required_devices)
+            log.debug("Waiting for builtin devices to appear: %s", devices)
             time.sleep(0.1)
-        log.warning("Got only these devices: %s", required_devices)
+        log.warning("Got only these devices: %s", get_dev_set())
 
     # noinspection PyTypeChecker
-    def _handle_message(self, msg):
-        super(MoveHub, self)._handle_message(msg)
-        if type(msg) == MsgHubAttachedIO:
+    def _handle_device_change(self, msg):
+        super(MoveHub, self)._handle_device_change(msg)
+        if isinstance(msg, MsgHubAttachedIO) and msg.event != MsgHubAttachedIO.EVENT_DETACHED:
             port = msg.port
             if port == self.PORT_A:
                 self.motor_A = self.peripherals[port]

@@ -1,3 +1,4 @@
+import time
 import unittest
 
 from pylgbst.hub import Hub
@@ -38,6 +39,7 @@ class GeneralTest(unittest.TestCase):
         conn.notifications.append('0f00043b0115000200000002000000')
         conn.notifications.append('0f00043c0114000200000002000000')
         conn.notifications.append('0f0004010126000000001000000010')
+        del hub
         conn.wait_notifications_handled()
 
     def test_hub_actions(self):
@@ -54,8 +56,21 @@ class GeneralTest(unittest.TestCase):
     def test_hub_alerts(self):
         conn = ConnectionMock().connect()
         hub = Hub(conn)
-        conn.notification_delayed('0600 03 0104ff', 1)
+        conn.notification_delayed('0600 03 0104ff', 0.1)
         hub.send(MsgHubAlert(MsgHubAlert.LOW_VOLTAGE, MsgHubAlert.UPD_REQUEST))
-        conn.notification_delayed('0600 03 030400', 1)
+        conn.notification_delayed('0600 03 030400', 0.1)
         hub.send(MsgHubAlert(MsgHubAlert.LOW_SIGNAL, MsgHubAlert.UPD_REQUEST))
         conn.wait_notifications_handled()
+
+    def test_disconnect_off(self):
+        conn = ConnectionMock().connect()
+        hub = Hub(conn)
+        conn.notification_delayed("04000231", 0.1)
+        hub.disconnect()
+        self.assertEqual("04000202", conn.writes[1][1])
+
+        conn = ConnectionMock().connect()
+        hub = Hub(conn)
+        conn.notification_delayed("04000230", 0.1)
+        hub.switch_off()
+        self.assertEqual("04000201", conn.writes[1][1])
