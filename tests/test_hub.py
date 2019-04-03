@@ -3,8 +3,9 @@ import unittest
 
 from pylgbst.hub import Hub
 from pylgbst.messages import MsgHubAction, MsgHubAlert, MsgHubProperties
+from pylgbst.peripherals import ColorDistanceSensor
 from pylgbst.utilities import usbyte
-from tests import ConnectionMock
+from tests import ConnectionMock, log
 
 
 class GeneralTest(unittest.TestCase):
@@ -30,6 +31,8 @@ class GeneralTest(unittest.TestCase):
     def test_device_attached(self):
         conn = ConnectionMock().connect()
         hub = Hub(conn)
+
+        # regular startup attaches
         conn.notifications.append('0f0004020125000000001000000010')
         conn.notifications.append('0f0004370127000000001000000010')
         conn.notifications.append('0f0004380127000000001000000010')
@@ -39,6 +42,13 @@ class GeneralTest(unittest.TestCase):
         conn.notifications.append('0f00043b0115000200000002000000')
         conn.notifications.append('0f00043c0114000200000002000000')
         conn.notifications.append('0f0004010126000000001000000010')
+
+        # detach and reattach
+        conn.notifications.append('0500040100')
+        conn.notifications.append('0500040200')
+        conn.notifications.append('0f0004010126000000001000000010')
+        conn.notifications.append('0f0004020125000000001000000010')
+
         del hub
         conn.wait_notifications_handled()
 
@@ -74,3 +84,26 @@ class GeneralTest(unittest.TestCase):
         conn.notification_delayed("04000230", 0.1)
         hub.switch_off()
         self.assertEqual("04000201", conn.writes[1][1])
+
+    def test_sensor(self):
+        conn = ConnectionMock().connect()
+        conn.notifications.append("0f0004020125000000001000000010")  # add dev
+        hub = Hub(conn)
+        time.sleep(0.1)
+        dev = hub.peripherals[0x02]
+        assert isinstance(dev, ColorDistanceSensor)
+        vals = []
+        cb = lambda x, y=None: vals.append((x, y))
+
+        conn.notification_delayed("0a004702080100000001", 0.1)  # subscribe ack
+        dev.subscribe(cb, granularity=1)
+
+        conn.notification_delayed("08004502ff0aff00", 0.1)  # value for sensor
+        time.sleep(0.2)
+
+        conn.notification_delayed("0a004702080000000000", 0.3)  # unsubscribe ack
+        dev.unsubscribe(cb)
+
+        self.assertEqual([(255, 10.0)], vals)
+        self.assertEqual("0a004102080100000001", conn.writes[1][1])
+        self.assertEqual("0a004102080000000000", conn.writes[2][1])

@@ -70,7 +70,7 @@ class ConnectionMock(Connection):
         return self
 
     def is_alive(self):
-        return not self.finished
+        return not self.finished and self.thr.is_alive()
 
     def notification_delayed(self, payload, pause):
         def inject():

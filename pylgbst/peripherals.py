@@ -4,7 +4,7 @@ import traceback
 from struct import pack, unpack
 from threading import Thread
 
-from pylgbst.messages import MsgHubProperties, MsgPortOutput, MsgPortInputFmtSetupSingle
+from pylgbst.messages import MsgHubProperties, MsgPortOutput, MsgPortInputFmtSetupSingle, MsgPortInfoRequest
 from pylgbst.utilities import queue, str2hex, usbyte, ushort
 
 log = logging.getLogger('peripherals')
@@ -65,7 +65,10 @@ class Peripheral(object):
         thr.start()
 
     def __repr__(self):
-        return "%s on port 0x%x" % (self.__class__.__name__, self.port)
+        msg = "%s on port 0x%x" % (self.__class__.__name__, self.port)
+        if self.virtual_ports:
+            msg += " (ports 0x%x and 0x%x combined)" % (self.virtual_ports[0], self.virtual_ports[1])
+        return msg
 
     def _port_subscribe(self, mode, granularity, enable):
         msg = MsgPortInputFmtSetupSingle(self.port, mode, granularity, enable)  # TODO: combined mode?
@@ -76,7 +79,13 @@ class Peripheral(object):
         msg.do_buffer = self.do_buffer
         self.hub.send(msg)
 
+    def __get_sensor_data(self):  # TODO: implement single sensor request
+        msg = MsgPortInfoRequest(self.port, MsgPortInfoRequest.INFO_PORT_VALUE)
+        return self.hub.send(msg)
+
     def subscribe(self, callback, mode, granularity=1):
+        if self._port_subscription_mode and mode != self._port_subscription_mode:
+            raise ValueError("Port is in active mode %s, unsubscribe first" % self._port_subscription_mode)
         self._port_subscription_mode = mode
         self._port_subscribe(self._port_subscription_mode, granularity, True)
         if callback:
@@ -95,16 +104,20 @@ class Peripheral(object):
     def _notify_subscribers(self, *args, **kwargs):
         for subscriber in self._subscribers:
             subscriber(*args, **kwargs)
+        return args
 
-    def queue_port_data(self, data):
+    def queue_port_data(self, msg):
         try:
-            self._incoming_port_data.put_nowait(data)
+            self._incoming_port_data.put_nowait(msg)
         except queue.Full:
-            log.debug("Dropped port data: %s", data)
+            log.debug("Dropped port data: %r", msg)
 
-    def handle_port_data(self, data):
-        log.warning("Unhandled device notification for %s: %s", self, str2hex(data[4:]))
-        self._notify_subscribers(data[4:])
+    def handle_port_data(self, msg):
+        """
+        :type msg: pylgbst.messages.MsgPortValueSingle
+        """
+        log.warning("Unhandled device notification for %s: %r", self, str2hex(msg))
+        self._notify_subscribers(msg)
 
     def _queue_reader(self):
         while True:

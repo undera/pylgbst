@@ -3,7 +3,8 @@ import time
 
 from pylgbst import get_connection_auto
 from pylgbst.messages import DownstreamMsg, UPSTREAM_MSGS, MsgHubAttachedIO, MsgPortOutputFeedback, MsgPortValueSingle, \
-    MsgPortValueCombined, MsgGenericError, MsgHubProperties, MsgHubAlert, MsgHubAction
+    MsgPortValueCombined, MsgGenericError, MsgHubProperties, MsgHubAlert, MsgHubAction, MsgPortInputFmtSingle, \
+    MsgPortInputFmtCombined
 from pylgbst.peripherals import Button, EncodedMotor, ColorDistanceSensor, LED, TiltSensor, Voltage, Peripheral, \
     Current, Motor
 from pylgbst.utilities import str2hex, usbyte, ushort
@@ -26,6 +27,8 @@ class Hub(object):
 
         self.add_message_handler(MsgHubAttachedIO, self._handle_device_change)
         self.add_message_handler(MsgPortOutputFeedback, self._handle_port_output)
+        self.add_message_handler(MsgPortInputFmtSingle, self._handle_port_output)
+        self.add_message_handler(MsgPortInputFmtCombined, self._handle_port_output)
         self.add_message_handler(MsgPortValueSingle, self._handle_sensor_data)
         self.add_message_handler(MsgPortValueCombined, self._handle_sensor_data)
         self.add_message_handler(MsgGenericError, self._handle_error)
@@ -41,8 +44,8 @@ class Hub(object):
         if self.connection and self.connection.is_alive():
             self.connection.disconnect()
 
-    def add_message_handler(self, classname, callable):
-        self._msg_handlers.append((classname, callable))
+    def add_message_handler(self, classname, callback):
+        self._msg_handlers.append((classname, callback))
 
     def send(self, msg):
         """
@@ -78,7 +81,7 @@ class Hub(object):
         log.debug("Notification on %s: %s", handle, str2hex(data))
 
         msg = self._get_upstream_msg(data)  # block in case there is pending outgoing msg
-        if self._sent_msg.is_reply(msg):
+        if isinstance(self._sent_msg, DownstreamMsg) and self._sent_msg.is_reply(msg):
             log.debug("Found matching upstream msg: %r", msg)
             self._sent_msg = msg  # FIXME: weird piggyback of UpstreamMsg via field of DownstreamMsg
         elif type(self._sent_msg) != DownstreamMsg:
