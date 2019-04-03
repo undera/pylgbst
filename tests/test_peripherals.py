@@ -41,6 +41,12 @@ class PeripheralsTest(unittest.TestCase):
         hub.led.set_color_index(COLOR_RED)
         self.assertEqual("0800813211510009", hub.writes[1][1])
 
+    def test_current(self):
+        pass  # TODO
+
+    def test_voltage(self):
+        pass  # TODO
+
     def test_tilt_sensor(self):
         hub = HubMock()
         hub.notify_mock.append('0f00 04 3a 0128000000000100000001')
@@ -86,6 +92,9 @@ class PeripheralsTest(unittest.TestCase):
         conn.notifications.append('050082390a')
         hub.motor_AB.angled(90)
         self.assertEqual("0f018139110c5a0000006464647f03", conn.writes[1][1])
+
+    def test_motor_sensor(self):
+        pass  # TODO
 
     def test_color_sensor(self):
         hub = HubMock()

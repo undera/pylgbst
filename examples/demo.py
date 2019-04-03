@@ -4,8 +4,8 @@ from time import sleep
 
 from pylgbst import *
 from pylgbst.comms import DebugServerConnection
-from pylgbst.hub import MoveHub, COLORS, COLOR_BLACK
-from pylgbst.peripherals import EncodedMotor, TiltSensor, Current, Voltage
+from pylgbst.hub import MoveHub
+from pylgbst.peripherals import EncodedMotor, TiltSensor, Current, Voltage, COLORS, COLOR_BLACK
 
 log = logging.getLogger("demo")
 
@@ -185,14 +185,8 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
     try:
-        connection = DebugServerConnection()
-    except BaseException:
-        logging.debug("Failed to use debug server: %s", traceback.format_exc())
-        connection = get_connection_auto()
-
-    try:
-        hub = MoveHub(connection)
+        hub = MoveHub()
         sleep(1)
         # demo_all(hub)
     finally:
-        connection.disconnect()
+        hub.disconnect()

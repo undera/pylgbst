@@ -1,14 +1,9 @@
 # coding=utf-8
 import logging
 import time
-import traceback
-
-import six
 
 from examples.plotter import Plotter
-from pylgbst import get_connection_auto
-from pylgbst.comms import DebugServerConnection
-from pylgbst.hub import EncodedMotor, PORT_AB, PORT_C, PORT_A, PORT_B, MoveHub
+from pylgbst.hub import EncodedMotor, MoveHub
 from tests import HubMock
 
 
@@ -182,16 +177,15 @@ def angles_experiment():
 
 
 class MotorMock(EncodedMotor):
-    def _wait_sync(self, is_async):
-        super(MotorMock, self)._wait_sync(True)
+    pass
 
 
 def get_hub_mock():
     hub = HubMock()
-    hub.motor_A = MotorMock(hub, PORT_A)
-    hub.motor_B = MotorMock(hub, PORT_B)
-    hub.motor_AB = MotorMock(hub, PORT_AB)
-    hub.motor_external = MotorMock(hub, PORT_C)
+    hub.motor_A = MotorMock(hub, MoveHub.PORT_A)
+    hub.motor_B = MotorMock(hub, MoveHub.PORT_B)
+    hub.motor_AB = MotorMock(hub, MoveHub.PORT_AB)
+    hub.motor_external = MotorMock(hub, MoveHub.PORT_C)
     return hub
 
 
@@ -220,13 +214,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     logging.getLogger('').setLevel(logging.DEBUG)
 
-    try:
-        conn = DebugServerConnection()
-    except BaseException:
-        logging.warning("Failed to use debug server: %s", traceback.format_exc())
-        conn = get_connection_auto()
-
-    hub = MoveHub(conn) if 1 else get_hub_mock()
+    hub = MoveHub() if 1 else get_hub_mock()
 
     plotter = Plotter(hub, 0.75)
     FIELD_WIDTH = 0.9

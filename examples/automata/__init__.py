@@ -1,9 +1,8 @@
 import time
 from collections import Counter
 
-from pylgbst.constants import COLOR_NONE, COLOR_BLACK, COLOR_CYAN, COLOR_BLUE
 from pylgbst.hub import MoveHub
-from pylgbst.peripherals import ColorDistanceSensor
+from pylgbst.peripherals import ColorDistanceSensor, COLOR_NONE, COLOR_BLACK, COLOR_CYAN, COLOR_BLUE
 
 
 class Automata(object):

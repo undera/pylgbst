@@ -1,10 +1,7 @@
 import logging
-import traceback
 
-from pylgbst import get_connection_auto
-from pylgbst.comms import DebugServerConnection
-from pylgbst.constants import COLORS, COLOR_YELLOW, COLOR_BLUE, COLOR_CYAN, COLOR_RED, COLOR_BLACK
 from pylgbst.hub import MoveHub
+from pylgbst.peripherals import COLOR_YELLOW, COLOR_BLUE, COLOR_CYAN, COLOR_RED, COLOR_BLACK, COLORS
 
 
 class ColorSorter(MoveHub):
@@ -51,9 +48,8 @@ class ColorSorter(MoveHub):
 
     def clear(self):
         self.color_distance_sensor.unsubscribe(self.on_color)
-        if not self.motor_B.in_progress():
-            self.move_to_bucket(COLOR_BLACK)
-        self.motor_AB.stop(is_async=True)
+        self.move_to_bucket(COLOR_BLACK)
+        self.motor_AB.stop()
 
     def tick(self):
         res = False
@@ -80,13 +76,7 @@ class ColorSorter(MoveHub):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
-    try:
-        conn = DebugServerConnection()
-    except BaseException:
-        logging.warning("Failed to use debug server: %s", traceback.format_exc())
-        conn = get_connection_auto()
-
-    sorter = ColorSorter(conn)
+    sorter = ColorSorter()
     empty = 0
     try:
         while True:

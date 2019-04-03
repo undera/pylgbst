@@ -2,8 +2,7 @@ import logging
 import math
 import time
 
-from pylgbst.constants import COLOR_RED, COLOR_CYAN, COLORS
-from pylgbst.peripherals import ColorDistanceSensor
+from pylgbst.peripherals import ColorDistanceSensor, COLOR_RED, COLOR_CYAN, COLORS
 
 
 class Plotter(object):
@@ -84,7 +83,7 @@ class Plotter(object):
     def finalize(self):
         if self.is_tool_down:
             self._tool_up()
-        self.both.stop(is_async=True)
+        self.both.stop()
 
     def _tool_down(self):
         self.is_tool_down = True
