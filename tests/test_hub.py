@@ -1,14 +1,14 @@
 import time
 import unittest
 
-from pylgbst.hub import Hub
+from pylgbst.hub import Hub, MoveHub
 from pylgbst.messages import MsgHubAction, MsgHubAlert, MsgHubProperties
 from pylgbst.peripherals import ColorDistanceSensor
 from pylgbst.utilities import usbyte
 from tests import ConnectionMock, log
 
 
-class GeneralTest(unittest.TestCase):
+class HubTest(unittest.TestCase):
     def test_hub_properties(self):
         conn = ConnectionMock().connect()
         hub = Hub(conn)
@@ -33,15 +33,8 @@ class GeneralTest(unittest.TestCase):
         hub = Hub(conn)
 
         # regular startup attaches
-        conn.notifications.append('0f0004020125000000001000000010')
-        conn.notifications.append('0f0004370127000000001000000010')
-        conn.notifications.append('0f0004380127000000001000000010')
-        conn.notifications.append('090004390227003738')
-        conn.notifications.append('0f0004320117000000001000000010')
-        conn.notifications.append('0f00043a0128000000001000000002')
-        conn.notifications.append('0f00043b0115000200000002000000')
-        conn.notifications.append('0f00043c0114000200000002000000')
         conn.notifications.append('0f0004010126000000001000000010')
+        conn.notifications.append('0f0004020125000000001000000010')
 
         # detach and reattach
         conn.notifications.append('0500040100')
@@ -55,12 +48,15 @@ class GeneralTest(unittest.TestCase):
     def test_hub_actions(self):
         conn = ConnectionMock().connect()
         hub = Hub(conn)
+        conn.notification_delayed('04000230', 0.1)
         hub.send(MsgHubAction(MsgHubAction.UPSTREAM_SHUTDOWN))
-        hub.send(MsgHubAction(MsgHubAction.UPSTREAM_SHUTDOWN))
-        hub.send(MsgHubAction(MsgHubAction.UPSTREAM_SHUTDOWN))
-        conn.notifications.append('04000230')
-        conn.notifications.append('04000231')
-        conn.notifications.append('04000232')
+
+        conn.notification_delayed('04000231', 0.1)
+        hub.send(MsgHubAction(MsgHubAction.UPSTREAM_DISCONNECT))
+
+        conn.notification_delayed('04000232', 0.1)
+        hub.send(MsgHubAction(MsgHubAction.UPSTREAM_BOOT_MODE))
+        time.sleep(0.1)
         conn.wait_notifications_handled()
 
     def test_hub_alerts(self):
@@ -114,3 +110,31 @@ class GeneralTest(unittest.TestCase):
         self.assertEqual([(255, 10.0)], vals)
         self.assertEqual("0a004102080100000001", conn.writes[1][1])
         self.assertEqual("0a004102080000000000", conn.writes[2][1])
+
+
+class MoveHubTest(unittest.TestCase):
+    def test_capabilities(self):
+        conn = ConnectionMock()
+        conn.notifications.append('0f00 04 01 0125000000001000000010')
+        conn.notifications.append('0f00 04 02 0126000000001000000010')
+        conn.notifications.append('0f00 04 37 0127000100000001000000')
+        conn.notifications.append('0f00 04 38 0127000100000001000000')
+        conn.notifications.append('0900 04 39 0227003738')
+        conn.notifications.append('0f00 04 32 0117000100000001000000')
+        conn.notifications.append('0f00 04 3a 0128000000000100000001')
+        conn.notifications.append('0f00 04 3b 0115000200000002000000')
+        conn.notifications.append('0f00 04 3c 0114000200000002000000')
+        hub = MoveHub(conn.connect())
+        hub.wait_for_devices()
+
+        conn.notification_delayed('12000101064c45474f204d6f766520487562', 0.1)
+        conn.notification_delayed('0b00010d06001653a0d1d4', 0.2)
+        conn.notification_delayed('060001060600', 0.3)
+        conn.notification_delayed('0600030104ff', 0.4)
+
+        hub.report_status()
+        conn.wait_notifications_handled()
+        self.assertEqual("0500010105", conn.writes[1][1])
+        self.assertEqual("0500010d05", conn.writes[2][1])
+        self.assertEqual("0500010605", conn.writes[3][1])
+        self.assertEqual("0500030103", conn.writes[4][1])
