@@ -2,7 +2,7 @@ import time
 import unittest
 
 from pylgbst.hub import MoveHub, Hub
-from pylgbst.peripherals import LED, TiltSensor, COLORS, COLOR_RED, Button, Current, Voltage
+from pylgbst.peripherals import LED, TiltSensor, COLORS, COLOR_RED, Button, Current, Voltage, ColorDistanceSensor
 from tests import log, HubMock, ConnectionMock
 
 
@@ -142,19 +142,23 @@ class PeripheralsTest(unittest.TestCase):
 
     def test_color_sensor(self):
         hub = HubMock()
-        hub.notify_mock.append('0f00 04 01 0125000000001000000010')
+        cds = ColorDistanceSensor(hub, MoveHub.PORT_C)
+        hub.peripherals[MoveHub.PORT_C] = cds
         time.sleep(1)
 
-        def callback(color, unk1, unk2=None):
-            name = COLORS[color] if color is not None else 'NONE'
-            log.info("Color: %s %s %s", name, unk1, unk2)
+        vals = []
+
+        def callback(*args):
+            vals.append(args)
 
         hub.connection.notification_delayed('0a00 4701090100000001', 0.1)
-        hub.color_distance_sensor.subscribe(callback)
+        cds.subscribe(callback)
 
-        hub.notify_mock.append("08004501ff0aff00")
-        time.sleep(1)
-        # TODO: assert
+        hub.connection.notification_delayed("08004501ff0aff00", 0.1)
+        time.sleep(0.2)
+
         hub.connection.notification_delayed('0a00 4701090100000001', 0.1)
-        hub.color_distance_sensor.unsubscribe(callback)
+        cds.unsubscribe(callback)
         hub.connection.wait_notifications_handled()
+
+        self.assertEqual([(255, 10.0)], vals)

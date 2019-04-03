@@ -133,21 +133,6 @@ class Peripheral(object):
         :type msg: pylgbst.messages.MsgPortOutputFeedback
         """
         return  # FIXME
-        if msg.status == STATUS_STARTED:
-            self.peripherals[port].started()
-        elif status == STATUS_FINISHED:
-            self.peripherals[port].finished()
-        elif status == STATUS_CONFLICT:
-            log.warning("Command conflict on port %s", PORTS[port])
-            self.peripherals[port].finished()
-        elif status == STATUS_INPROGRESS:
-            log.warning("Another command is in progress on port %s", PORTS[port])
-            self.peripherals[port].finished()
-        elif status == STATUS_INTERRUPTED:
-            log.warning("Command interrupted on port %s", PORTS[port])
-            self.peripherals[port].finished()
-        else:
-            log.warning("Unhandled status value: 0x%x on port %s", status, PORTS[port])
 
 
 class LED(Peripheral):
@@ -363,7 +348,7 @@ class ColorDistanceSensor(Peripheral):
     OFF2 = 0x07
     COLOR_DISTANCE_FLOAT = 0x08
     LUMINOSITY = 0x09
-    SOME_20BYTES = 0x0a  # TODO: understand it
+    SOME_20BYTES = 0x0a  # TODO: understand it, now we know some port info discovery commands
 
     def __init__(self, parent, port):
         super(ColorDistanceSensor, self).__init__(parent, port)
