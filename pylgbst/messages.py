@@ -170,15 +170,6 @@ class MsgHubAction(DownstreamMsg, UpstreamMsg):
         msg = super(MsgHubAction, cls).decode(data)
         assert isinstance(msg, MsgHubAction)
         msg.action = msg._byte()
-
-        # TODO: make hub to disconnect if device says so
-        if msg.action == cls.UPSTREAM_SHUTDOWN:
-            log.warning("Device will shut down")
-        elif msg.action == cls.UPSTREAM_DISCONNECT:
-            log.warning("Device disconnects")
-        elif msg.action == cls.UPSTREAM_BOOT_MODE:
-            log.warning("Device goes into boot mode")
-
         return msg
 
 

@@ -29,6 +29,7 @@ class Hub(object):
         self.add_message_handler(MsgPortValueSingle, self._handle_sensor_data)
         self.add_message_handler(MsgPortValueCombined, self._handle_sensor_data)
         self.add_message_handler(MsgGenericError, self._handle_error)
+        self.add_message_handler(MsgHubAction, self._handle_action)
 
         if not connection:
             connection = get_connection_auto()
@@ -39,6 +40,9 @@ class Hub(object):
     def __del__(self):
         if self.connection and self.connection.is_alive():
             self.connection.disconnect()
+
+    def add_message_handler(self, classname, callable):
+        self._msg_handlers.append((classname, callable))
 
     def send(self, msg):
         """
@@ -106,6 +110,17 @@ class Hub(object):
     def _handle_port_output(self, msg):
         self.peripherals[msg.port].notify_feedback(msg)
 
+    def _handle_action(self, msg):
+        """
+        :type msg: MsgHubAction
+        """
+        if msg.action == MsgHubAction.UPSTREAM_DISCONNECT:
+            log.warning("Hub disconnects")
+            self.connection.disconnect()
+        elif msg.action == MsgHubAction.UPSTREAM_SHUTDOWN:
+            log.warning("Hub switches off")
+            self.connection.disconnect()
+
     def _handle_device_change(self, msg):
         if msg.event == MsgHubAttachedIO.EVENT_DETACHED:
             log.debug("Detaching peripheral: %s", self.peripherals[msg.port])
@@ -160,9 +175,6 @@ class Hub(object):
 
     def switch_off(self):
         self.send(MsgHubAction(MsgHubAction.SWITCH_OFF))
-
-    def add_message_handler(self, classname, callable):
-        self._msg_handlers.append((classname, callable))
 
 
 class MoveHub(Hub):

@@ -66,6 +66,7 @@ class ConnectionMock(Connection):
         :rtype: ConnectionMock
         """
         super(ConnectionMock, self).connect(hub_mac)
+        log.debug("Mock connected")
         return self
 
     def is_alive(self):
