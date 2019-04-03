@@ -126,18 +126,12 @@ class PeripheralsTest(unittest.TestCase):
         self.assertEqual([(5,), (9,), (4, -2)], vals)
 
     def test_motor(self):
-        conn = ConnectionMock()
-        conn.notifications.append('0900 04 39 0227003738')
-        hub = HubMock(conn)
-        time.sleep(0.1)
+        hub = HubMock()
+        motor = EncodedMotor(hub, MoveHub.PORT_C)
+        hub.peripherals[MoveHub.PORT_C] = motor
 
-        conn.notifications.append('050082390a')
-        hub.motor_AB.timed(1.5)
-        self.assertEqual("0d018139110adc056464647f03", conn.writes[0][1])
-
-        conn.notifications.append('050082390a')
-        hub.motor_AB.angled(90)
-        self.assertEqual("0f018139110c5a0000006464647f03", conn.writes[1][1])
+        motor.timed(1.5)
+        motor.angled(90)
 
     def test_motor_sensor(self):
         hub = HubMock()

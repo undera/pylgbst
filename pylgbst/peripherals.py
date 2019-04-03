@@ -160,12 +160,6 @@ class LED(Peripheral):
 
 
 class Motor(Peripheral):
-    TRAILER = b'\x64\x7f\x03'  # NOTE: \x64 is 100, might mean something; also trailer might be a sequence terminator
-    # TODO: investigate sequence behavior, seen with zero values passed to angled mode
-    # trailer is not required for all movement types
-    MOVEMENT_TYPE = 0x11
-
-    CONSTANT_SINGLE = 0x01
     CONSTANT_GROUP = 0x02
     SOME_SINGLE = 0x07
     SOME_GROUP = 0x08
@@ -174,7 +168,26 @@ class Motor(Peripheral):
     ANGLED_SINGLE = 0x0B
     ANGLED_GROUP = 0x0C
 
+    SUBCMD_START_POWER = 0x01
+    # SUBCMD_START_POWER = 0x02
+    SUBCMD_SET_ACC_TIME = 0x05
+    SUBCMD_SET_DEC_TIME = 0x06
+    SUBCMD_START_SPEED = 0x07
+    # SUBCMD_START_SPEED = 0x08
+    SUBCMD_START_SPEED_FOR_TIME = 0x09
+    # SUBCMD_START_SPEED_FOR_TIME = 0x0A
+    SUBCMD_START_SPEED_FOR_DEGREES = 0x0B
+    # SUBCMD_START_SPEED_FOR_DEGREES = 0x0C
+    SUBCMD_GOTO_ABSOLUTE_POSITION = 0x0D
+    # SUBCMD_GOTO_ABSOLUTE_POSITIONC = 0x0E
+    SUBCMD_PRESET_ENCODER = 0x14
+
     def _speed_abs(self, relative):
+        if relative is None:
+            # special value for BRAKE
+            # https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startpower-power
+            return 127
+
         if relative < -1:
             log.warning("Speed cannot be less than -1")
             relative = -1
@@ -186,25 +199,32 @@ class Motor(Peripheral):
         absolute = math.ceil(relative * 100)  # scale of 100 is proven by experiments
         return int(absolute)
 
-    def _wrap_and_write(self, mtype, params, speed_primary, speed_secondary):
+    def _write_direct_mode(self, subcmd, params):
         if self.virtual_ports:
-            mtype += 1  # de-facto rule
+            subcmd += 1  # de-facto rule
 
-        abs_primary = self._speed_abs(speed_primary)
-        abs_secondary = self._speed_abs(speed_secondary)
+        params = pack("<B", subcmd) + params
+        msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, params)
+        self._send_to_port(msg)
 
-        if mtype == self.ANGLED_GROUP and (not abs_secondary or not abs_primary):
-            raise ValueError("Cannot have zero speed in double angled mode")  # otherwise it gets nuts
+        # params += self.TRAILER
+        # TRAILER = b'\x64\x7f\x03'  # NOTE: \x64 is 100, might mean something; also trailer might be a sequence terminator
+        # TODO: investigate sequence behavior, seen with zero values passed to angled mode
+        # trailer is not required for all movement types
 
-        params = pack("<B", self.MOVEMENT_TYPE) + pack("<B", mtype) + params
+    def constant(self, speed_primary=1.0, speed_secondary=None):
+        if speed_secondary is None:
+            speed_secondary = speed_primary
 
-        params += pack("<b", abs_primary)
+        params = b""
+        params += pack("<b", self._speed_abs(speed_primary))
         if self.virtual_ports:
-            params += pack("<b", abs_secondary)
+            params += pack("<b", self._speed_abs(speed_secondary))
 
-        params += self.TRAILER
+        self._write_direct_mode(self.SUBCMD_START_POWER, params)
 
-        self._send_to_port(params)
+    def stop(self):
+        self.constant(0)
 
     def timed(self, seconds, speed_primary=1, speed_secondary=None):
         if speed_secondary is None:
@@ -212,9 +232,9 @@ class Motor(Peripheral):
 
         params = pack('<H', int(seconds * 1000))
 
-        self._wrap_and_write(self.TIMED_SINGLE, params, speed_primary, speed_secondary)
+        self._write_direct_mode(self.TIMED_SINGLE, params, speed_primary, speed_secondary)
 
-    def angled(self, angle, speed_primary=1, speed_secondary=None):
+    def angled(self, angle, speed_primary=1.0, speed_secondary=None):
         if speed_secondary is None:
             speed_secondary = speed_primary
 
@@ -226,22 +246,13 @@ class Motor(Peripheral):
 
         params = pack('<I', angle)
 
-        self._wrap_and_write(self.ANGLED_SINGLE, params, speed_primary, speed_secondary)
+        self._write_direct_mode(self.ANGLED_SINGLE, params, speed_primary, speed_secondary)
 
-    def constant(self, speed_primary=1, speed_secondary=None):
+    def __some(self, speed_primary=1.0, speed_secondary=None):
         if speed_secondary is None:
             speed_secondary = speed_primary
 
-        self._wrap_and_write(self.CONSTANT_SINGLE, b"", speed_primary, speed_secondary)
-
-    def __some(self, speed_primary=1, speed_secondary=None):
-        if speed_secondary is None:
-            speed_secondary = speed_primary
-
-        self._wrap_and_write(self.SOME_SINGLE, b"", speed_primary, speed_secondary)
-
-    def stop(self):
-        self.constant(0)
+        self._write_direct_mode(self.SOME_SINGLE, b"", speed_primary, speed_secondary)
 
 
 class EncodedMotor(Motor):
