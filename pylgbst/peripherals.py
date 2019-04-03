@@ -457,6 +457,7 @@ class Button(Peripheral):
 
     def __init__(self, parent):
         super(Button, self).__init__(parent, 0)  # fake port 0
+        self.hub.add_message_handler(MsgHubProperties, self._props_msg)
 
     def subscribe(self, callback, mode=None, granularity=1):
         self.hub.send(MsgHubProperties(MsgHubProperties.BUTTON, MsgHubProperties.UPD_ENABLE))
@@ -471,6 +472,9 @@ class Button(Peripheral):
         if not self._subscribers:
             self.hub.send(MsgHubProperties(MsgHubProperties.BUTTON, MsgHubProperties.UPD_DISABLE))
 
-    def handle_port_data(self, data):
-        param = usbyte(data, 5)
-        self._notify_subscribers(bool(param))
+    def _props_msg(self, msg):
+        """
+        :type msg: MsgHubProperties
+        """
+        if msg.property == MsgHubProperties.BUTTON and msg.operation == MsgHubProperties.UPSTREAM_UPDATE:
+            self._notify_subscribers(bool(usbyte(msg.parameters, 0)))

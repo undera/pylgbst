@@ -5,7 +5,7 @@ from pylgbst.hub import Hub, MoveHub
 from pylgbst.messages import MsgHubAction, MsgHubAlert, MsgHubProperties
 from pylgbst.peripherals import ColorDistanceSensor
 from pylgbst.utilities import usbyte
-from tests import ConnectionMock, log
+from tests import ConnectionMock
 
 
 class HubTest(unittest.TestCase):
@@ -124,15 +124,12 @@ class MoveHubTest(unittest.TestCase):
         conn.notifications.append('0f00 04 3a 0128000000000100000001')
         conn.notifications.append('0f00 04 3b 0115000200000002000000')
         conn.notifications.append('0f00 04 3c 0114000200000002000000')
-        hub = MoveHub(conn.connect())
-        hub.wait_for_devices()
 
         conn.notification_delayed('12000101064c45474f204d6f766520487562', 0.1)
         conn.notification_delayed('0b00010d06001653a0d1d4', 0.2)
         conn.notification_delayed('060001060600', 0.3)
         conn.notification_delayed('0600030104ff', 0.4)
-
-        hub.report_status()
+        MoveHub(conn.connect())
         conn.wait_notifications_handled()
         self.assertEqual("0500010105", conn.writes[1][1])
         self.assertEqual("0500010d05", conn.writes[2][1])

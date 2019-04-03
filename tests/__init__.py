@@ -2,7 +2,7 @@ import time
 from binascii import unhexlify
 
 from pylgbst.comms import Connection
-from pylgbst.hub import MoveHub
+from pylgbst.hub import MoveHub, Hub
 from pylgbst.peripherals import *
 
 logging.basicConfig(level=logging.DEBUG)
@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger('test')
 
 
-class HubMock(MoveHub):
+class HubMock(Hub):
     """
     :type connection: ConnectionMock
     """
@@ -21,9 +21,6 @@ class HubMock(MoveHub):
         self.connection = self.connection
         self.notify_mock = self.connection.notifications
         self.writes = self.connection.writes
-
-    def _report_status(self):
-        pass
 
 
 class ConnectionMock(Connection):

@@ -1,12 +1,37 @@
 import time
 import unittest
 
-from pylgbst.hub import MoveHub
-from pylgbst.peripherals import LED, TiltSensor, COLORS, COLOR_RED
+from pylgbst.hub import MoveHub, Hub
+from pylgbst.peripherals import LED, TiltSensor, COLORS, COLOR_RED, Button
 from tests import log, HubMock, ConnectionMock
 
 
 class PeripheralsTest(unittest.TestCase):
+
+    def test_button(self):
+        hub = HubMock()
+        time.sleep(0.1)
+        button = Button(hub)
+        hub.peripherals[0x00] = button
+
+        vals = []
+
+        def callback(pressed):
+            vals.append(pressed)
+
+        button.subscribe(callback)
+
+        hub.connection.notification_delayed("060001020600", 0.1)
+        hub.connection.notification_delayed("060001020601", 0.2)
+        hub.connection.notification_delayed("060001020600", 0.3)
+        time.sleep(0.4)
+
+        button.unsubscribe(callback)
+        hub.connection.wait_notifications_handled()
+
+        self.assertEqual([False, True, False], vals)
+        self.assertEqual("0500010202", hub.writes[1][1])
+        self.assertEqual("0500010203", hub.writes[2][1])
 
     def test_led(self):
         hub = HubMock()
@@ -79,21 +104,4 @@ class PeripheralsTest(unittest.TestCase):
         # TODO: assert
         hub.connection.notification_delayed('0a00 4701090100000001', 0.1)
         hub.color_distance_sensor.unsubscribe(callback)
-        hub.connection.wait_notifications_handled()
-
-    def test_button(self):
-        hub = HubMock()
-        time.sleep(1)
-
-        def callback(pressed):
-            log.info("Pressed: %s", pressed)
-
-        hub.notify_mock.append("060001020600")
-        hub.button.subscribe(callback)
-
-        hub.notify_mock.append("060001020601")
-        hub.notify_mock.append("060001020600")
-        time.sleep(1)
-        # TODO: assert
-        hub.button.unsubscribe(callback)
         hub.connection.wait_notifications_handled()

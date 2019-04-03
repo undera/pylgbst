@@ -238,7 +238,10 @@ class MoveHub(Hub):
         self.port_C = None
         self.port_D = None
 
-    def wait_for_devices(self, get_dev_set=None):
+        self._wait_for_devices()
+        self._report_status()
+
+    def _wait_for_devices(self, get_dev_set=None):
         if not get_dev_set:
             get_dev_set = lambda: (self.motor_A, self.motor_B, self.motor_AB, self.led, self.tilt_sensor,
                                    self.amperage, self.voltage)
@@ -250,6 +253,21 @@ class MoveHub(Hub):
             log.debug("Waiting for builtin devices to appear: %s", devices)
             time.sleep(0.1)
         log.warning("Got only these devices: %s", get_dev_set())
+
+    def _report_status(self):
+        # TODO: add firmware version
+        name = self.send(MsgHubProperties(MsgHubProperties.ADVERTISE_NAME, MsgHubProperties.UPD_REQUEST))
+        mac = self.send(MsgHubProperties(MsgHubProperties.PRIMARY_MAC, MsgHubProperties.UPD_REQUEST))
+        log.info("%s on %s", name.payload, str2hex(mac.payload))
+
+        voltage = self.send(MsgHubProperties(MsgHubProperties.VOLTAGE_PERC, MsgHubProperties.UPD_REQUEST))
+        assert isinstance(voltage, MsgHubProperties)
+        log.info("Voltage: %s%%", usbyte(voltage.parameters, 0))
+
+        voltage = self.send(MsgHubAlert(MsgHubAlert.LOW_VOLTAGE, MsgHubAlert.UPD_REQUEST))
+        assert isinstance(voltage, MsgHubAlert)
+        if not voltage.is_ok():
+            log.warning("Low voltage, check power source (maybe replace battery)")
 
     # noinspection PyTypeChecker
     def _handle_device_change(self, msg):
@@ -279,18 +297,3 @@ class MoveHub(Hub):
                 self.color_distance_sensor = self.peripherals[port]
             elif type(self.peripherals[port]) == EncodedMotor and port not in (self.PORT_A, self.PORT_B, self.PORT_AB):
                 self.motor_external = self.peripherals[port]
-
-    def report_status(self):
-        # TODO: add firmware version
-        name = self.send(MsgHubProperties(MsgHubProperties.ADVERTISE_NAME, MsgHubProperties.UPD_REQUEST))
-        mac = self.send(MsgHubProperties(MsgHubProperties.PRIMARY_MAC, MsgHubProperties.UPD_REQUEST))
-        log.info("%s on %s", name.payload, str2hex(mac.payload))
-
-        voltage = self.send(MsgHubProperties(MsgHubProperties.VOLTAGE_PERC, MsgHubProperties.UPD_REQUEST))
-        assert isinstance(voltage, MsgHubProperties)
-        log.info("Voltage: %s%%", usbyte(voltage.parameters, 0))
-
-        voltage = self.send(MsgHubAlert(MsgHubAlert.LOW_VOLTAGE, MsgHubAlert.UPD_REQUEST))
-        assert isinstance(voltage, MsgHubAlert)
-        if not voltage.is_ok():
-            log.warning("Low voltage, check power source (maybe replace battery)")
