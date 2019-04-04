@@ -50,7 +50,7 @@ class Hub(object):
         self._wait_for_reply(None)
 
         log.debug("Send message: %r", msg)
-        self.connection.write(self.HUB_HARDWARE_HANDLE, msg)
+        self.connection.write(self.HUB_HARDWARE_HANDLE, str(msg))
         self._sent_msg = msg
 
         self._wait_for_reply(msg)
@@ -154,9 +154,10 @@ class Hub(object):
         log.info("Attached peripheral: %s", self.peripherals[msg.port])
 
         if msg.event == msg.EVENT_ATTACHED:
-            # TODO: what to do with this info? it's useless, I guess
             hw_revision = reversed([usbyte(msg.payload, x) for x in range(2, 6)])
             sw_revision = reversed([usbyte(msg.payload, x) for x in range(6, 10)])
+            # what to do with this info? it's useless, I guess
+            del hw_revision, sw_revision
         elif msg.event == msg.EVENT_ATTACHED_VIRTUAL:
             self.peripherals[port].virtual_ports = (usbyte(msg.payload, 2), usbyte(msg.payload, 3))
 
@@ -178,6 +179,8 @@ class Hub(object):
 
 class MoveHub(Hub):
     """
+    Class implementing Lego Boost's MoveHub specifics
+
     :type led: LEDRGB
     :type tilt_sensor: TiltSensor
     :type button: Button
@@ -251,7 +254,7 @@ class MoveHub(Hub):
         log.warning("Got only these devices: %s", get_dev_set())
 
     def _report_status(self):
-        # TODO: add firmware version
+        # maybe add firmware version
         name = self.send(MsgHubProperties(MsgHubProperties.ADVERTISE_NAME, MsgHubProperties.UPD_REQUEST))
         mac = self.send(MsgHubProperties(MsgHubProperties.PRIMARY_MAC, MsgHubProperties.UPD_REQUEST))
         log.info("%s on %s", name.payload, str2hex(mac.payload))

@@ -22,7 +22,11 @@ class Message(object):
         return pack("<B", msglen) + pack("<B", self.hub_id) + pack("<B", self.TYPE) + self.payload
 
     def __repr__(self):
-        return self.__class__.__name__ + "(type=%x, payload=%s)" % (self.TYPE, str2hex(self.payload))
+        data = self.__dict__
+        data = {x: (str2hex(y) if isinstance(y, str) else y)
+                for x, y in data.items()
+                if x not in ('hub_id', 'needs_reply')}
+        return self.__class__.__name__ + "(%s)" % data
 
     def __iter__(self):
         return iter(str(self))
