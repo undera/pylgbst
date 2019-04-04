@@ -2,7 +2,7 @@ import time
 import unittest
 
 from pylgbst.hub import MoveHub
-from pylgbst.peripherals import LED, TiltSensor, COLOR_RED, Button, Current, Voltage, ColorDistanceSensor, EncodedMotor
+from pylgbst.peripherals import LEDRGB, TiltSensor, COLOR_RED, Button, Current, Voltage, ColorDistanceSensor, EncodedMotor
 from tests import HubMock, ConnectionMock
 
 
@@ -35,7 +35,7 @@ class PeripheralsTest(unittest.TestCase):
 
     def test_led(self):
         hub = HubMock()
-        hub.led = LED(hub, MoveHub.PORT_LED)
+        hub.led = LEDRGB(hub, MoveHub.PORT_LED)
         hub.peripherals[MoveHub.PORT_LED] = hub.led
         hub.connection.notification_delayed("0500 82 320a", 0.1)
         hub.led.set_color(COLOR_RED)

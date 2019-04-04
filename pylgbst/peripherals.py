@@ -135,12 +135,12 @@ class Peripheral(object):
         return  # FIXME
 
 
-class LED(Peripheral):
+class LEDRGB(Peripheral):
     MODE_INDEX = 0x00
     MODE_RGB = 0x01
 
     def __init__(self, parent, port):
-        super(LED, self).__init__(parent, port)
+        super(LEDRGB, self).__init__(parent, port)
 
     def set_color(self, color):
         if color == COLOR_NONE:

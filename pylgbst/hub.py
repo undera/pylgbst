@@ -138,7 +138,7 @@ class Hub(object):
         elif dev_type == msg.DEV_VISION_SENSOR:
             self.peripherals[port] = ColorDistanceSensor(self, port)
         elif dev_type == msg.DEV_RGB_LIGHT:
-            self.peripherals[port] = LED(self, port)
+            self.peripherals[port] = LEDRGB(self, port)
         elif dev_type in (msg.DEV_TILT_EXTERNAL, msg.DEV_TILT_INTERNAL):
             self.peripherals[port] = TiltSensor(self, port)
         elif dev_type == msg.DEV_CURRENT:
@@ -178,7 +178,7 @@ class Hub(object):
 
 class MoveHub(Hub):
     """
-    :type led: LED
+    :type led: LEDRGB
     :type tilt_sensor: TiltSensor
     :type button: Button
     :type current: Current
