@@ -105,6 +105,7 @@ class Hub(object):
 
     def _handle_error(self, msg):
         log.warning("Command error: %s", msg.message())
+        self._sent_msg = DownstreamMsg()
 
     def _handle_port_output(self, msg):
         self.peripherals[msg.port].notify_feedback(msg)

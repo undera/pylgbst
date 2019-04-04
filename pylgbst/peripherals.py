@@ -160,14 +160,6 @@ class LED(Peripheral):
 
 
 class Motor(Peripheral):
-    CONSTANT_GROUP = 0x02
-    SOME_SINGLE = 0x07
-    SOME_GROUP = 0x08
-    TIMED_SINGLE = 0x09
-    TIMED_GROUP = 0x0A
-    ANGLED_SINGLE = 0x0B
-    ANGLED_GROUP = 0x0C
-
     SUBCMD_START_POWER = 0x01
     # SUBCMD_START_POWER = 0x02
     SUBCMD_SET_ACC_TIME = 0x05
@@ -179,8 +171,8 @@ class Motor(Peripheral):
     SUBCMD_START_SPEED_FOR_DEGREES = 0x0B
     # SUBCMD_START_SPEED_FOR_DEGREES = 0x0C
     SUBCMD_GOTO_ABSOLUTE_POSITION = 0x0D
+
     # SUBCMD_GOTO_ABSOLUTE_POSITIONC = 0x0E
-    SUBCMD_PRESET_ENCODER = 0x14
 
     def _speed_abs(self, relative):
         if relative is None:
@@ -214,7 +206,10 @@ class Motor(Peripheral):
         msg = MsgPortOutput(self.port, subcmd, params)
         self._send_to_port(msg)
 
-    def start_speed(self, speed_primary=1.0, speed_secondary=None):
+    def start_power(self, speed_primary=1.0, speed_secondary=None):
+        """
+        https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startpower-power
+        """
         if speed_secondary is None:
             speed_secondary = speed_primary
 
@@ -228,7 +223,27 @@ class Motor(Peripheral):
     def stop(self):
         self.start_speed(0)
 
-    def hold_speed(self, speed_primary=1.0, speed_secondary=None, max_power=1.0, use_profile=0b00):
+    def set_acc_time(self, time, profile_no):
+        """
+        https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-setacctime-time-profileno-0x05
+        """
+        params = b""
+        params += pack("<H", time)
+        params += pack("<B", profile_no)
+
+        self._send_cmd(self.SUBCMD_SET_ACC_TIME, params)
+
+    def set_dec_time(self, time, profile_no):
+        """
+        https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-setdectime-time-profileno-0x06
+        """
+        params = b""
+        params += pack("<H", time)
+        params += pack("<B", profile_no)
+
+        self._send_cmd(self.SUBCMD_SET_DEC_TIME, params)
+
+    def start_speed(self, speed_primary=1.0, speed_secondary=None, max_power=1.0, use_profile=0b00):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startspeed-speed-maxpower-useprofile-0x07
         """
@@ -243,39 +258,79 @@ class Motor(Peripheral):
         params += pack("<B", int(100 * max_power))
         params += pack("<B", use_profile)
 
-        self._send_cmd(self.SUBCMD_START_POWER, params)
+        self._send_cmd(self.SUBCMD_START_SPEED, params)
 
-    def timed(self, seconds, speed_primary=1.0, speed_secondary=None):
+    def start_speed_for_time(self, seconds, speed_primary=1.0, speed_secondary=None, max_power=1.0, end_state=0x7f,
+                             use_profile=0b00):
+        """
+        https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startspeedfortime-time-speed-maxpower-endstate-useprofile-0x09
+        """
         if speed_secondary is None:
             speed_secondary = speed_primary
 
-        params = pack('<H', int(seconds * 1000))
+        params = b""
+        params += pack("<H", int(seconds * 1000))
+        params += pack("<b", self._speed_abs(speed_primary))
+        if self.virtual_ports:
+            params += pack("<b", self._speed_abs(speed_secondary))
 
-        self._write_direct_mode(self.TIMED_SINGLE, params, speed_primary, speed_secondary)
+        params += pack("<B", end_state)
+        params += pack("<B", int(100 * max_power))
+        params += pack("<B", use_profile)
 
-    def angled(self, angle, speed_primary=1.0, speed_secondary=None):
+        self._send_cmd(self.SUBCMD_START_SPEED_FOR_TIME, params)
+
+    def start_speed_for_degrees(self, degrees, speed_primary=1.0, speed_secondary=None, max_power=1.0, end_state=0x7f,
+                                use_profile=0b00):
+        """
+        https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startspeedfordegrees-degrees-speed-maxpower-endstate-useprofile-0x0b
+        """
         if speed_secondary is None:
             speed_secondary = speed_primary
 
-        angle = int(round(angle))
-        if angle < 0:
-            angle = -angle
+        degrees = int(round(degrees))
+        if degrees < 0:
+            degrees = -degrees
             speed_primary = -speed_primary
             speed_secondary = -speed_secondary
 
-        params = pack('<I', angle)
+        params = b""
+        params += pack("<I", degrees)
+        params += pack("<b", self._speed_abs(speed_primary))
+        if self.virtual_ports:
+            params += pack("<b", self._speed_abs(speed_secondary))
 
-        self._write_direct_mode(self.ANGLED_SINGLE, params, speed_primary, speed_secondary)
+        params += pack("<B", end_state)
+        params += pack("<B", int(100 * max_power))
+        params += pack("<B", use_profile)
 
-    def __some(self, speed_primary=1.0, speed_secondary=None):
-        if speed_secondary is None:
-            speed_secondary = speed_primary
+        self._send_cmd(self.SUBCMD_START_SPEED_FOR_DEGREES, params)
 
-        self._write_direct_mode(self.SOME_SINGLE, b"", speed_primary, speed_secondary)
+    def goto_position(self, degrees_primary, degrees_secondary=None, speed=1.0, max_power=1.0, end_state=0x7f,
+                      use_profile=0b00):
+        """
+        https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startspeedfordegrees-degrees-speed-maxpower-endstate-useprofile-0x0b
+        """
+        if degrees_secondary is None:
+            degrees_secondary = degrees_primary
+
+        params = b""
+        params += pack("<I", degrees_primary)
+        if self.virtual_ports:
+            params += pack("<I", degrees_secondary)
+
+        params += pack("<b", self._speed_abs(speed))
+
+        params += pack("<B", end_state)
+        params += pack("<B", int(100 * max_power))
+        params += pack("<B", use_profile)
+
+        self._send_cmd(self.SUBCMD_GOTO_ABSOLUTE_POSITION, params)
 
 
 class EncodedMotor(Motor):
-    # MOTORS
+    SUBCMD_PRESET_ENCODER = 0x14
+
     SENSOR_SOMETHING1 = 0x00  # TODO: understand it
     SENSOR_SPEED = 0x01
     SENSOR_ANGLE = 0x02
@@ -297,6 +352,20 @@ class EncodedMotor(Motor):
 
     def subscribe(self, callback, mode=SENSOR_ANGLE, granularity=1):
         super(EncodedMotor, self).subscribe(callback, mode, granularity)
+
+    def preset_encoder(self, degrees=0, degrees_secondary=None, only_combined=False):
+        """
+        https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-presetencoder-position-n-a
+        https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-presetencoder-leftposition-rightposition-0x14
+        """
+        if degrees_secondary is None:
+            degrees_secondary = degrees
+
+        if self.virtual_ports and not only_combined:
+            self._send_cmd(self.SUBCMD_PRESET_ENCODER, pack("<i", degrees) + pack("<i", degrees_secondary))
+        else:
+            params = pack("<i", degrees)
+            self._write_direct_mode(self.SENSOR_ANGLE, params)
 
 
 class TiltSensor(Peripheral):

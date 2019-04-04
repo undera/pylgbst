@@ -9,7 +9,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     hub = MoveHub()
     try:
-        hub.motor_AB.start_speed(0.45, 0.45)
+        hub.motor_AB.start_power(0.45, 0.45)
         hub.motor_external.angled(12590, 0.1)
         # time.sleep(180)
     finally:
