@@ -113,7 +113,7 @@ class FaceTracker(MoveHub):
         if on and not self._is_smile_on:
             self._is_smile_on = True
             self.motor_B.angled(-90, 0.5)
-            self.led.set_color_index(COLOR_RED)
+            self.led.set_color(COLOR_RED)
 
         if not on and self._is_smile_on:
             self._is_smile_on = False
@@ -195,10 +195,10 @@ class FaceTracker(MoveHub):
             self.motor_external.stop()
             self.motor_AB.stop()
             if not self._is_smile_on:
-                self.led.set_color_index(COLOR_BLUE)
+                self.led.set_color(COLOR_BLUE)
         else:
             if not self._is_smile_on:
-                self.led.set_color_index(COLOR_YELLOW)
+                self.led.set_color(COLOR_YELLOW)
 
             self._auto_pan(self.cur_face)
             self._find_smile(self.cur_face)

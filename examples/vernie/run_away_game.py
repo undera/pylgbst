@@ -6,7 +6,7 @@ running = True
 
 
 def callback(color, distance):
-    robot.led.set_color_index(color)
+    robot.led.set_color(color)
     speed = (10 - distance + 1) / 10.0
     secs = (10 - distance + 1) / 10.0
     print("Distance is %.1f inches, I'm running back with %s%% speed!" % (distance, int(speed * 100)))
@@ -21,7 +21,7 @@ def on_btn(pressed):
         running = False
 
 
-robot.led.set_color_index(COLOR_GREEN)
+robot.led.set_color(COLOR_GREEN)
 robot.button.subscribe(on_btn)
 robot.color_distance_sensor.subscribe(callback)
 robot.say("Place your hand in front of sensor")
@@ -31,6 +31,6 @@ while running:
 
 robot.color_distance_sensor.unsubscribe(callback)
 robot.button.unsubscribe(on_btn)
-robot.led.set_color_index(COLOR_NONE)
+robot.led.set_color(COLOR_NONE)
 while robot.led.in_progress():
     time.sleep(1)

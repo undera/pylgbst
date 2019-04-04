@@ -142,21 +142,22 @@ class LED(Peripheral):
     def __init__(self, parent, port):
         super(LED, self).__init__(parent, port)
 
-    def set_color_index(self, color):
+    def set_color(self, color):
         if color == COLOR_NONE:
             color = COLOR_BLACK
 
         if color not in COLORS:
             raise ValueError("Color %s is not in list of available colors" % color)
 
+        # TODO: merge rgb mode in, make it switch the mode prior to changing color
         payload = pack("<B", self.MODE_INDEX) + pack("<B", color)
         msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
         self._send_to_port(msg)
 
-    def set_color_rgb(self, red, green, blue):
-        payload = pack("<B", self.MODE_RGB) + pack("<B", red) + pack("<B", green) + pack("<B", blue)
-        msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
-        self._send_to_port(msg)
+    # def set_color_rgb(self, red, green, blue):
+    #    payload = pack("<B", self.MODE_RGB) + pack("<B", red) + pack("<B", green) + pack("<B", blue)
+    #    msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
+    #    self._send_to_port(msg)
 
 
 class Motor(Peripheral):

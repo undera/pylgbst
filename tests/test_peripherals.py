@@ -38,7 +38,7 @@ class PeripheralsTest(unittest.TestCase):
         hub.led = LED(hub, MoveHub.PORT_LED)
         hub.peripherals[MoveHub.PORT_LED] = hub.led
         hub.connection.notification_delayed("0500 82 320a", 0.1)
-        hub.led.set_color_index(COLOR_RED)
+        hub.led.set_color(COLOR_RED)
         self.assertEqual("0800813211510009", hub.writes[1][1])
 
     def test_current(self):
