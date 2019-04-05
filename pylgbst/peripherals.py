@@ -228,7 +228,7 @@ class Motor(Peripheral):
     def stop(self):
         self.start_speed(0)
 
-    def set_acc_time(self, time, profile_no):
+    def set_acc_profile(self, time, profile_no):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-setacctime-time-profileno-0x05
         """
@@ -238,7 +238,7 @@ class Motor(Peripheral):
 
         self._send_cmd(self.SUBCMD_SET_ACC_TIME, params)
 
-    def set_dec_time(self, time, profile_no):
+    def set_dec_profile(self, time, profile_no):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-setdectime-time-profileno-0x06
         """
@@ -248,7 +248,7 @@ class Motor(Peripheral):
 
         self._send_cmd(self.SUBCMD_SET_DEC_TIME, params)
 
-    def start_speed(self, speed_primary=1.0, speed_secondary=None, max_power=1.0, use_profile=0b00):
+    def start_speed(self, speed_primary=1.0, speed_secondary=None, max_power=1.0, use_profile=0b11):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startspeed-speed-maxpower-useprofile-0x07
         """
@@ -266,7 +266,7 @@ class Motor(Peripheral):
         self._send_cmd(self.SUBCMD_START_SPEED, params)
 
     def timed(self, seconds, speed_primary=1.0, speed_secondary=None, max_power=1.0, end_state=END_STATE_BRAKE,
-              use_profile=0b00):
+              use_profile=0b11):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startspeedfortime-time-speed-maxpower-endstate-useprofile-0x09
         """
@@ -279,14 +279,14 @@ class Motor(Peripheral):
         if self.virtual_ports:
             params += pack("<b", self._speed_abs(speed_secondary))
 
-        params += pack("<B", end_state)
         params += pack("<B", int(100 * max_power))
+        params += pack("<B", end_state)
         params += pack("<B", use_profile)
 
         self._send_cmd(self.SUBCMD_START_SPEED_FOR_TIME, params)
 
     def angled(self, degrees, speed_primary=1.0, speed_secondary=None, max_power=1.0, end_state=END_STATE_BRAKE,
-               use_profile=0b00):
+               use_profile=0b11):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startspeedfordegrees-degrees-speed-maxpower-endstate-useprofile-0x0b
         :type degrees: int
@@ -307,14 +307,14 @@ class Motor(Peripheral):
         if self.virtual_ports:
             params += pack("<b", self._speed_abs(speed_secondary))
 
-        params += pack("<B", end_state)
         params += pack("<B", int(100 * max_power))
+        params += pack("<B", end_state)
         params += pack("<B", use_profile)
 
         self._send_cmd(self.SUBCMD_START_SPEED_FOR_DEGREES, params)
 
     def goto_position(self, degrees_primary, degrees_secondary=None, speed=1.0, max_power=1.0,
-                      end_state=END_STATE_BRAKE, use_profile=0b00):
+                      end_state=END_STATE_BRAKE, use_profile=0b11):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startspeedfordegrees-degrees-speed-maxpower-endstate-useprofile-0x0b
         """

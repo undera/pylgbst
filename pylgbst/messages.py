@@ -588,7 +588,8 @@ class MsgPortOutput(DownstreamMsg):
         return super(MsgPortOutput, self).__str__()
 
     def is_reply(self, msg):
-        return isinstance(msg, MsgPortOutputFeedback) and msg.port == self.port
+        nonbuffer_completed = msg.is_completed() or self.do_buffer
+        return isinstance(msg, MsgPortOutputFeedback) and msg.port == self.port and nonbuffer_completed
 
 
 class MsgPortOutputFeedback(UpstreamMsg):

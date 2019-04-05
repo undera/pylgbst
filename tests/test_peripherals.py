@@ -2,7 +2,8 @@ import time
 import unittest
 
 from pylgbst.hub import MoveHub
-from pylgbst.peripherals import LEDRGB, TiltSensor, COLOR_RED, Button, Current, Voltage, ColorDistanceSensor, EncodedMotor
+from pylgbst.peripherals import LEDRGB, TiltSensor, COLOR_RED, Button, Current, Voltage, ColorDistanceSensor, \
+    EncodedMotor
 from tests import HubMock, ConnectionMock
 
 
@@ -137,6 +138,18 @@ class PeripheralsTest(unittest.TestCase):
         hub.connection.notification_delayed('050082010a', 0.1)
         motor.stop()
         self.assertEqual("0800810111510100", hub.writes[2][1])
+
+        hub.connection.wait_notifications_handled()
+
+    def test_motor_angled(self):
+        hub = HubMock()
+        motor = EncodedMotor(hub, MoveHub.PORT_C)
+        hub.peripherals[MoveHub.PORT_C] = motor
+
+        hub.connection.notification_delayed('0500820101', 0.1)
+        hub.connection.notification_delayed('050082010a', 0.2)
+        motor.angled(120, 0.25)
+        self.assertEqual("0e008101110b7800000019647f03", hub.writes[1][1])
 
         hub.connection.wait_notifications_handled()
 
