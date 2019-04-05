@@ -16,7 +16,9 @@ class Automata(object):
 
     def __on_sensor(self, color, distance=-1):
         if distance < 4:
-            self._sensor.append((color, int(distance)))
+            if color not in (COLOR_NONE, COLOR_BLACK):
+                self._sensor.append((color, int(distance)))
+                logging.info("Sensor data: %s", COLORS[color])
 
     def feed_tape(self):
         self.__hub.motor_external.angled(120, 0.25)
@@ -52,10 +54,11 @@ class Automata(object):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     bot = Automata()
     color = COLOR_NONE
     while color != COLOR_RED:
         bot.feed_tape()
         color = bot.get_color()
         print (COLORS[color])
+        break
