@@ -228,22 +228,22 @@ class Motor(Peripheral):
     def stop(self):
         self.start_speed(0)
 
-    def set_acc_profile(self, time, profile_no):
+    def set_acc_profile(self, seconds, profile_no=0x00):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-setacctime-time-profileno-0x05
         """
         params = b""
-        params += pack("<H", time)
+        params += pack("<H", int(seconds * 1000))
         params += pack("<B", profile_no)
 
         self._send_cmd(self.SUBCMD_SET_ACC_TIME, params)
 
-    def set_dec_profile(self, time, profile_no):
+    def set_dec_profile(self, seconds, profile_no=0x00):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-setdectime-time-profileno-0x06
         """
         params = b""
-        params += pack("<H", time)
+        params += pack("<H", int(seconds * 1000))
         params += pack("<B", profile_no)
 
         self._send_cmd(self.SUBCMD_SET_DEC_TIME, params)
