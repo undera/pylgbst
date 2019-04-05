@@ -1,8 +1,8 @@
+import logging
 import time
 from collections import Counter
 
-from pylgbst.constants import COLOR_NONE, COLOR_BLACK, COLOR_CYAN, COLOR_BLUE
-from pylgbst.movehub import MoveHub
+from pylgbst.movehub import MoveHub, COLOR_NONE, COLOR_CYAN, COLOR_BLUE, COLOR_BLACK, COLOR_RED, COLORS
 from pylgbst.peripherals import ColorDistanceSensor
 
 
@@ -15,21 +15,23 @@ class Automata(object):
         self._sensor = []
 
     def __on_sensor(self, color, distance=-1):
-        if distance < 4 and color not in (COLOR_NONE, COLOR_BLACK):
-            # print (COLORS[color], distance)
+        if distance < 4:
             self._sensor.append((color, int(distance)))
 
     def feed_tape(self):
-        self.__hub.motor_external.angled(120, 0.1)
+        self.__hub.motor_external.angled(120, 0.25)
         time.sleep(0.2)
 
     def get_color(self):
         res = self._sensor
         self._sensor = []
+        logging.info("Sensor data: %s", res)
         cnts = Counter([x[0] for x in res])
         clr = cnts.most_common(1)[0][0] if cnts else COLOR_NONE
         if clr == COLOR_CYAN:
             clr = COLOR_BLUE
+        elif clr == COLOR_BLACK:
+            clr = COLOR_NONE
         return clr
 
     def left(self):
@@ -47,3 +49,13 @@ class Automata(object):
     def backward(self):
         self.__hub.motor_AB.angled(830, -0.25)
         time.sleep(0.5)
+
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+    bot = Automata()
+    color = COLOR_NONE
+    while color != COLOR_RED:
+        bot.feed_tape()
+        color = bot.get_color()
+        print (COLORS[color])
