@@ -175,6 +175,10 @@ class Motor(Peripheral):
 
     # SUBCMD_GOTO_ABSOLUTE_POSITIONC = 0x0E
 
+    END_STATE_BRAKE = 127
+    END_STATE_HOLD = 126
+    END_STATE_FLOAT = 0
+
     def _speed_abs(self, relative):
         if relative is None:
             # special value for BRAKE
@@ -261,8 +265,8 @@ class Motor(Peripheral):
 
         self._send_cmd(self.SUBCMD_START_SPEED, params)
 
-    def start_speed_for_time(self, seconds, speed_primary=1.0, speed_secondary=None, max_power=1.0, end_state=0x7f,
-                             use_profile=0b00):
+    def timed(self, seconds, speed_primary=1.0, speed_secondary=None, max_power=1.0, end_state=END_STATE_BRAKE,
+              use_profile=0b00):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startspeedfortime-time-speed-maxpower-endstate-useprofile-0x09
         """
@@ -281,10 +285,12 @@ class Motor(Peripheral):
 
         self._send_cmd(self.SUBCMD_START_SPEED_FOR_TIME, params)
 
-    def start_speed_for_degrees(self, degrees, speed_primary=1.0, speed_secondary=None, max_power=1.0, end_state=0x7f,
-                                use_profile=0b00):
+    def angled(self, degrees, speed_primary=1.0, speed_secondary=None, max_power=1.0, end_state=END_STATE_BRAKE,
+               use_profile=0b00):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startspeedfordegrees-degrees-speed-maxpower-endstate-useprofile-0x0b
+        :type degrees: int
+        :type speed_primary: float
         """
         if speed_secondary is None:
             speed_secondary = speed_primary
@@ -307,8 +313,8 @@ class Motor(Peripheral):
 
         self._send_cmd(self.SUBCMD_START_SPEED_FOR_DEGREES, params)
 
-    def goto_position(self, degrees_primary, degrees_secondary=None, speed=1.0, max_power=1.0, end_state=0x7f,
-                      use_profile=0b00):
+    def goto_position(self, degrees_primary, degrees_secondary=None, speed=1.0, max_power=1.0,
+                      end_state=END_STATE_BRAKE, use_profile=0b00):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startspeedfordegrees-degrees-speed-maxpower-endstate-useprofile-0x0b
         """
