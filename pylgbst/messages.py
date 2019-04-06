@@ -11,9 +11,9 @@ class Message(object):
 
     def __init__(self):
         self.hub_id = 0x00  # not used according to official doc
-        self.payload = ""
+        self.payload = b""
 
-    def __str__(self):
+    def bytes(self):
         """
         see https://lego.github.io/lego-ble-wireless-protocol-docs/#common-message-header
         """
@@ -23,13 +23,10 @@ class Message(object):
 
     def __repr__(self):
         data = self.__dict__
-        data = {x: (str2hex(y) if isinstance(y, str) else y)
+        data = {x: (str2hex(y) if isinstance(y, bytes) else y)
                 for x, y in data.items()
                 if x not in ('hub_id', 'needs_reply')}
         return self.__class__.__name__ + "(%s)" % data
-
-    def __iter__(self):
-        return iter(str(self))
 
 
 class DownstreamMsg(Message):
@@ -107,18 +104,18 @@ class MsgHubProperties(DownstreamMsg, UpstreamMsg):
     UPD_REQUEST = 0x05
     UPSTREAM_UPDATE = 0x06
 
-    def __init__(self, prop=None, operation=None, parameters=""):
+    def __init__(self, prop=None, operation=None, parameters=b""):
         super(MsgHubProperties, self).__init__()
 
         self.property = prop
         self.operation = operation
         self.parameters = parameters
 
-    def __str__(self):
+    def bytes(self):
         if self.operation == self.UPD_REQUEST:
             self.needs_reply = True
         self.payload = pack("<B", self.property) + pack("<B", self.operation) + self.parameters
-        return super(MsgHubProperties, self).__str__()
+        return super(MsgHubProperties, self).bytes()
 
     @classmethod
     def decode(cls, data):
@@ -156,10 +153,10 @@ class MsgHubAction(DownstreamMsg, UpstreamMsg):
         super(MsgHubAction, self).__init__()
         self.action = action
 
-    def __str__(self):
-        self.payload = chr(self.action)
+    def bytes(self):
+        self.payload = pack("<B", self.action)
         self.needs_reply = self.action in (self.DISCONNECT, self.SWITCH_OFF)
-        return super(MsgHubAction, self).__str__()
+        return super(MsgHubAction, self).bytes()
 
     def is_reply(self, msg):
         assert isinstance(msg, MsgHubAction)
@@ -206,11 +203,11 @@ class MsgHubAlert(DownstreamMsg, UpstreamMsg):
         self.operation = operation
         self.status = None
 
-    def __str__(self):
-        self.payload = chr(self.atype) + chr(self.operation)
+    def bytes(self):
+        self.payload = pack("<B", self.atype) + pack("<B", self.operation)
         if self.operation == self.UPD_REQUEST:
             self.needs_reply = True
-        return super(MsgHubAlert, self).__str__()
+        return super(MsgHubAlert, self).bytes()
 
     @classmethod
     def decode(cls, data):
@@ -331,9 +328,9 @@ class MsgPortInfoRequest(DownstreamMsg):
         self.info_type = info_type
         self.needs_reply = True
 
-    def __str__(self):
+    def bytes(self):
         self.payload = pack("<B", self.port) + pack("<B", self.info_type)
-        return super(MsgPortInfoRequest, self).__str__()
+        return super(MsgPortInfoRequest, self).bytes()
 
     def is_reply(self, msg):
         if msg.port != self.port:
@@ -574,7 +571,7 @@ class MsgPortOutput(DownstreamMsg):
         self.subcommand = subcommand
         self.params = params
 
-    def __str__(self):
+    def bytes(self):
         startup_completion_flags = 0
         if not self.do_buffer:
             startup_completion_flags |= self.SC_NO_BUFFER
@@ -585,7 +582,7 @@ class MsgPortOutput(DownstreamMsg):
 
         self.payload = pack("<B", self.port) + pack("<B", startup_completion_flags) \
                        + pack("<B", self.subcommand) + self.params
-        return super(MsgPortOutput, self).__str__()
+        return super(MsgPortOutput, self).bytes()
 
     def is_reply(self, msg):
         nonbuffer_completed = msg.is_completed() or self.do_buffer

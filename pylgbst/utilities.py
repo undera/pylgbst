@@ -3,6 +3,7 @@ This module offers some utilities, in a way they are work in both Python 2 and 3
 """
 
 import binascii
+import logging
 import sys
 from struct import unpack
 
@@ -27,6 +28,9 @@ def usint(seq, index):
 
 
 def str2hex(data):  # we need it for python 2+3 compatibility
-    if sys.version_info[0] == 3:
+    # if sys.version_info[0] == 3:
+    # data = bytes(data, 'ascii')
+    if not isinstance(data, bytes):
         data = bytes(data, 'ascii')
-    return binascii.hexlify(data).decode("utf8")
+    hexed = binascii.hexlify(data)
+    return hexed

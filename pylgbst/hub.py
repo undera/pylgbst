@@ -23,9 +23,6 @@ class Hub(object):
         self._sync_replies = queue.Queue(1)
 
         self.add_message_handler(MsgHubAttachedIO, self._handle_device_change)
-        self.add_message_handler(MsgPortOutputFeedback, self._handle_port_output)
-        self.add_message_handler(MsgPortInputFmtSingle, self._handle_port_output)
-        self.add_message_handler(MsgPortInputFmtCombined, self._handle_port_output)
         self.add_message_handler(MsgPortValueSingle, self._handle_sensor_data)
         self.add_message_handler(MsgPortValueCombined, self._handle_sensor_data)
         self.add_message_handler(MsgGenericError, self._handle_error)
@@ -49,7 +46,7 @@ class Hub(object):
         :type msg: pylgbst.messages.DownstreamMsg
         """
         log.debug("Send message: %r", msg)
-        self.connection.write(self.HUB_HARDWARE_HANDLE, str(msg))
+        self.connection.write(self.HUB_HARDWARE_HANDLE, msg.bytes())
         if msg.needs_reply:
             assert not self._sync_request, "Pending request %r while trying to put %r" % (self._sync_request, msg)
             self._sync_request = msg
@@ -92,9 +89,6 @@ class Hub(object):
     def _handle_error(self, msg):
         log.warning("Command error: %s", msg.message())
         self._sync_request = DownstreamMsg()
-
-    def _handle_port_output(self, msg):
-        self.peripherals[msg.port].notify_feedback(msg)
 
     def _handle_action(self, msg):
         """

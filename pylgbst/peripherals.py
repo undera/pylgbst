@@ -128,14 +128,8 @@ class Peripheral(object):
                 log.warning("%s", traceback.format_exc())
                 log.warning("Failed to handle port data by %s: %s", self, str2hex(data))
 
-    def notify_feedback(self, msg):
-        """
-        :type msg: pylgbst.messages.MsgPortOutputFeedback
-        """
-        return  # FIXME
-
     def describe(self):
-        pass
+        pass  # TODO
 
 
 class LEDRGB(Peripheral):

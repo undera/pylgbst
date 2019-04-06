@@ -24,7 +24,7 @@ class HubTest(unittest.TestCase):
         msg = MsgHubProperties(MsgHubProperties.ADVERTISE_NAME, MsgHubProperties.UPD_REQUEST)
         resp = hub.send(msg)
         assert isinstance(resp, MsgHubProperties)
-        self.assertEqual("LEGO Move Hub", resp.parameters)
+        self.assertEqual(b"LEGO Move Hub", resp.parameters)
 
         conn.wait_notifications_handled()
 
@@ -80,13 +80,13 @@ class HubTest(unittest.TestCase):
         hub = Hub(conn)
         conn.notification_delayed("04000231", 0.1)
         hub.disconnect()
-        self.assertEqual("04000202", conn.writes[1][1])
+        self.assertEqual(b"04000202", conn.writes[1][1])
 
         conn = ConnectionMock().connect()
         hub = Hub(conn)
         conn.notification_delayed("04000230", 0.1)
         hub.switch_off()
-        self.assertEqual("04000201", conn.writes[1][1])
+        self.assertEqual(b"04000201", conn.writes[1][1])
 
     def test_sensor(self):
         conn = ConnectionMock().connect()
@@ -108,8 +108,8 @@ class HubTest(unittest.TestCase):
         dev.unsubscribe(cb)
 
         self.assertEqual([(255, 10.0)], vals)
-        self.assertEqual("0a004102080100000001", conn.writes[1][1])
-        self.assertEqual("0a004102080000000000", conn.writes[2][1])
+        self.assertEqual(b"0a004102080100000001", conn.writes[1][1])
+        self.assertEqual(b"0a004102080000000000", conn.writes[2][1])
 
 
 class MoveHubTest(unittest.TestCase):
@@ -131,7 +131,7 @@ class MoveHubTest(unittest.TestCase):
         conn.notification_delayed('0600030104ff', 0.4)
         MoveHub(conn.connect())
         conn.wait_notifications_handled()
-        self.assertEqual("0500010105", conn.writes[1][1])
-        self.assertEqual("0500010d05", conn.writes[2][1])
-        self.assertEqual("0500010605", conn.writes[3][1])
-        self.assertEqual("0500030103", conn.writes[4][1])
+        self.assertEqual(b"0500010105", conn.writes[1][1])
+        self.assertEqual(b"0500010d05", conn.writes[2][1])
+        self.assertEqual(b"0500010605", conn.writes[3][1])
+        self.assertEqual(b"0500030103", conn.writes[4][1])

@@ -34,8 +34,8 @@ class PeripheralsTest(unittest.TestCase):
         hub.connection.wait_notifications_handled()
 
         self.assertEqual([False, True, False], vals)
-        self.assertEqual("0500010202", hub.writes[1][1])
-        self.assertEqual("0500010203", hub.writes[2][1])
+        self.assertEqual(b"0500010202", hub.writes[1][1])
+        self.assertEqual(b"0500010203", hub.writes[2][1])
 
     def test_led(self):
         hub = HubMock()
@@ -43,7 +43,7 @@ class PeripheralsTest(unittest.TestCase):
         hub.peripherals[MoveHub.PORT_LED] = hub.led
         hub.connection.notification_delayed("0500 82 320a", 0.1)
         hub.led.set_color(COLOR_RED)
-        self.assertEqual("0800813211510009", hub.writes[1][1])
+        self.assertEqual(b"0800813211510009", hub.writes[1][1])
 
     def test_current(self):
         hub = HubMock()
@@ -67,8 +67,8 @@ class PeripheralsTest(unittest.TestCase):
         hub.connection.wait_notifications_handled()
 
         self.assertEqual([0.0400390625], vals)
-        self.assertEqual("0a00413b000100000001", hub.writes[1][1])
-        self.assertEqual("0a00413b000000000000", hub.writes[2][1])
+        self.assertEqual(b"0a00413b000100000001", hub.writes[1][1])
+        self.assertEqual(b"0a00413b000000000000", hub.writes[2][1])
 
     def test_voltage(self):
         hub = HubMock()
@@ -92,8 +92,8 @@ class PeripheralsTest(unittest.TestCase):
         hub.connection.wait_notifications_handled()
 
         self.assertEqual([0.474853515625], vals)
-        self.assertEqual("0a00413c000100000001", hub.writes[1][1])
-        self.assertEqual("0a00413c000000000000", hub.writes[2][1])
+        self.assertEqual(b"0a00413c000100000001", hub.writes[1][1])
+        self.assertEqual(b"0a00413c000000000000", hub.writes[2][1])
 
     def test_tilt_sensor(self):
         hub = HubMock()
@@ -136,47 +136,47 @@ class PeripheralsTest(unittest.TestCase):
 
         hub.connection.notification_delayed('050082020a', 0.1)
         motor.start_power(1.0)
-        self.assertEqual("0800810211510164", hub.writes.pop(1)[1])
+        self.assertEqual(b"0800810211510164", hub.writes.pop(1)[1])
 
         hub.connection.notification_delayed('050082020a', 0.1)
         motor.stop()
-        self.assertEqual("090081021107006403", hub.writes.pop(1)[1])
+        self.assertEqual(b"090081021107006403", hub.writes.pop(1)[1])
 
         hub.connection.notification_delayed('050082020a', 0.1)
         motor.set_acc_profile(1.0)
-        self.assertEqual("090081021105e80300", hub.writes.pop(1)[1])
+        self.assertEqual(b"090081021105e80300", hub.writes.pop(1)[1])
 
         hub.connection.notification_delayed('050082020a', 0.1)
         motor.set_dec_profile(1.0)
-        self.assertEqual("090081021106e80300", hub.writes.pop(1)[1])
+        self.assertEqual(b"090081021106e80300", hub.writes.pop(1)[1])
 
         hub.connection.notification_delayed('050082020a', 0.1)
         motor.start_speed(1.0)
-        self.assertEqual("090081021107646403", hub.writes.pop(1)[1])
+        self.assertEqual(b"090081021107646403", hub.writes.pop(1)[1])
 
         hub.connection.notification_delayed('050082020a', 0.1)
         motor.stop()
-        self.assertEqual("090081021107006403", hub.writes.pop(1)[1])
+        self.assertEqual(b"090081021107006403", hub.writes.pop(1)[1])
 
         logging.debug("\n\n")
         hub.connection.notification_delayed('0500820201', 0.1)
         hub.connection.notification_delayed('050082020a', 0.2)
         motor.timed(1.0)
-        self.assertEqual("0c0081021109e80364647f03", hub.writes.pop(1)[1])
+        self.assertEqual(b"0c0081021109e80364647f03", hub.writes.pop(1)[1])
 
         hub.connection.notification_delayed('0500820201', 0.1)
         hub.connection.notification_delayed('050082020a', 0.2)
         motor.angled(180)
-        self.assertEqual("0e008102110bb400000064647f03", hub.writes.pop(1)[1])
+        self.assertEqual(b"0e008102110bb400000064647f03", hub.writes.pop(1)[1])
 
         hub.connection.notification_delayed('050082020a', 0.2)
         motor.preset_encoder(-180)
-        self.assertEqual("0b0081021151024cffffff", hub.writes.pop(1)[1])
+        self.assertEqual(b"0b0081021151024cffffff", hub.writes.pop(1)[1])
 
         hub.connection.notification_delayed('0500820201', 0.1)
         hub.connection.notification_delayed('050082020a', 0.2)
         motor.goto_position(0)
-        self.assertEqual("0e008102110d00000000647f6403", hub.writes.pop(1)[1])
+        self.assertEqual(b"0e008102110d00000000647f6403", hub.writes.pop(1)[1])
 
         hub.connection.wait_notifications_handled()
 
