@@ -21,6 +21,7 @@ class PeripheralsTest(unittest.TestCase):
             vals.append(pressed)
 
         button.subscribe(callback)
+        time.sleep(0.1)
 
         hub.connection.notification_delayed("060001020600", 0.1)
         hub.connection.notification_delayed("060001020601", 0.2)
@@ -28,6 +29,7 @@ class PeripheralsTest(unittest.TestCase):
         time.sleep(0.4)
 
         button.unsubscribe(callback)
+        time.sleep(0.1)
         hub.connection.wait_notifications_handled()
 
         self.assertEqual([False, True, False], vals)
@@ -128,21 +130,6 @@ class PeripheralsTest(unittest.TestCase):
 
     def test_motor(self):
         hub = HubMock()
-        motor = EncodedMotor(hub, MoveHub.PORT_C)
-        hub.peripherals[MoveHub.PORT_C] = motor
-
-        hub.connection.notification_delayed('050082010a', 0.1)
-        motor.start_power(0.25)
-        self.assertEqual("0800810111510119", hub.writes[1][1])
-
-        hub.connection.notification_delayed('050082010a', 0.1)
-        motor.stop()
-        self.assertEqual("0800810111510100", hub.writes[2][1])
-
-        hub.connection.wait_notifications_handled()
-
-    def test_motor_all(self):
-        hub = HubMock()
         motor = EncodedMotor(hub, MoveHub.PORT_D)
         hub.peripherals[MoveHub.PORT_D] = motor
 
@@ -179,6 +166,10 @@ class PeripheralsTest(unittest.TestCase):
         hub.connection.notification_delayed('050082020a', 0.2)
         motor.angled(180)
         self.assertEqual("0e008102110bb400000064647f03", hub.writes.pop(1)[1])
+
+        hub.connection.notification_delayed('050082020a', 0.2)
+        motor.preset_encoder(-180)
+        self.assertEqual("0b0081021151024cffffff", hub.writes.pop(1)[1])
 
         hub.connection.notification_delayed('0500820201', 0.1)
         hub.connection.notification_delayed('050082020a', 0.2)
