@@ -149,6 +149,9 @@ class Peripheral(object):
             assert isinstance(mode_combinations, MsgPortInfo)
             info['possible_mode_combinations'] = mode_combinations.possible_mode_combinations
 
+        for mode in mode_info.output_modes:
+            info['output_modes'].append(self._describe_mode(mode))
+
         for mode in mode_info.input_modes:
             info['input_modes'].append(self._describe_mode(mode))
 
@@ -536,42 +539,38 @@ class ColorDistanceSensor(Peripheral):
 
 
 class Voltage(Peripheral):
-    MODE1 = 0x00  # give less frequent notifications
-    MODE2 = 0x01  # give more frequent notifications, maybe different value (cpu vs board?)
+    # sensor says there are "L" and "S" values, but what are they?
+    VOLTAGE_L = 0x00
+    VOLTAGE_S = 0x01
 
     def __init__(self, parent, port):
         super(Voltage, self).__init__(parent, port)
         self.last_value = None
 
-    def subscribe(self, callback, mode=MODE1, granularity=1):
+    def subscribe(self, callback, mode=VOLTAGE_L, granularity=1):
         super(Voltage, self).subscribe(callback, mode, granularity)
 
-    # we know only voltage subscription from it. is it really battery or just onboard voltage?
-    # device has turned off on 1b0e00060045 3c 0803 / 1b0e000600453c 0703
-    # moderate 9v ~= 3840
-    # good 7.5v ~= 3892
-    # liion 5v ~= 2100
     def handle_port_data(self, msg):
         data = msg.payload
         val = ushort(data, 0)
-        self.last_value = val / 4096.0
+        self.last_value = val / 3893.0
         self._notify_subscribers(self.last_value)
 
 
 class Current(Peripheral):
-    MODE1 = 0x00  # give less frequent notifications
-    MODE2 = 0x01  # give more frequent notifications, maybe different value (cpu vs board?)
+    CURRENT_L = 0x00
+    CURRENT_S = 0x01
 
     def __init__(self, parent, port):
         super(Current, self).__init__(parent, port)
         self.last_value = None
 
-    def subscribe(self, callback, mode=MODE1, granularity=1):
+    def subscribe(self, callback, mode=CURRENT_L, granularity=1):
         super(Current, self).subscribe(callback, mode, granularity)
 
     def handle_port_data(self, msg):
         val = ushort(msg.payload, 0)
-        self.last_value = val / 4096.0
+        self.last_value = val / 3893.0
         self._notify_subscribers(self.last_value)
 
 

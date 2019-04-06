@@ -159,11 +159,11 @@ def demo_voltage(movehub):
     def callback2(value):
         log.info("Voltage: %s", value)
 
-    movehub.current.subscribe(callback1, mode=Current.MODE1, granularity=0)
-    movehub.current.subscribe(callback1, mode=Current.MODE1, granularity=1)
+    movehub.current.subscribe(callback1, mode=Current.CURRENT_L, granularity=0)
+    movehub.current.subscribe(callback1, mode=Current.CURRENT_L, granularity=1)
 
-    movehub.voltage.subscribe(callback2, mode=Voltage.MODE1, granularity=0)
-    movehub.voltage.subscribe(callback2, mode=Voltage.MODE1, granularity=1)
+    movehub.voltage.subscribe(callback2, mode=Voltage.VOLTAGE_L, granularity=0)
+    movehub.voltage.subscribe(callback2, mode=Voltage.VOLTAGE_L, granularity=1)
     time.sleep(5)
     movehub.current.unsubscribe(callback1)
     movehub.voltage.unsubscribe(callback2)

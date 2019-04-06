@@ -560,7 +560,7 @@ class MsgPortModeInfo(UpstreamMsg):
                 "decimals": self._byte(),
             }
         else:
-            return self.payload
+            return self.payload  # FIXME: will probably fail here
 
 
 class MsgPortValueSingle(UpstreamMsg):
