@@ -130,6 +130,7 @@ class MoveHubTest(unittest.TestCase):
         conn.notification_delayed('060001060600', 0.3)
         conn.notification_delayed('0600030104ff', 0.4)
         MoveHub(conn.connect())
+        time.sleep(0.5)
         conn.wait_notifications_handled()
         self.assertEqual(b"0500010105", conn.writes[1][1])
         self.assertEqual(b"0500010d05", conn.writes[2][1])
