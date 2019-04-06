@@ -4,7 +4,8 @@ import traceback
 from struct import pack, unpack
 from threading import Thread
 
-from pylgbst.messages import MsgHubProperties, MsgPortOutput, MsgPortInputFmtSetupSingle, MsgPortInfoRequest
+from pylgbst.messages import MsgHubProperties, MsgPortOutput, MsgPortInputFmtSetupSingle, MsgPortInfoRequest, \
+    MsgPortModeInfoRequest, MsgPortInfo
 from pylgbst.utilities import queue, str2hex, usbyte, ushort
 
 log = logging.getLogger('peripherals')
@@ -129,7 +130,28 @@ class Peripheral(object):
                 log.warning("Failed to handle port data by %s: %s", self, str2hex(data))
 
     def describe(self):
-        pass  # TODO
+        mode_info = self.hub.send(MsgPortInfoRequest(self.port, MsgPortInfoRequest.INFO_MODE_INFO))
+        assert isinstance(mode_info, MsgPortInfo)
+
+        if mode_info.is_combinable():
+            mode_combinations = self.hub.send(MsgPortInfoRequest(self.port, MsgPortInfoRequest.INFO_MODE_COMBINATIONS))
+            assert isinstance(mode_combinations, MsgPortInfo)
+            log.info("Possible mode combinations: %s", mode_combinations.possible_mode_combinations)
+
+        if False:
+            infos = (MsgPortModeInfoRequest.INFO_NAME,
+                     MsgPortModeInfoRequest.INFO_RAW_RANGE,
+                     MsgPortModeInfoRequest.INFO_PCT_RANGE,
+                     MsgPortModeInfoRequest.INFO_SI_RANGE,
+                     MsgPortModeInfoRequest.INFO_NAME_OF_VALUE,
+                     MsgPortModeInfoRequest.INFO_MAPPING,
+                     MsgPortModeInfoRequest.INFO_MOTOR_BIAS,
+                     MsgPortModeInfoRequest.INFO_CAPABILITY_BITS,
+                     MsgPortModeInfoRequest.INFO_VALUE_FORMAT,
+                     )
+
+            for info in infos:
+                self.hub.send(MsgPortModeInfoRequest(self.port, mode, info))
 
 
 class LEDRGB(Peripheral):

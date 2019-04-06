@@ -44,6 +44,7 @@ class Hub(object):
     def send(self, msg):
         """
         :type msg: pylgbst.messages.DownstreamMsg
+        :rtype: pylgbst.messages.UpstreamMsg
         """
         log.debug("Send message: %r", msg)
         self.connection.write(self.HUB_HARDWARE_HANDLE, msg.bytes())
@@ -51,7 +52,9 @@ class Hub(object):
             assert not self._sync_request, "Pending request %r while trying to put %r" % (self._sync_request, msg)
             self._sync_request = msg
             log.debug("Waiting for sync reply to %r...", msg)
-            return self._sync_replies.get()
+            resp = self._sync_replies.get()
+            log.debug("Fetched sync reply: %r", resp)
+            return resp
         else:
             return None
 
@@ -66,14 +69,10 @@ class Hub(object):
                 self._sync_replies.put(msg)
                 self._sync_request = None
 
-        found = False
         for msg_class, handler in self._msg_handlers:
             if isinstance(msg, msg_class):
-                found = True
+                log.debug("Handling msg with %s: %r", handler, msg)
                 handler(msg)
-
-        if not found:
-            log.debug("Did not find handler for message: %r", msg)
 
     def _get_upstream_msg(self, data):
         msg_type = usbyte(data, 2)

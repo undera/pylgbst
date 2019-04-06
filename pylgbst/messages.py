@@ -58,6 +58,7 @@ class UpstreamMsg(Message):
         assert hub_id == 0
         msg_type = msg._byte()
         assert cls.TYPE == msg_type, "Message type does not match: %x!=%x" % (cls.TYPE, msg_type)
+        assert isinstance(msg.payload, bytes)
         return msg
 
     def __shift(self, vtype, vlen):
@@ -417,10 +418,20 @@ class MsgPortInfo(UpstreamMsg):
     """
     TYPE = 0x43
 
+    CAP_OUTPUT = 0b00000001
+    CAP_INPUT = 0b00000010
+    CAP_COMBINABLE = 0b00000100
+    CAP_SYNCHRONIZABLE = 0b00001000
+
     def __init__(self):
         super(MsgPortInfo, self).__init__()
         self.port = None
         self.info_type = None
+        self.capabilities = None
+        self.total_modes = None
+        self.input_modes = None
+        self.output_modes = None
+        self.possible_mode_combinations = []
 
     @classmethod
     def decode(cls, data):
@@ -428,7 +439,45 @@ class MsgPortInfo(UpstreamMsg):
         assert isinstance(msg, MsgPortInfo)
         msg.port = msg._byte()
         msg.info_type = msg._byte()
+        if msg.info_type == MsgPortInfoRequest.INFO_MODE_INFO:
+            msg.capabilities = msg._byte()
+            msg.total_modes = msg._byte()
+            msg.input_modes = msg._bits_list(msg._short())
+            msg.output_modes = msg._bits_list(msg._short())
+            assert len(msg.input_modes) + len(msg.output_modes) == msg.total_modes - 1
+        else:
+            while msg.payload:
+                # https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#pos-m
+                val = msg._short()
+                msg.possible_mode_combinations.append(msg._bits_list(val))
+                if not val:
+                    break
         return msg
+
+    def is_output(self):
+        assert self.info_type == MsgPortInfoRequest.INFO_MODE_INFO
+        return self.capabilities & self.CAP_OUTPUT
+
+    def is_input(self):
+        assert self.info_type == MsgPortInfoRequest.INFO_MODE_INFO
+        return self.capabilities & self.CAP_INPUT
+
+    def is_combinable(self):
+        assert self.info_type == MsgPortInfoRequest.INFO_MODE_INFO
+        return self.capabilities & self.CAP_COMBINABLE
+
+    def is_synchronizable(self):
+        assert self.info_type == MsgPortInfoRequest.INFO_MODE_INFO
+        return self.capabilities & self.CAP_SYNCHRONIZABLE
+
+    def _bits_list(self, short):
+        res = []
+        x = 1
+        for i in range(16 + 1):
+            if short & x:
+                res.append(i)
+            x <<= 1
+        return res
 
 
 class MsgPortModeInfo(UpstreamMsg):
