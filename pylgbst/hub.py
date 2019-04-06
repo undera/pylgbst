@@ -54,6 +54,8 @@ class Hub(object):
             log.debug("Waiting for sync reply to %r...", msg)
             resp = self._sync_replies.get()
             log.debug("Fetched sync reply: %r", resp)
+            if isinstance(resp, MsgGenericError):
+                raise RuntimeError(resp.message())
             return resp
         else:
             return None
@@ -87,7 +89,9 @@ class Hub(object):
 
     def _handle_error(self, msg):
         log.warning("Command error: %s", msg.message())
-        self._sync_request = DownstreamMsg()
+        if self._sync_request:
+            self._sync_request = None
+            self._sync_replies.put(msg)
 
     def _handle_action(self, msg):
         """

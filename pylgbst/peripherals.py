@@ -5,7 +5,7 @@ from struct import pack, unpack
 from threading import Thread
 
 from pylgbst.messages import MsgHubProperties, MsgPortOutput, MsgPortInputFmtSetupSingle, MsgPortInfoRequest, \
-    MsgPortModeInfoRequest, MsgPortInfo
+    MsgPortModeInfoRequest, MsgPortInfo, MsgPortModeInfo
 from pylgbst.utilities import queue, str2hex, usbyte, ushort
 
 log = logging.getLogger('peripherals')
@@ -134,8 +134,8 @@ class Peripheral(object):
         assert isinstance(mode_info, MsgPortInfo)
         info = {
             "mode_count": mode_info.total_modes,
-            "input_modes": mode_info.input_modes,
-            "output_modes": mode_info.output_modes,
+            "input_modes": [],
+            "output_modes": [],
             "capabilities": {
                 "logically_combinable": mode_info.is_combinable(),
                 "synchronizable": mode_info.is_synchronizable(),
@@ -149,23 +149,22 @@ class Peripheral(object):
             assert isinstance(mode_combinations, MsgPortInfo)
             info['possible_mode_combinations'] = mode_combinations.possible_mode_combinations
 
-        if False:
-            infos = (MsgPortModeInfoRequest.INFO_NAME,
-                     MsgPortModeInfoRequest.INFO_RAW_RANGE,
-                     MsgPortModeInfoRequest.INFO_PCT_RANGE,
-                     MsgPortModeInfoRequest.INFO_SI_RANGE,
-                     MsgPortModeInfoRequest.INFO_NAME_OF_VALUE,
-                     MsgPortModeInfoRequest.INFO_MAPPING,
-                     MsgPortModeInfoRequest.INFO_MOTOR_BIAS,
-                     MsgPortModeInfoRequest.INFO_CAPABILITY_BITS,
-                     MsgPortModeInfoRequest.INFO_VALUE_FORMAT,
-                     )
-
-            for info in infos:
-                self.hub.send(MsgPortModeInfoRequest(self.port, mode, info))
+        for mode in mode_info.input_modes:
+            info['input_modes'].append(self._describe_mode(mode))
 
         log.debug("Port info for 0x%x: %s", self.port, info)
         return info
+
+    def _describe_mode(self, mode):
+        descr = {"Mode": mode}
+        for info in MsgPortModeInfoRequest.INFO_TYPES:
+            try:
+                resp = self.hub.send(MsgPortModeInfoRequest(self.port, mode, info))
+                assert isinstance(resp, MsgPortModeInfo)
+                descr[MsgPortModeInfoRequest.INFO_TYPES[info]] = resp.value
+            except RuntimeError:
+                log.debug("Got error while requesting info 0x%x: %s", info, traceback.format_exc())
+        return descr
 
 
 class LEDRGB(Peripheral):

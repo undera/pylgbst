@@ -75,6 +75,18 @@ class UpstreamMsg(Message):
     def _long(self):
         return self.__shift("I", 4)
 
+    def _float(self):
+        return self.__shift("f", 4)
+
+    def _bits_list(self, val):
+        res = []
+        x = 1
+        for i in range(16 + 1):
+            if val & x:
+                res.append(i)
+            x <<= 1
+        return res
+
 
 class MsgHubProperties(DownstreamMsg, UpstreamMsg):
     """
@@ -353,12 +365,24 @@ class MsgPortModeInfoRequest(DownstreamMsg):
     INFO_RAW_RANGE = 0x01
     INFO_PCT_RANGE = 0x02
     INFO_SI_RANGE = 0x03  # no idea what 'SI' stands for
-    INFO_NAME_OF_VALUE = 0x04
+    INFO_UNITS = 0x04
     INFO_MAPPING = 0x05
     # INFO_INTERNAL = 0x06
     INFO_MOTOR_BIAS = 0x07
     INFO_CAPABILITY_BITS = 0x08
     INFO_VALUE_FORMAT = 0x80
+
+    INFO_TYPES = {
+        INFO_NAME: "Name",
+        INFO_RAW_RANGE: "Raw range",
+        INFO_PCT_RANGE: "Percent range",
+        INFO_SI_RANGE: "SI value range",
+        INFO_UNITS: "Units",
+        INFO_MAPPING: "Mapping",
+        INFO_MOTOR_BIAS: "Motor bias",
+        INFO_CAPABILITY_BITS: "Capabilities",
+        INFO_VALUE_FORMAT: "Value encoding",
+    }
 
     def __init__(self, port, mode, info_type):
         super(MsgPortModeInfoRequest, self).__init__()
@@ -469,15 +493,6 @@ class MsgPortInfo(UpstreamMsg):
         assert self.info_type == MsgPortInfoRequest.INFO_MODE_INFO
         return bool(self.capabilities & self.CAP_SYNCHRONIZABLE)
 
-    def _bits_list(self, short):
-        res = []
-        x = 1
-        for i in range(16 + 1):
-            if short & x:
-                res.append(i)
-            x <<= 1
-        return res
-
 
 class MsgPortModeInfo(UpstreamMsg):
     """
@@ -485,11 +500,30 @@ class MsgPortModeInfo(UpstreamMsg):
     """
     TYPE = 0x44
 
+    MAPPING_FLAGS = {
+        7: "Supports NULL value",
+        6: "Supports Functional Mapping 2.0+",
+        5: "N/A",
+        4: "Absolute [min..max]",
+        3: "Relative [-1..1]",
+        2: "Discrete [0, 1, 2, 3]",
+        1: "N/A",
+        0: "N/A",
+    }
+
+    DATASET_TYPES = {
+        0b00: "8 bit",
+        0b01: "16 bit",
+        0b10: "32 bit",
+        0b11: "FLOAT",
+    }
+
     def __init__(self):
         super(MsgPortModeInfo, self).__init__()
         self.port = None
         self.mode = None
         self.info_type = None  # @see MsgPortModeInfoRequest
+        self.value = None
 
     @classmethod
     def decode(cls, data):
@@ -498,7 +532,35 @@ class MsgPortModeInfo(UpstreamMsg):
         msg.port = msg._byte()
         msg.mode = msg._byte()
         msg.info_type = msg._byte()
+        msg.value = msg._value()
         return msg
+
+    def _value(self):
+        info = MsgPortModeInfoRequest
+        if self.info_type == info.INFO_NAME:
+            return self.payload[:self.payload.index(b"\00")].decode('ascii')
+        elif self.info_type in (info.INFO_RAW_RANGE, info.INFO_PCT_RANGE, info.INFO_SI_RANGE):
+            return [self._float(), self._float()]
+        elif self.info_type == info.INFO_UNITS:
+            return self.payload[:self.payload.index(b"\00")].decode('ascii')
+        elif self.info_type == info.INFO_MAPPING:
+            inp = self._bits_list(self._byte())
+            outp = self._bits_list(self._byte())
+            return {
+                "input": [self.MAPPING_FLAGS[x] for x in inp],
+                "output": [self.MAPPING_FLAGS[x] for x in outp],
+            }
+        elif self.info_type == info.INFO_MOTOR_BIAS:
+            return self._byte()
+        elif self.info_type == info.INFO_VALUE_FORMAT:
+            return {
+                "datasets": self._byte(),
+                "type": self.DATASET_TYPES[self._byte()],
+                "total_figures": self._byte(),
+                "decimals": self._byte(),
+            }
+        else:
+            return self.payload
 
 
 class MsgPortValueSingle(UpstreamMsg):
