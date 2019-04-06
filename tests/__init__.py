@@ -50,7 +50,7 @@ class ConnectionMock(Connection):
                     data = self.notifications.pop(0)
                     s = unhexlify(data.replace(' ', ''))
                     self.notification_handler(MoveHub.HUB_HARDWARE_HANDLE, bytes(s))
-            time.sleep(0.1)
+            time.sleep(0.01)
 
         self.finished = True
 
@@ -79,7 +79,7 @@ class ConnectionMock(Connection):
     def wait_notifications_handled(self):
         self.running = False
         for _ in range(1, 180):
-            time.sleep(0.1)
+            time.sleep(0.01)
             log.debug("Waiting for notifications to process...")
             if self.finished:
                 log.debug("Done waiting for notifications to process")

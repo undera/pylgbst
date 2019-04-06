@@ -4,6 +4,7 @@ from pylgbst import get_connection_auto
 from pylgbst.messages import *
 from pylgbst.peripherals import *
 from pylgbst.utilities import str2hex, usbyte, ushort
+from pylgbst.utilities import queue
 
 log = logging.getLogger('hub')
 
@@ -12,14 +13,14 @@ class Hub(object):
     """
     :type connection: pylgbst.comms.Connection
     :type peripherals: dict[int,Peripheral]
-    :type _sent_msg: pylgbst.messages.DownstreamMsg
     """
     HUB_HARDWARE_HANDLE = 0x0E
 
     def __init__(self, connection=None):
         self._msg_handlers = []
         self.peripherals = {}
-        self._sent_msg = DownstreamMsg()
+        self._sync_request = None
+        self._sync_replies = queue.Queue(1)
 
         self.add_message_handler(MsgHubAttachedIO, self._handle_device_change)
         self.add_message_handler(MsgPortOutputFeedback, self._handle_port_output)
@@ -47,41 +48,26 @@ class Hub(object):
         """
         :type msg: pylgbst.messages.DownstreamMsg
         """
-        self._wait_for_reply(None)
-
         log.debug("Send message: %r", msg)
         self.connection.write(self.HUB_HARDWARE_HANDLE, str(msg))
-        self._sent_msg = msg
-
-        self._wait_for_reply(msg)
-
-        resp = self._sent_msg
-        self._sent_msg = DownstreamMsg()
-        return resp
-
-    def _wait_for_reply(self, msg):
-        start = time.time()
-        while isinstance(self._sent_msg, DownstreamMsg) and self._sent_msg.needs_reply and self.connection.is_alive():
-            spent = time.time() - start
-            if spent > 10.0:
-                log.info("Waiting %.2f for pair message to answer %r", spent, msg)
-                time.sleep(1.0)
-            elif spent > 1.0:
-                log.debug("Waiting %.2f for pair message to answer %r", spent, msg)
-                time.sleep(0.1)
-            elif spent > 0.1:
-                log.debug("Waiting %.2f for pair message to answer %r", spent, msg)
-                time.sleep(0.01)
+        if msg.needs_reply:
+            assert not self._sync_request, "Pending request %r while trying to put %r" % (self._sync_request, msg)
+            self._sync_request = msg
+            log.debug("Waiting for sync reply to %r...", msg)
+            return self._sync_replies.get()
+        else:
+            return None
 
     def _notify(self, handle, data):
         log.debug("Notification on %s: %s", handle, str2hex(data))
 
-        msg = self._get_upstream_msg(data)  # block in case there is pending outgoing msg
-        if isinstance(self._sent_msg, DownstreamMsg) and self._sent_msg.is_reply(msg):
-            log.debug("Found matching upstream msg: %r", msg)
-            self._sent_msg = msg  # FIXME: weird piggyback of UpstreamMsg via field of DownstreamMsg
-        elif type(self._sent_msg) != DownstreamMsg:
-            log.debug("Upstream msg is not reply we need: %r", msg)
+        msg = self._get_upstream_msg(data)
+
+        if self._sync_request:
+            if self._sync_request.is_reply(msg):
+                log.debug("Found matching upstream msg: %r", msg)
+                self._sync_replies.put(msg)
+                self._sync_request = None
 
         found = False
         for msg_class, handler in self._msg_handlers:
@@ -105,7 +91,7 @@ class Hub(object):
 
     def _handle_error(self, msg):
         log.warning("Command error: %s", msg.message())
-        self._sent_msg = DownstreamMsg()
+        self._sync_request = DownstreamMsg()
 
     def _handle_port_output(self, msg):
         self.peripherals[msg.port].notify_feedback(msg)

@@ -1,3 +1,4 @@
+import logging
 import time
 import unittest
 
@@ -157,6 +158,7 @@ class PeripheralsTest(unittest.TestCase):
         motor.stop()
         self.assertEqual("090081021107006403", hub.writes.pop(1)[1])
 
+        logging.debug("\n\n")
         hub.connection.notification_delayed('0500820201', 0.1)
         hub.connection.notification_delayed('050082020a', 0.2)
         motor.timed(1.0)
