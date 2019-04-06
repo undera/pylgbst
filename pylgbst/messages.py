@@ -444,7 +444,6 @@ class MsgPortInfo(UpstreamMsg):
             msg.total_modes = msg._byte()
             msg.input_modes = msg._bits_list(msg._short())
             msg.output_modes = msg._bits_list(msg._short())
-            assert len(msg.input_modes) + len(msg.output_modes) == msg.total_modes - 1
         else:
             while msg.payload:
                 # https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#pos-m
@@ -456,19 +455,19 @@ class MsgPortInfo(UpstreamMsg):
 
     def is_output(self):
         assert self.info_type == MsgPortInfoRequest.INFO_MODE_INFO
-        return self.capabilities & self.CAP_OUTPUT
+        return bool(self.capabilities & self.CAP_OUTPUT)
 
     def is_input(self):
         assert self.info_type == MsgPortInfoRequest.INFO_MODE_INFO
-        return self.capabilities & self.CAP_INPUT
+        return bool(self.capabilities & self.CAP_INPUT)
 
     def is_combinable(self):
         assert self.info_type == MsgPortInfoRequest.INFO_MODE_INFO
-        return self.capabilities & self.CAP_COMBINABLE
+        return bool(self.capabilities & self.CAP_COMBINABLE)
 
     def is_synchronizable(self):
         assert self.info_type == MsgPortInfoRequest.INFO_MODE_INFO
-        return self.capabilities & self.CAP_SYNCHRONIZABLE
+        return bool(self.capabilities & self.CAP_SYNCHRONIZABLE)
 
     def _bits_list(self, short):
         res = []

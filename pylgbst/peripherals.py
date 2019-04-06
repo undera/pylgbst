@@ -132,11 +132,22 @@ class Peripheral(object):
     def describe(self):
         mode_info = self.hub.send(MsgPortInfoRequest(self.port, MsgPortInfoRequest.INFO_MODE_INFO))
         assert isinstance(mode_info, MsgPortInfo)
+        info = {
+            "mode_count": mode_info.total_modes,
+            "input_modes": mode_info.input_modes,
+            "output_modes": mode_info.output_modes,
+            "capabilities": {
+                "logically_combinable": mode_info.is_combinable(),
+                "synchronizable": mode_info.is_synchronizable(),
+                "can_output": mode_info.is_output(),
+                "can_input": mode_info.is_input(),
+            }
+        }
 
         if mode_info.is_combinable():
             mode_combinations = self.hub.send(MsgPortInfoRequest(self.port, MsgPortInfoRequest.INFO_MODE_COMBINATIONS))
             assert isinstance(mode_combinations, MsgPortInfo)
-            log.info("Possible mode combinations: %s", mode_combinations.possible_mode_combinations)
+            info['possible_mode_combinations'] = mode_combinations.possible_mode_combinations
 
         if False:
             infos = (MsgPortModeInfoRequest.INFO_NAME,
@@ -152,6 +163,9 @@ class Peripheral(object):
 
             for info in infos:
                 self.hub.send(MsgPortModeInfoRequest(self.port, mode, info))
+
+        log.debug("Port info for 0x%x: %s", self.port, info)
+        return info
 
 
 class LEDRGB(Peripheral):
