@@ -14,11 +14,11 @@ class Automata(object):
         self._sensor = []
 
     def __on_sensor(self, color, distance=-1):
-        logging.info("Sensor data: %s/%s", COLORS[color], distance)
+        logging.debug("Sensor data: %s/%s", COLORS[color], distance)
         if distance <= 4:
             if color not in (COLOR_NONE, COLOR_BLACK):
                 self._sensor.append((color, int(distance)))
-                logging.info("Sensor data: %s", COLORS[color])
+                logging.debug("Sensor data: %s", COLORS[color])
 
     def feed_tape(self):
         self.__hub.motor_external.angled(60, 0.5)
