@@ -185,6 +185,5 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
     hub = MoveHub()
-    demo_motor_sensors(hub)
-    # demo_all(hub)
+    demo_all(hub)
     hub.disconnect()

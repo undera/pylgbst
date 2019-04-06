@@ -15,7 +15,7 @@ class Automata(object):
 
     def __on_sensor(self, color, distance=-1):
         logging.info("Sensor data: %s/%s", COLORS[color], distance)
-        if distance < 4:
+        if distance <= 4:
             if color not in (COLOR_NONE, COLOR_BLACK):
                 self._sensor.append((color, int(distance)))
                 logging.info("Sensor data: %s", COLORS[color])
