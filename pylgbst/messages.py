@@ -271,7 +271,7 @@ class MsgHubAttachedIO(UpstreamMsg):
         return msg
 
 
-class MsgGenericError(UpstreamMsg):  # TODO: decode it
+class MsgGenericError(UpstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#generic-error-messages
     """

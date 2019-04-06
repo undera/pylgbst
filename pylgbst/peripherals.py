@@ -134,6 +134,9 @@ class Peripheral(object):
         """
         return  # FIXME
 
+    def describe(self):
+        pass
+
 
 class LEDRGB(Peripheral):
     MODE_INDEX = 0x00

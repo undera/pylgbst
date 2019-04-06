@@ -27,4 +27,6 @@ def usint(seq, index):
 
 
 def str2hex(data):  # we need it for python 2+3 compatibility
+    if sys.version_info[0] == 3:
+        data = bytes(data, 'ascii')
     return binascii.hexlify(data).decode("utf8")
