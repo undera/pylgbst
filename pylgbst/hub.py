@@ -1,3 +1,4 @@
+import threading
 import time
 
 from pylgbst import get_connection_auto
@@ -33,6 +34,7 @@ class Hub(object):
         self.peripherals = {}
         self._sync_request = None
         self._sync_replies = queue.Queue(1)
+        self._sync_lock = threading.Lock()
 
         self.add_message_handler(MsgHubAttachedIO, self._handle_device_change)
         self.add_message_handler(MsgPortValueSingle, self._handle_sensor_data)
@@ -61,9 +63,11 @@ class Hub(object):
         log.debug("Send message: %r", msg)
         self.connection.write(self.HUB_HARDWARE_HANDLE, msg.bytes())
         if msg.needs_reply:
-            assert not self._sync_request, "Pending request %r while trying to put %r" % (self._sync_request, msg)
-            self._sync_request = msg
-            log.debug("Waiting for sync reply to %r...", msg)
+            with self._sync_lock:
+                assert not self._sync_request, "Pending request %r while trying to put %r" % (self._sync_request, msg)
+                self._sync_request = msg
+                log.debug("Waiting for sync reply to %r...", msg)
+
             resp = self._sync_replies.get()
             log.debug("Fetched sync reply: %r", resp)
             if isinstance(resp, MsgGenericError):
@@ -77,11 +81,12 @@ class Hub(object):
 
         msg = self._get_upstream_msg(data)
 
-        if self._sync_request:
-            if self._sync_request.is_reply(msg):
-                log.debug("Found matching upstream msg: %r", msg)
-                self._sync_replies.put(msg)
-                self._sync_request = None
+        with self._sync_lock:
+            if self._sync_request:
+                if self._sync_request.is_reply(msg):
+                    log.debug("Found matching upstream msg: %r", msg)
+                    self._sync_replies.put(msg)
+                    self._sync_request = None
 
         for msg_class, handler in self._msg_handlers:
             if isinstance(msg, msg_class):
@@ -101,9 +106,10 @@ class Hub(object):
 
     def _handle_error(self, msg):
         log.warning("Command error: %s", msg.message())
-        if self._sync_request:
-            self._sync_request = None
-            self._sync_replies.put(msg)
+        with self._sync_lock:
+            if self._sync_request:
+                self._sync_request = None
+                self._sync_replies.put(msg)
 
     def _handle_action(self, msg):
         """
