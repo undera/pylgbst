@@ -8,8 +8,6 @@ from pylgbst.utilities import queue
 
 log = logging.getLogger('hub')
 
-# TODO: support more types of peripherals from
-# https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#io-type-id
 PERIPHERAL_TYPES = {
     MsgHubAttachedIO.DEV_MOTOR: Motor,
     MsgHubAttachedIO.DEV_MOTOR_EXTERNAL_TACHO: EncodedMotor,

@@ -1,319 +1,4 @@
 {
-  "ColorDistanceSensor on port 0x1": {
-    "mode_count": 11,
-    "input_modes": [
-      {
-        "Mode": 0,
-        "Name": "COLOR",
-        "Raw range": [
-          0.0,
-          10.0
-        ],
-        "Percent range": [
-          0.0,
-          100.0
-        ],
-        "SI value range": [
-          0.0,
-          10.0
-        ],
-        "Units": "IDX",
-        "Mapping": {
-          "input": [
-            "Discrete [0, 1, 2, 3]",
-            "Supports Functional Mapping 2.0+",
-            "Supports NULL value"
-          ],
-          "output": []
-        },
-        "Value encoding": {
-          "datasets": 1,
-          "type": "8 bit",
-          "total_figures": 3,
-          "decimals": 0
-        }
-      },
-      {
-        "Mode": 1,
-        "Name": "PROX",
-        "Raw range": [
-          0.0,
-          10.0
-        ],
-        "Percent range": [
-          0.0,
-          100.0
-        ],
-        "SI value range": [
-          0.0,
-          10.0
-        ],
-        "Units": "DIS",
-        "Mapping": {
-          "input": [
-            "Absolute [min..max]",
-            "Supports Functional Mapping 2.0+"
-          ],
-          "output": []
-        },
-        "Value encoding": {
-          "datasets": 1,
-          "type": "8 bit",
-          "total_figures": 3,
-          "decimals": 0
-        }
-      },
-      {
-        "Mode": 2,
-        "Name": "COUNT",
-        "Raw range": [
-          0.0,
-          100.0
-        ],
-        "Percent range": [
-          0.0,
-          100.0
-        ],
-        "SI value range": [
-          0.0,
-          100.0
-        ],
-        "Units": "CNT",
-        "Mapping": {
-          "input": [
-            "Relative [-1..1]"
-          ],
-          "output": []
-        },
-        "Value encoding": {
-          "datasets": 1,
-          "type": "32 bit",
-          "total_figures": 4,
-          "decimals": 0
-        }
-      },
-      {
-        "Mode": 3,
-        "Name": "REFLT",
-        "Raw range": [
-          0.0,
-          100.0
-        ],
-        "Percent range": [
-          0.0,
-          100.0
-        ],
-        "SI value range": [
-          0.0,
-          100.0
-        ],
-        "Units": "PCT",
-        "Mapping": {
-          "input": [
-            "Absolute [min..max]"
-          ],
-          "output": []
-        },
-        "Value encoding": {
-          "datasets": 1,
-          "type": "8 bit",
-          "total_figures": 3,
-          "decimals": 0
-        }
-      },
-      {
-        "Mode": 4,
-        "Name": "AMBI",
-        "Raw range": [
-          0.0,
-          100.0
-        ],
-        "Percent range": [
-          0.0,
-          100.0
-        ],
-        "SI value range": [
-          0.0,
-          100.0
-        ],
-        "Units": "PCT",
-        "Mapping": {
-          "input": [
-            "Absolute [min..max]"
-          ],
-          "output": []
-        },
-        "Value encoding": {
-          "datasets": 1,
-          "type": "8 bit",
-          "total_figures": 3,
-          "decimals": 0
-        }
-      },
-      {
-        "Mode": 6,
-        "Name": "RGB I",
-        "Raw range": [
-          0.0,
-          1023.0
-        ],
-        "Percent range": [
-          0.0,
-          100.0
-        ],
-        "SI value range": [
-          0.0,
-          1023.0
-        ],
-        "Units": "RAW",
-        "Mapping": {
-          "input": [
-            "Absolute [min..max]"
-          ],
-          "output": []
-        },
-        "Value encoding": {
-          "datasets": 3,
-          "type": "16 bit",
-          "total_figures": 5,
-          "decimals": 0
-        }
-      },
-      {
-        "Mode": 9,
-        "Name": "DEBUG",
-        "Raw range": [
-          0.0,
-          1023.0
-        ],
-        "Percent range": [
-          0.0,
-          100.0
-        ],
-        "SI value range": [
-          0.0,
-          10.0
-        ],
-        "Units": "N/A",
-        "Mapping": {
-          "input": [
-            "Absolute [min..max]"
-          ],
-          "output": []
-        },
-        "Value encoding": {
-          "datasets": 2,
-          "type": "16 bit",
-          "total_figures": 5,
-          "decimals": 0
-        }
-      },
-      {
-        "Mode": 10,
-        "Name": "CALIB",
-        "Raw range": [
-          0.0,
-          65535.0
-        ],
-        "Percent range": [
-          0.0,
-          100.0
-        ],
-        "SI value range": [
-          0.0,
-          65535.0
-        ],
-        "Units": "N/A",
-        "Mapping": {
-          "input": [
-            "Absolute [min..max]"
-          ],
-          "output": []
-        },
-        "Value encoding": {
-          "datasets": 8,
-          "type": "16 bit",
-          "total_figures": 5,
-          "decimals": 0
-        }
-      }
-    ],
-    "output_modes": [
-      {
-        "Mode": 5,
-        "Name": "COL O",
-        "Raw range": [
-          0.0,
-          10.0
-        ],
-        "Percent range": [
-          0.0,
-          100.0
-        ],
-        "SI value range": [
-          0.0,
-          10.0
-        ],
-        "Units": "IDX",
-        "Mapping": {
-          "input": [],
-          "output": [
-            "Discrete [0, 1, 2, 3]"
-          ]
-        },
-        "Value encoding": {
-          "datasets": 1,
-          "type": "8 bit",
-          "total_figures": 3,
-          "decimals": 0
-        }
-      },
-      {
-        "Mode": 7,
-        "Name": "IR Tx",
-        "Raw range": [
-          0.0,
-          65535.0
-        ],
-        "Percent range": [
-          0.0,
-          100.0
-        ],
-        "SI value range": [
-          0.0,
-          65535.0
-        ],
-        "Units": "N/A",
-        "Mapping": {
-          "input": [],
-          "output": [
-            "Discrete [0, 1, 2, 3]"
-          ]
-        },
-        "Value encoding": {
-          "datasets": 1,
-          "type": "16 bit",
-          "total_figures": 5,
-          "decimals": 0
-        }
-      }
-    ],
-    "capabilities": {
-      "logically_combinable": true,
-      "synchronizable": false,
-      "can_output": true,
-      "can_input": true
-    },
-    "possible_mode_combinations": [
-      [
-        0,
-        1,
-        2,
-        3,
-        6
-      ]
-    ]
-  },
   "EncodedMotor on port 0x2": {
     "mode_count": 4,
     "input_modes": [
@@ -937,6 +622,7 @@
       ]
     ]
   },
+
   "LEDRGB on port 0x32": {
     "mode_count": 2,
     "input_modes": [],
@@ -1008,6 +694,323 @@
       "can_input": false
     }
   },
+
+  "ColorDistanceSensor on port 0x1": {
+    "mode_count": 11,
+    "input_modes": [
+      {
+        "Mode": 0,
+        "Name": "COLOR",
+        "Raw range": [
+          0.0,
+          10.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          10.0
+        ],
+        "Units": "IDX",
+        "Mapping": {
+          "input": [
+            "Discrete [0, 1, 2, 3]",
+            "Supports Functional Mapping 2.0+",
+            "Supports NULL value"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 3,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 1,
+        "Name": "PROX",
+        "Raw range": [
+          0.0,
+          10.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          10.0
+        ],
+        "Units": "DIS",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]",
+            "Supports Functional Mapping 2.0+"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 3,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 2,
+        "Name": "COUNT",
+        "Raw range": [
+          0.0,
+          100.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          100.0
+        ],
+        "Units": "CNT",
+        "Mapping": {
+          "input": [
+            "Relative [-1..1]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "32 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 3,
+        "Name": "REFLT",
+        "Raw range": [
+          0.0,
+          100.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          100.0
+        ],
+        "Units": "PCT",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 3,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 4,
+        "Name": "AMBI",
+        "Raw range": [
+          0.0,
+          100.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          100.0
+        ],
+        "Units": "PCT",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 3,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 6,
+        "Name": "RGB I",
+        "Raw range": [
+          0.0,
+          1023.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          1023.0
+        ],
+        "Units": "RAW",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 3,
+          "type": "16 bit",
+          "total_figures": 5,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 9,
+        "Name": "DEBUG",
+        "Raw range": [
+          0.0,
+          1023.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          10.0
+        ],
+        "Units": "N/A",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 2,
+          "type": "16 bit",
+          "total_figures": 5,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 10,
+        "Name": "CALIB",
+        "Raw range": [
+          0.0,
+          65535.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          65535.0
+        ],
+        "Units": "N/A",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 8,
+          "type": "16 bit",
+          "total_figures": 5,
+          "decimals": 0
+        }
+      }
+    ],
+    "output_modes": [
+      {
+        "Mode": 5,
+        "Name": "COL O",
+        "Raw range": [
+          0.0,
+          10.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          10.0
+        ],
+        "Units": "IDX",
+        "Mapping": {
+          "input": [],
+          "output": [
+            "Discrete [0, 1, 2, 3]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 3,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 7,
+        "Name": "IR Tx",
+        "Raw range": [
+          0.0,
+          65535.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          65535.0
+        ],
+        "Units": "N/A",
+        "Mapping": {
+          "input": [],
+          "output": [
+            "Discrete [0, 1, 2, 3]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "16 bit",
+          "total_figures": 5,
+          "decimals": 0
+        }
+      }
+    ],
+    "capabilities": {
+      "logically_combinable": true,
+      "synchronizable": false,
+      "can_output": true,
+      "can_input": true
+    },
+    "possible_mode_combinations": [
+      [
+        0,
+        1,
+        2,
+        3,
+        6
+      ]
+    ]
+  },
+
   "TiltSensor on port 0x3a": {
     "mode_count": 8,
     "input_modes": [
@@ -1263,6 +1266,7 @@
       ]
     ]
   },
+
   "Current on port 0x3b": {
     "mode_count": 2,
     "input_modes": [

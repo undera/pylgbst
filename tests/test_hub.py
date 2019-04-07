@@ -110,7 +110,7 @@ class HubTest(unittest.TestCase):
         self.assertEqual(b"0a004102080100000001", conn.writes.pop(1)[1])
 
         conn.notification_delayed("08004502ff0aff00", 0.1)  # value for sensor
-        time.sleep(0.2)
+        time.sleep(0.3)
 
         conn.notification_delayed("0a004702080000000000", 0.3)  # unsubscribe ack
         dev.unsubscribe(cb)

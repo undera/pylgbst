@@ -39,6 +39,9 @@ COLORS = {
 }
 
 
+# TODO: support more types of peripherals from
+# https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#io-type-id
+
 class Peripheral(object):
     """
     :type parent: pylgbst.hub.Hub
@@ -95,7 +98,7 @@ class Peripheral(object):
 
     def _send_output(self, msg):
         assert isinstance(msg, MsgPortOutput)
-        msg.is_buffered = self.is_buffered
+        msg.is_buffered = self.is_buffered  # TODO: support buffering
         self.hub.send(msg)
 
     def get_sensor_data(self, mode):
@@ -104,19 +107,19 @@ class Peripheral(object):
         resp = self.hub.send(msg)
         return self._decode_port_data(resp)
 
-    def subscribe(self, callback, mode=0x00, granularity=1):  # TODO: review it
+    def subscribe(self, callback, mode=0x00, granularity=1):
         if self._port_mode.mode != mode and self._subscribers:
-            raise ValueError("Port is in active mode %r, unsubscribe first" % self._port_mode)
+            raise ValueError("Port is in active mode %r, unsubscribe all subscribers first" % self._port_mode)
         self.set_port_mode(mode, True, granularity)
         if callback:
             self._subscribers.add(callback)
 
-    def unsubscribe(self, callback=None):  # TODO: review it
+    def unsubscribe(self, callback=None):
         if callback in self._subscribers:
             self._subscribers.remove(callback)
 
         if not self._port_mode.upd_enabled:
-            log.warning("Attempt to unsubscribe while never subscribed: %s", self)
+            log.warning("Attempt to unsubscribe while port value updates are off: %s", self)
         elif not self._subscribers:
             self.set_port_mode(self._port_mode.mode, False)
 
@@ -143,7 +146,7 @@ class Peripheral(object):
         :type msg: pylgbst.messages.MsgPortValueSingle
         """
         decoded = self._decode_port_data(msg)
-        assert isinstance(decoded, (tuple, list))
+        assert isinstance(decoded, (tuple, list)), "Unexpected data type: %s" % type(decoded)
         self._notify_subscribers(*decoded)
 
     def _queue_reader(self):
@@ -215,17 +218,11 @@ class LEDRGB(Peripheral):
             if color not in COLORS:
                 raise ValueError("Color %s is not in list of available colors" % color)
 
-            # TODO: merge rgb mode in, make it switch the mode prior to changing color
             self.set_port_mode(self.MODE_INDEX)
             payload = pack("<B", self.MODE_INDEX) + pack("<B", color)
 
         msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
         self._send_output(msg)
-
-    # def set_color_rgb(self, red, green, blue):
-    #    payload = pack("<B", self.MODE_RGB) + pack("<B", red) + pack("<B", green) + pack("<B", blue)
-    #    msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
-    #    self._send_to_port(msg)
 
 
 class Motor(Peripheral):
@@ -356,7 +353,7 @@ class EncodedMotor(Motor):
     # SUBCMD_GOTO_ABSOLUTE_POSITIONC = 0x0E
     SUBCMD_PRESET_ENCODER = 0x14
 
-    SENSOR_SOMETHING1 = 0x00  # TODO: understand it
+    SENSOR_SOMETHING1 = 0x00  # what's the meaning of it? it is not present in mode info
     SENSOR_SPEED = 0x01
     SENSOR_ANGLE = 0x02
 
@@ -412,17 +409,17 @@ class EncodedMotor(Motor):
     def _decode_port_data(self, msg):
         data = msg.payload
         if self._port_mode.mode == self.SENSOR_ANGLE:
-            rotation = unpack("<l", data[0:4])[0]
-            return (rotation,)
+            angle = unpack("<l", data[0:4])[0]
+            return (angle,)
         elif self._port_mode.mode == self.SENSOR_SOMETHING1:
-            # TODO: understand what it means
-            rotation = usbyte(data, 0)
-            return (rotation,)
+            smth = usbyte(data, 0)
+            return (smth,)
         elif self._port_mode.mode == self.SENSOR_SPEED:
-            rotation = unpack("<b", data[0])[0]
-            return (rotation,)
+            speed = unpack("<b", data[0])[0]
+            return (speed,)
         else:
             log.debug("Got motor sensor data while in unexpected mode: %r", self._port_mode)
+            return ()
 
     def subscribe(self, callback, mode=SENSOR_ANGLE, granularity=1):
         super(EncodedMotor, self).subscribe(callback, mode, granularity)
@@ -504,6 +501,7 @@ class TiltSensor(Peripheral):  # TODO: apply official docs to it
             return (roll, pitch, yaw)
         else:
             log.debug("Got tilt sensor data while in unexpected mode: %r", self._port_mode)
+            return ()
 
     def _byte2deg(self, val):
         if val > 90:
@@ -518,9 +516,9 @@ class VisionSensor(Peripheral):
     COUNT_2INCH = 0x02
     DISTANCE_HOW_CLOSE = 0x03
     DISTANCE_SUBINCH_HOW_CLOSE = 0x04
-    OFF1 = 0x05
+    SET_COLOR = 0x05
     STREAM_3_VALUES = 0x06
-    OFF2 = 0x07
+    SET_IR_TX = 0x07
     COLOR_DISTANCE_FLOAT = 0x08
     LUMINOSITY = 0x09
     CALIBRATE = 0x0a
@@ -542,18 +540,16 @@ class VisionSensor(Peripheral):
             return (color, float(distance))
         elif self._port_mode.mode == self.COLOR_ONLY:
             color = usbyte(data, 0)
-            return (color)
+            return (color,)
         elif self._port_mode.mode == self.DISTANCE_INCHES:
             distance = usbyte(data, 0)
-            return (distance)
+            return (distance,)
         elif self._port_mode.mode == self.DISTANCE_HOW_CLOSE:
             distance = usbyte(data, 0)
-            return (distance)
+            return (distance,)
         elif self._port_mode.mode == self.DISTANCE_SUBINCH_HOW_CLOSE:
             distance = usbyte(data, 0)
-            return (distance)
-        elif self._port_mode.mode == self.OFF1 or self._port_mode.mode == self.OFF2:
-            log.info("Turned off led on %s", self)
+            return (distance,)
         elif self._port_mode.mode == self.COUNT_2INCH:
             count = unpack("<L", data[0:4])[0]  # is it all 4 bytes or just 2?
             return (count,)
@@ -568,7 +564,28 @@ class VisionSensor(Peripheral):
             return (luminosity,)
         else:  # TODO: support whatever we forgot
             log.debug("Unhandled data in mode %s: %s", self._port_mode.mode, str2hex(data))
-            return (None,)
+            return ()
+
+    def set_color(self, color):
+        if color == COLOR_NONE:
+            color = COLOR_BLACK
+
+        if color not in COLORS:
+            raise ValueError("Color %s is not in list of available colors" % color)
+
+        self.set_port_mode(self.SET_COLOR)
+        payload = pack("<B", self.SET_COLOR) + pack("<B", color)
+
+        msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
+        self._send_output(msg)
+
+    def set_ir_tx(self, level=1.0):
+        assert 0 <= level <= 1.0
+        self.set_port_mode(self.SET_IR_TX)
+        payload = pack("<B", self.SET_IR_TX) + pack("<H", int(level * 65535))
+
+        msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
+        self._send_output(msg)
 
 
 class Voltage(Peripheral):
