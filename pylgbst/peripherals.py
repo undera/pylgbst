@@ -105,9 +105,9 @@ class Peripheral(object):
         return self._decode_port_data(resp)
 
     def subscribe(self, callback, mode=0x00, granularity=1):  # TODO: review it
-        if self._port_mode.mode != mode:
+        if self._port_mode.mode != mode and self._subscribers:
             raise ValueError("Port is in active mode %r, unsubscribe first" % self._port_mode)
-        self.set_port_mode(self._port_mode, True, granularity)
+        self.set_port_mode(mode, True, granularity)
         if callback:
             self._subscribers.add(callback)
 
@@ -115,7 +115,7 @@ class Peripheral(object):
         if callback in self._subscribers:
             self._subscribers.remove(callback)
 
-        if self._port_mode.upd_enabled:
+        if not self._port_mode.upd_enabled:
             log.warning("Attempt to unsubscribe while never subscribed: %s", self)
         elif not self._subscribers:
             self.set_port_mode(self._port_mode.mode, False)
@@ -148,12 +148,12 @@ class Peripheral(object):
 
     def _queue_reader(self):
         while True:
-            data = self._incoming_port_data.get()
+            msg = self._incoming_port_data.get()
             try:
-                self._handle_port_data(data)
+                self._handle_port_data(msg)
             except BaseException:
                 log.warning("%s", traceback.format_exc())
-                log.warning("Failed to handle port data by %s: %s", self, str2hex(data))
+                log.warning("Failed to handle port data by %s: %r", self, msg)
 
     def describe_possible_modes(self):
         mode_info = self.hub.send(MsgPortInfoRequest(self.port, MsgPortInfoRequest.INFO_MODE_INFO))
@@ -568,6 +568,7 @@ class VisionSensor(Peripheral):
             return (luminosity,)
         else:  # TODO: support whatever we forgot
             log.debug("Unhandled data in mode %s: %s", self._port_mode.mode, str2hex(data))
+            return (None,)
 
 
 class Voltage(Peripheral):

@@ -95,21 +95,28 @@ class HubTest(unittest.TestCase):
         time.sleep(0.1)
         dev = hub.peripherals[0x02]
         assert isinstance(dev, VisionSensor)
+
+        conn.notification_delayed("0a004702080000000000", 0.1)
+        conn.notification_delayed("08004502ff0aff00", 0.2)  # value for sensor
+        self.assertEqual((255, 10.0), dev.get_sensor_data(VisionSensor.COLOR_DISTANCE_FLOAT))
+        self.assertEqual(b"0a004102080000000001", conn.writes.pop(1)[1])
+        self.assertEqual(b"0500210200", conn.writes.pop(1)[1])
+
         vals = []
         cb = lambda x, y=None: vals.append((x, y))
 
         conn.notification_delayed("0a004702080100000001", 0.1)  # subscribe ack
         dev.subscribe(cb, granularity=1)
+        self.assertEqual(b"0a004102080100000001", conn.writes.pop(1)[1])
 
         conn.notification_delayed("08004502ff0aff00", 0.1)  # value for sensor
         time.sleep(0.2)
 
         conn.notification_delayed("0a004702080000000000", 0.3)  # unsubscribe ack
         dev.unsubscribe(cb)
+        self.assertEqual(b"0a004102080100000000", conn.writes.pop(1)[1])
 
         self.assertEqual([(255, 10.0)], vals)
-        self.assertEqual(b"0a004102080100000001", conn.writes[1][1])
-        self.assertEqual(b"0a004102080000000000", conn.writes[2][1])
 
 
 class MoveHubTest(unittest.TestCase):
