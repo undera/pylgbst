@@ -13,7 +13,7 @@ class ColorSorter(MoveHub):
         self.color = 0
         self.distance = 10
         self._last_wheel_dir = 1
-        self.color_distance_sensor.subscribe(self.on_color)
+        self.vision_sensor.subscribe(self.on_color)
         self.queue = [None for _ in range(0, 1)]
 
     def on_color(self, colr, dist):
@@ -47,7 +47,7 @@ class ColorSorter(MoveHub):
         self._last_wheel_dir = wheel_dir
 
     def clear(self):
-        self.color_distance_sensor.unsubscribe(self.on_color)
+        self.vision_sensor.unsubscribe(self.on_color)
         self.move_to_bucket(COLOR_BLACK)
         self.motor_AB.stop()
 

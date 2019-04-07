@@ -2,7 +2,7 @@ import logging
 import math
 import time
 
-from pylgbst.peripherals import ColorDistanceSensor, COLOR_RED, COLOR_CYAN, COLORS
+from pylgbst.peripherals import VisionSensor, COLOR_RED, COLOR_CYAN, COLORS
 
 
 class Plotter(object):
@@ -35,11 +35,11 @@ class Plotter(object):
         self.is_tool_down = False
 
     def _reset_caret(self):
-        if not self._hub.color_distance_sensor:
+        if not self._hub.vision_sensor:
             logging.warning("No color/distance sensor, cannot center caret")
             return
 
-        self._hub.color_distance_sensor.subscribe(self._on_distance, mode=ColorDistanceSensor.COLOR_DISTANCE_FLOAT)
+        self._hub.vision_sensor.subscribe(self._on_distance, mode=VisionSensor.COLOR_DISTANCE_FLOAT)
         self.caret.timed(0.5, 1)
         try:
             self.caret.start_power(-1)
@@ -48,14 +48,14 @@ class Plotter(object):
             while self._marker_color not in (COLOR_RED, COLOR_CYAN) and count < max_tries:
                 time.sleep(30.0 / max_tries)
                 count += 1
-            self._hub.color_distance_sensor.unsubscribe(self._on_distance)
+            self._hub.vision_sensor.unsubscribe(self._on_distance)
             clr = COLORS[self._marker_color] if self._marker_color else None
             logging.info("Centering tries: %s, color #%s", count, clr)
             if count >= max_tries:
                 raise RuntimeError("Failed to center caret")
         finally:
             self.caret.stop()
-            self._hub.color_distance_sensor.unsubscribe(self._on_distance)
+            self._hub.vision_sensor.unsubscribe(self._on_distance)
 
         if self._marker_color == COLOR_CYAN:
             self.move(-0.1, 0)

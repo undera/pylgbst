@@ -3,7 +3,7 @@ import unittest
 
 from pylgbst.hub import Hub, MoveHub
 from pylgbst.messages import MsgHubAction, MsgHubAlert, MsgHubProperties
-from pylgbst.peripherals import ColorDistanceSensor
+from pylgbst.peripherals import VisionSensor
 from pylgbst.utilities import usbyte
 from tests import ConnectionMock
 
@@ -94,7 +94,7 @@ class HubTest(unittest.TestCase):
         hub = Hub(conn)
         time.sleep(0.1)
         dev = hub.peripherals[0x02]
-        assert isinstance(dev, ColorDistanceSensor)
+        assert isinstance(dev, VisionSensor)
         vals = []
         cb = lambda x, y=None: vals.append((x, y))
 

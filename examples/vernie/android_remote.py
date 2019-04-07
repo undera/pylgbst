@@ -10,7 +10,7 @@ import socket
 import time
 
 from examples.vernie import Vernie
-from pylgbst.peripherals import ColorDistanceSensor
+from pylgbst.peripherals import VisionSensor
 
 host = ''
 port = 8999
@@ -54,7 +54,7 @@ robot = Vernie()
 robot.button.subscribe(on_btn)
 robot.motor_AB.stop()
 
-robot.color_distance_sensor.subscribe(on_distance, ColorDistanceSensor.DISTANCE_INCHES)
+robot.vision_sensor.subscribe(on_distance, VisionSensor.DISTANCE_INCHES)
 try:
     udp_sock.bind((host, port))
     time.sleep(1)

@@ -10,7 +10,7 @@ class Automata(object):
     def __init__(self):
         super(Automata, self).__init__()
         self.__hub = MoveHub()
-        self.__hub.color_distance_sensor.subscribe(self.__on_sensor)
+        self.__hub.vision_sensor.subscribe(self.__on_sensor)
         self._sensor = []
 
     def __on_sensor(self, color, distance=-1):

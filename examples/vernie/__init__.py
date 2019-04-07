@@ -68,7 +68,7 @@ class Vernie(MoveHub):
         self.language = language
 
         while True:
-            required_devices = (self.color_distance_sensor, self.motor_external)
+            required_devices = (self.vision_sensor, self.motor_external)
             if None not in required_devices:
                 break
             log.debug("Waiting for required devices to appear: %s", required_devices)

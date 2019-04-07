@@ -14,7 +14,7 @@ PERIPHERAL_TYPES = {
     MsgHubAttachedIO.DEV_MOTOR: Motor,
     MsgHubAttachedIO.DEV_MOTOR_EXTERNAL_TACHO: EncodedMotor,
     MsgHubAttachedIO.DEV_MOTOR_INTERNAL_TACHO: EncodedMotor,
-    MsgHubAttachedIO.DEV_VISION_SENSOR: ColorDistanceSensor,
+    MsgHubAttachedIO.DEV_VISION_SENSOR: VisionSensor,
     MsgHubAttachedIO.DEV_RGB_LIGHT: LEDRGB,
     MsgHubAttachedIO.DEV_TILT_EXTERNAL: TiltSensor,
     MsgHubAttachedIO.DEV_TILT_INTERNAL: TiltSensor,
@@ -169,7 +169,7 @@ class MoveHub(Hub):
     :type button: Button
     :type current: Current
     :type voltage: Voltage
-    :type color_distance_sensor: pylgbst.peripherals.ColorDistanceSensor
+    :type vision_sensor: pylgbst.peripherals.VisionSensor
     :type port_C: Peripheral
     :type port_D: Peripheral
     :type motor_A: EncodedMotor
@@ -202,7 +202,7 @@ class MoveHub(Hub):
         self.motor_A = None
         self.motor_B = None
         self.motor_AB = None
-        self.color_distance_sensor = None
+        self.vision_sensor = None
         self.tilt_sensor = None
         self.motor_external = None
         self.port_C = None
@@ -263,7 +263,7 @@ class MoveHub(Hub):
             elif port == self.PORT_VOLTAGE:
                 self.voltage = self.peripherals[port]
 
-            if type(self.peripherals[port]) == ColorDistanceSensor:
-                self.color_distance_sensor = self.peripherals[port]
+            if type(self.peripherals[port]) == VisionSensor:
+                self.vision_sensor = self.peripherals[port]
             elif type(self.peripherals[port]) == EncodedMotor and port not in (self.PORT_A, self.PORT_B, self.PORT_AB):
                 self.motor_external = self.peripherals[port]

@@ -3,7 +3,7 @@ import time
 import unittest
 
 from pylgbst.hub import MoveHub
-from pylgbst.peripherals import LEDRGB, TiltSensor, COLOR_RED, Button, Current, Voltage, ColorDistanceSensor, \
+from pylgbst.peripherals import LEDRGB, TiltSensor, COLOR_RED, Button, Current, Voltage, VisionSensor, \
     EncodedMotor
 from tests import HubMock
 
@@ -206,7 +206,7 @@ class PeripheralsTest(unittest.TestCase):
 
     def test_color_sensor(self):
         hub = HubMock()
-        cds = ColorDistanceSensor(hub, MoveHub.PORT_C)
+        cds = VisionSensor(hub, MoveHub.PORT_C)
         hub.peripherals[MoveHub.PORT_C] = cds
 
         vals = []

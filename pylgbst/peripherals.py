@@ -59,7 +59,6 @@ class Peripheral(object):
         self.is_buffered = False
 
         self._subscribers = set()
-        self._port_subscription_mode = None
         self._port_mode = MsgPortInputFmtSingle(self.port, 0x00, 1, False)
 
         self._incoming_port_data = queue.Queue(1)  # limit 1 means we drop data if we can't handle it fast enough
@@ -100,28 +99,26 @@ class Peripheral(object):
         self.hub.send(msg)
 
     def get_sensor_data(self, mode):
-        self.set_port_mode(mode)  # TODO: keep update settings from past!
+        self.set_port_mode(mode)
         msg = MsgPortInfoRequest(self.port, MsgPortInfoRequest.INFO_PORT_VALUE)
         resp = self.hub.send(msg)
         return self._decode_port_data(resp)
 
-    def subscribe(self, callback, mode=0x00, granularity=1):
-        if self._port_subscription_mode and mode != self._port_subscription_mode:
-            raise ValueError("Port is in active mode %s, unsubscribe first" % self._port_subscription_mode)
-        self._port_subscription_mode = mode
-        self.set_port_mode(self._port_subscription_mode, True, granularity)
+    def subscribe(self, callback, mode=0x00, granularity=1):  # TODO: review it
+        if self._port_mode.mode != mode:
+            raise ValueError("Port is in active mode %r, unsubscribe first" % self._port_mode)
+        self.set_port_mode(self._port_mode, True, granularity)
         if callback:
             self._subscribers.add(callback)
 
-    def unsubscribe(self, callback=None):
+    def unsubscribe(self, callback=None):  # TODO: review it
         if callback in self._subscribers:
             self._subscribers.remove(callback)
 
-        if self._port_subscription_mode is None:
+        if self._port_mode.upd_enabled:
             log.warning("Attempt to unsubscribe while never subscribed: %s", self)
         elif not self._subscribers:
-            self.set_port_mode(self._port_subscription_mode, False, 0)
-            self._port_subscription_mode = None
+            self.set_port_mode(self._port_mode.mode, False)
 
     def _notify_subscribers(self, *args, **kwargs):
         for subscriber in self._subscribers:
@@ -414,18 +411,18 @@ class EncodedMotor(Motor):
 
     def _decode_port_data(self, msg):
         data = msg.payload
-        if self._port_subscription_mode == self.SENSOR_ANGLE:
+        if self._port_mode.mode == self.SENSOR_ANGLE:
             rotation = unpack("<l", data[0:4])[0]
             return (rotation,)
-        elif self._port_subscription_mode == self.SENSOR_SOMETHING1:
+        elif self._port_mode.mode == self.SENSOR_SOMETHING1:
             # TODO: understand what it means
             rotation = usbyte(data, 0)
             return (rotation,)
-        elif self._port_subscription_mode == self.SENSOR_SPEED:
+        elif self._port_mode.mode == self.SENSOR_SPEED:
             rotation = unpack("<b", data[0])[0]
             return (rotation,)
         else:
-            log.debug("Got motor sensor data while in unexpected mode: %s", self._port_subscription_mode)
+            log.debug("Got motor sensor data while in unexpected mode: %r", self._port_mode)
 
     def subscribe(self, callback, mode=SENSOR_ANGLE, granularity=1):
         super(EncodedMotor, self).subscribe(callback, mode, granularity)
@@ -487,26 +484,26 @@ class TiltSensor(Peripheral):  # TODO: apply official docs to it
 
     def _decode_port_data(self, msg):
         data = msg.payload
-        if self._port_subscription_mode == self.MODE_3AXIS_SIMPLE:
+        if self._port_mode.mode == self.MODE_3AXIS_SIMPLE:
             state = usbyte(data, 0)
             return (state,)
-        elif self._port_subscription_mode == self.MODE_2AXIS_SIMPLE:
+        elif self._port_mode.mode == self.MODE_2AXIS_SIMPLE:
             state = usbyte(data, 0)
             return (state,)
-        elif self._port_subscription_mode == self.MODE_BUMP_COUNT:
+        elif self._port_mode.mode == self.MODE_BUMP_COUNT:
             bump_count = ushort(data, 0)
             return (bump_count,)
-        elif self._port_subscription_mode == self.MODE_2AXIS_FULL:
+        elif self._port_mode.mode == self.MODE_2AXIS_FULL:
             roll = self._byte2deg(usbyte(data, 0))
             pitch = self._byte2deg(usbyte(data, 1))
             return (roll, pitch)
-        elif self._port_subscription_mode == self.MODE_3AXIS_FULL:
+        elif self._port_mode.mode == self.MODE_3AXIS_FULL:
             roll = self._byte2deg(usbyte(data, 0))
             pitch = self._byte2deg(usbyte(data, 1))
             yaw = self._byte2deg(usbyte(data, 2))  # did I get the order right?
             return (roll, pitch, yaw)
         else:
-            log.debug("Got tilt sensor data while in unexpected mode: %s", self._port_subscription_mode)
+            log.debug("Got tilt sensor data while in unexpected mode: %r", self._port_mode)
 
     def _byte2deg(self, val):
         if val > 90:
@@ -515,7 +512,7 @@ class TiltSensor(Peripheral):  # TODO: apply official docs to it
             return val
 
 
-class ColorDistanceSensor(Peripheral):
+class VisionSensor(Peripheral):
     COLOR_ONLY = 0x00
     DISTANCE_INCHES = 0x01
     COUNT_2INCH = 0x02
@@ -529,48 +526,48 @@ class ColorDistanceSensor(Peripheral):
     CALIBRATE = 0x0a
 
     def __init__(self, parent, port):
-        super(ColorDistanceSensor, self).__init__(parent, port)
+        super(VisionSensor, self).__init__(parent, port)
 
     def subscribe(self, callback, mode=COLOR_DISTANCE_FLOAT, granularity=1):
-        super(ColorDistanceSensor, self).subscribe(callback, mode, granularity)
+        super(VisionSensor, self).subscribe(callback, mode, granularity)
 
     def _decode_port_data(self, msg):
         data = msg.payload
-        if self._port_subscription_mode == self.COLOR_DISTANCE_FLOAT:
+        if self._port_mode.mode == self.COLOR_DISTANCE_FLOAT:
             color = usbyte(data, 0)
             distance = usbyte(data, 1)
             partial = usbyte(data, 3)
             if partial:
                 distance += 1.0 / partial
             return (color, float(distance))
-        elif self._port_subscription_mode == self.COLOR_ONLY:
+        elif self._port_mode.mode == self.COLOR_ONLY:
             color = usbyte(data, 0)
             return (color)
-        elif self._port_subscription_mode == self.DISTANCE_INCHES:
+        elif self._port_mode.mode == self.DISTANCE_INCHES:
             distance = usbyte(data, 0)
             return (distance)
-        elif self._port_subscription_mode == self.DISTANCE_HOW_CLOSE:
+        elif self._port_mode.mode == self.DISTANCE_HOW_CLOSE:
             distance = usbyte(data, 0)
             return (distance)
-        elif self._port_subscription_mode == self.DISTANCE_SUBINCH_HOW_CLOSE:
+        elif self._port_mode.mode == self.DISTANCE_SUBINCH_HOW_CLOSE:
             distance = usbyte(data, 0)
             return (distance)
-        elif self._port_subscription_mode == self.OFF1 or self._port_subscription_mode == self.OFF2:
+        elif self._port_mode.mode == self.OFF1 or self._port_mode.mode == self.OFF2:
             log.info("Turned off led on %s", self)
-        elif self._port_subscription_mode == self.COUNT_2INCH:
+        elif self._port_mode.mode == self.COUNT_2INCH:
             count = unpack("<L", data[0:4])[0]  # is it all 4 bytes or just 2?
             return (count,)
-        elif self._port_subscription_mode == self.STREAM_3_VALUES:
+        elif self._port_mode.mode == self.STREAM_3_VALUES:
             # TODO: understand better meaning of these 3 values
             val1 = ushort(data, 4)
             val2 = ushort(data, 6)
             val3 = ushort(data, 8)
             return (val1, val2, val3)
-        elif self._port_subscription_mode == self.LUMINOSITY:
+        elif self._port_mode.mode == self.LUMINOSITY:
             luminosity = ushort(data, 4) / 1023.0
             return (luminosity,)
         else:  # TODO: support whatever we forgot
-            log.debug("Unhandled data in mode %s: %s", self._port_subscription_mode, str2hex(data))
+            log.debug("Unhandled data in mode %s: %s", self._port_mode.mode, str2hex(data))
 
 
 class Voltage(Peripheral):

@@ -1,4 +1,4 @@
-from pylgbst.peripherals import ColorDistanceSensor
+from pylgbst.peripherals import VisionSensor
 from . import *
 
 logging.basicConfig(level=logging.INFO)
@@ -29,7 +29,7 @@ def on_turn(angl):
 
 
 robot.button.subscribe(on_btn)
-robot.color_distance_sensor.subscribe(on_change_lum, ColorDistanceSensor.LUMINOSITY, granularity=1)
+robot.vision_sensor.subscribe(on_change_lum, VisionSensor.LUMINOSITY, granularity=1)
 robot.motor_A.subscribe(on_turn, granularity=30)
 
 # TODO: add bump detect to go back?
@@ -62,5 +62,5 @@ while running:
         logging.info("Luminosity is %.3f, moving towards it", cur_luminosity)
         robot.move(FORWARD, 1)
 
-robot.color_distance_sensor.unsubscribe(on_change_lum)
+robot.vision_sensor.unsubscribe(on_change_lum)
 robot.button.unsubscribe(on_btn)
