@@ -8,6 +8,20 @@ from pylgbst.utilities import queue
 
 log = logging.getLogger('hub')
 
+# TODO: support more types of peripherals from
+# https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#io-type-id
+PERIPHERAL_TYPES = {
+    MsgHubAttachedIO.DEV_MOTOR: Motor,
+    MsgHubAttachedIO.DEV_MOTOR_EXTERNAL_TACHO: EncodedMotor,
+    MsgHubAttachedIO.DEV_MOTOR_INTERNAL_TACHO: EncodedMotor,
+    MsgHubAttachedIO.DEV_VISION_SENSOR: ColorDistanceSensor,
+    MsgHubAttachedIO.DEV_RGB_LIGHT: LEDRGB,
+    MsgHubAttachedIO.DEV_TILT_EXTERNAL: TiltSensor,
+    MsgHubAttachedIO.DEV_TILT_INTERNAL: TiltSensor,
+    MsgHubAttachedIO.DEV_CURRENT: Current,
+    MsgHubAttachedIO.DEV_VOLTAGE: Voltage,
+}
+
 
 class Hub(object):
     """
@@ -114,24 +128,10 @@ class Hub(object):
         port = msg.port
         dev_type = ushort(msg.payload, 0)
 
-        if dev_type == msg.DEV_MOTOR:
-            self.peripherals[port] = Motor(self, port)
-        elif dev_type in (msg.DEV_MOTOR_EXTERNAL_TACHO, msg.DEV_MOTOR_INTERNAL_TACHO):
-            self.peripherals[port] = EncodedMotor(self, port)
-        elif dev_type == msg.DEV_VISION_SENSOR:
-            self.peripherals[port] = ColorDistanceSensor(self, port)
-        elif dev_type == msg.DEV_RGB_LIGHT:
-            self.peripherals[port] = LEDRGB(self, port)
-        elif dev_type in (msg.DEV_TILT_EXTERNAL, msg.DEV_TILT_INTERNAL):
-            self.peripherals[port] = TiltSensor(self, port)
-        elif dev_type == msg.DEV_CURRENT:
-            self.peripherals[port] = Current(self, port)
-        elif dev_type == msg.DEV_VOLTAGE:
-            self.peripherals[port] = Voltage(self, port)
+        if dev_type in PERIPHERAL_TYPES:
+            self.peripherals[port] = PERIPHERAL_TYPES[dev_type](self, port)
         else:
-            # TODO: support more types of peripherals from
-            # https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#io-type-id
-            log.warning("Unhandled peripheral type 0x%x on port 0x%x", dev_type, port)
+            log.warning("Have not dedicated class for peripheral type 0x%x on port 0x%x", dev_type, port)
             self.peripherals[port] = Peripheral(self, port)
 
         log.info("Attached peripheral: %s", self.peripherals[msg.port])
