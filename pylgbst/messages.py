@@ -676,14 +676,14 @@ class MsgPortOutput(DownstreamMsg):
     def __init__(self, port, subcommand, params):
         super(MsgPortOutput, self).__init__()
         self.port = port
-        self.do_buffer = False
+        self.is_buffered = False
         self.do_feedback = True
         self.subcommand = subcommand
         self.params = params
 
     def bytes(self):
         startup_completion_flags = 0
-        if not self.do_buffer:
+        if not self.is_buffered:
             startup_completion_flags |= self.SC_NO_BUFFER
 
         if self.do_feedback:
@@ -696,7 +696,7 @@ class MsgPortOutput(DownstreamMsg):
 
     def is_reply(self, msg):
         return isinstance(msg, MsgPortOutputFeedback) and msg.port == self.port \
-               and (msg.is_completed() or self.do_buffer)
+               and (msg.is_completed() or self.is_buffered)
 
 
 class MsgPortOutputFeedback(UpstreamMsg):

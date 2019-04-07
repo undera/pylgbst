@@ -51,14 +51,15 @@ class Peripheral(object):
         :type port: int
         """
         super(Peripheral, self).__init__()
-        self.do_buffer = False
         self.virtual_ports = ()
         self.hub = parent
         self.port = port
-        self.use_command_buffering = False
+
+        self.is_buffered = False
+
         self._subscribers = set()
         self._port_subscription_mode = None
-        # TODO: maybe max queue len of 2?
+
         self._incoming_port_data = queue.Queue(1)  # limit 1 means we drop data if we can't handle it fast enough
         thr = Thread(target=self._queue_reader)
         thr.setDaemon(True)
@@ -71,16 +72,18 @@ class Peripheral(object):
             msg += " (ports 0x%x and 0x%x combined)" % (self.virtual_ports[0], self.virtual_ports[1])
         return msg
 
-    def _port_subscribe(self, mode, granularity, enable):
-        msg = MsgPortInputFmtSetupSingle(self.port, mode, granularity, enable)  # TODO: combined mode?
+    def set_port_mode(self, mode, send_updates=None, update_granularity=None):
+        msg = MsgPortInputFmtSetupSingle(self.port, mode, update_granularity, send_updates)
+        # TODO: remember which mode we are in?
         self.hub.send(msg)
 
-    def _send_to_port(self, msg):
-        assert type(msg) == MsgPortOutput
-        msg.do_buffer = self.do_buffer
+    def _send_output(self, msg):
+        assert isinstance(msg, MsgPortOutput)
+        msg.is_buffered = self.is_buffered
         self.hub.send(msg)
 
-    def __get_sensor_data(self):  # TODO: implement single sensor request
+    def get_sensor_data(self, mode):
+        self.set_port_mode(mode)  # TODO: keep update settings from past!
         msg = MsgPortInfoRequest(self.port, MsgPortInfoRequest.INFO_PORT_VALUE)
         return self.hub.send(msg)
 
@@ -88,7 +91,7 @@ class Peripheral(object):
         if self._port_subscription_mode and mode != self._port_subscription_mode:
             raise ValueError("Port is in active mode %s, unsubscribe first" % self._port_subscription_mode)
         self._port_subscription_mode = mode
-        self._port_subscribe(self._port_subscription_mode, granularity, True)
+        self.set_port_mode(self._port_subscription_mode, True, granularity)
         if callback:
             self._subscribers.add(callback)
 
@@ -99,7 +102,7 @@ class Peripheral(object):
         if self._port_subscription_mode is None:
             log.warning("Attempt to unsubscribe while never subscribed: %s", self)
         elif not self._subscribers:
-            self._port_subscribe(self._port_subscription_mode, 0, False)
+            self.set_port_mode(self._port_subscription_mode, False, 0)
             self._port_subscription_mode = None
 
     def _notify_subscribers(self, *args, **kwargs):
@@ -178,16 +181,21 @@ class LEDRGB(Peripheral):
         super(LEDRGB, self).__init__(parent, port)
 
     def set_color(self, color):
-        if color == COLOR_NONE:
-            color = COLOR_BLACK
+        if isinstance(color, (list, tuple)):
+            assert len(color) == 3
+            payload = pack("<B", self.MODE_RGB) + pack("<B", color[0]) + pack("<B", color[1]) + pack("<B", color[2])
+        else:
+            if color == COLOR_NONE:
+                color = COLOR_BLACK
 
-        if color not in COLORS:
-            raise ValueError("Color %s is not in list of available colors" % color)
+            if color not in COLORS:
+                raise ValueError("Color %s is not in list of available colors" % color)
 
-        # TODO: merge rgb mode in, make it switch the mode prior to changing color
-        payload = pack("<B", self.MODE_INDEX) + pack("<B", color)
+            # TODO: merge rgb mode in, make it switch the mode prior to changing color
+            payload = pack("<B", self.MODE_INDEX) + pack("<B", color)
+
         msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
-        self._send_to_port(msg)
+        self._send_output(msg)
 
     # def set_color_rgb(self, red, green, blue):
     #    payload = pack("<B", self.MODE_RGB) + pack("<B", red) + pack("<B", green) + pack("<B", blue)
@@ -204,11 +212,6 @@ class Motor(Peripheral):
     # SUBCMD_START_SPEED = 0x08
     SUBCMD_START_SPEED_FOR_TIME = 0x09
     # SUBCMD_START_SPEED_FOR_TIME = 0x0A
-    SUBCMD_START_SPEED_FOR_DEGREES = 0x0B
-    # SUBCMD_START_SPEED_FOR_DEGREES = 0x0C
-    SUBCMD_GOTO_ABSOLUTE_POSITION = 0x0D
-
-    # SUBCMD_GOTO_ABSOLUTE_POSITIONC = 0x0E
 
     END_STATE_BRAKE = 127
     END_STATE_HOLD = 126
@@ -237,14 +240,14 @@ class Motor(Peripheral):
 
         params = pack("<B", subcmd) + params
         msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, params)
-        self._send_to_port(msg)
+        self._send_output(msg)
 
     def _send_cmd(self, subcmd, params):
         if self.virtual_ports:
             subcmd += 1  # de-facto rule
 
         msg = MsgPortOutput(self.port, subcmd, params)
-        self._send_to_port(msg)
+        self._send_output(msg)
 
     def start_power(self, speed_primary=1.0, speed_secondary=None):
         """
@@ -320,7 +323,19 @@ class Motor(Peripheral):
 
         self._send_cmd(self.SUBCMD_START_SPEED_FOR_TIME, params)
 
-    def angled(self, degrees, speed_primary=1.0, speed_secondary=None, max_power=1.0, end_state=END_STATE_BRAKE,
+
+class EncodedMotor(Motor):
+    SUBCMD_START_SPEED_FOR_DEGREES = 0x0B
+    # SUBCMD_START_SPEED_FOR_DEGREES = 0x0C
+    SUBCMD_GOTO_ABSOLUTE_POSITION = 0x0D
+    # SUBCMD_GOTO_ABSOLUTE_POSITIONC = 0x0E
+    SUBCMD_PRESET_ENCODER = 0x14
+
+    SENSOR_SOMETHING1 = 0x00  # TODO: understand it
+    SENSOR_SPEED = 0x01
+    SENSOR_ANGLE = 0x02
+
+    def angled(self, degrees, speed_primary=1.0, speed_secondary=None, max_power=1.0, end_state=Motor.END_STATE_BRAKE,
                use_profile=0b11):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startspeedfordegrees-degrees-speed-maxpower-endstate-useprofile-0x0b
@@ -349,7 +364,7 @@ class Motor(Peripheral):
         self._send_cmd(self.SUBCMD_START_SPEED_FOR_DEGREES, params)
 
     def goto_position(self, degrees_primary, degrees_secondary=None, speed=1.0, max_power=1.0,
-                      end_state=END_STATE_BRAKE, use_profile=0b11):
+                      end_state=Motor.END_STATE_BRAKE, use_profile=0b11):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startspeedfordegrees-degrees-speed-maxpower-endstate-useprofile-0x0b
         """
@@ -368,14 +383,6 @@ class Motor(Peripheral):
         params += pack("<B", use_profile)
 
         self._send_cmd(self.SUBCMD_GOTO_ABSOLUTE_POSITION, params)
-
-
-class EncodedMotor(Motor):
-    SUBCMD_PRESET_ENCODER = 0x14
-
-    SENSOR_SOMETHING1 = 0x00  # TODO: understand it
-    SENSOR_SPEED = 0x01
-    SENSOR_ANGLE = 0x02
 
     def handle_port_data(self, msg):
         data = msg.payload
@@ -410,7 +417,7 @@ class EncodedMotor(Motor):
             self._write_direct_mode(self.SENSOR_ANGLE, params)
 
 
-class TiltSensor(Peripheral):
+class TiltSensor(Peripheral):  # TODO: apply official docs to it
     MODE_2AXIS_FULL = 0x00
     MODE_2AXIS_SIMPLE = 0x01
     MODE_3AXIS_SIMPLE = 0x02
@@ -491,7 +498,7 @@ class ColorDistanceSensor(Peripheral):
     OFF2 = 0x07
     COLOR_DISTANCE_FLOAT = 0x08
     LUMINOSITY = 0x09
-    SOME_20BYTES = 0x0a  # TODO: understand it, now we know some port info discovery commands
+    CALIBRATE = 0x0a
 
     def __init__(self, parent, port):
         super(ColorDistanceSensor, self).__init__(parent, port)
@@ -553,7 +560,7 @@ class Voltage(Peripheral):
     def handle_port_data(self, msg):
         data = msg.payload
         val = ushort(data, 0)
-        self.last_value = val / 3893.0
+        self.last_value = 9600.0 * val / 3893.0
         self._notify_subscribers(self.last_value)
 
 
@@ -570,7 +577,7 @@ class Current(Peripheral):
 
     def handle_port_data(self, msg):
         val = ushort(msg.payload, 0)
-        self.last_value = val / 3893.0
+        self.last_value = 2444 * val / 4095.0
         self._notify_subscribers(self.last_value)
 
 
