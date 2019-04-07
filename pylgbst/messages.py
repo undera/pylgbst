@@ -411,6 +411,9 @@ class MsgPortInputFmtSetupSingle(DownstreamMsg):
     def __init__(self, port, mode, delta=1, update_enable=0):
         super(MsgPortInputFmtSetupSingle, self).__init__()
         self.port = port
+        self.mode = mode
+        self.updates_enabled = update_enable
+        self.update_delta = delta
         self.payload = pack("<B", port) + pack("<B", mode) + pack("<I", delta) + pack("<B", update_enable)
         self.needs_reply = True
 
@@ -605,9 +608,12 @@ class MsgPortInputFmtSingle(UpstreamMsg):
     """
     TYPE = 0x47
 
-    def __init__(self):
+    def __init__(self, port=None, mode=None, upd_enabled=None, upd_delta=None):
         super(MsgPortInputFmtSingle, self).__init__()
-        self.port = None
+        self.port = port
+        self.mode = mode
+        self.upd_delta = upd_delta
+        self.upd_enabled = upd_enabled
 
     @classmethod
     def decode(cls, data):
@@ -615,9 +621,9 @@ class MsgPortInputFmtSingle(UpstreamMsg):
         assert isinstance(msg, MsgPortInputFmtSingle)
         msg.port = msg._byte()
         msg.mode = msg._byte()
-        msg.delta_interval = msg._long()
+        msg.upd_delta = msg._long()
         if len(msg.payload):
-            msg.enabled = msg._byte()
+            msg.upd_enabled = msg._byte()
 
         return msg
 

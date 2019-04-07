@@ -66,7 +66,7 @@ class PeripheralsTest(unittest.TestCase):
         current.unsubscribe(callback)
         hub.connection.wait_notifications_handled()
 
-        self.assertEqual([0.0400390625], vals)
+        self.assertEqual([97.87936507936507], vals)
         self.assertEqual(b"0a00413b000100000001", hub.writes[1][1])
         self.assertEqual(b"0a00413b000000000000", hub.writes[2][1])
 
@@ -91,7 +91,7 @@ class PeripheralsTest(unittest.TestCase):
         voltage.unsubscribe(callback)
         hub.connection.wait_notifications_handled()
 
-        self.assertEqual([0.474853515625], vals)
+        self.assertEqual([4.79630105317236], vals)
         self.assertEqual(b"0a00413c000100000001", hub.writes[1][1])
         self.assertEqual(b"0a00413c000000000000", hub.writes[2][1])
 

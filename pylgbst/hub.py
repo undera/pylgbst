@@ -189,18 +189,6 @@ class MoveHub(Hub):
     PORT_CURRENT = 0x3B
     PORT_VOLTAGE = 0x3C
 
-    PORTS = {
-        PORT_A: "A",
-        PORT_B: "B",
-        PORT_AB: "AB",
-        PORT_C: "C",
-        PORT_D: "D",
-        PORT_LED: "LED",
-        PORT_TILT_SENSOR: "TILT_SENSOR",
-        PORT_CURRENT: "AMPERAGE",
-        PORT_VOLTAGE: "VOLTAGE",
-    }
-
     # noinspection PyTypeChecker
     def __init__(self, connection=None):
         super(MoveHub, self).__init__(connection)
