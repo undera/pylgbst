@@ -99,7 +99,7 @@ class HubTest(unittest.TestCase):
         conn.notification_delayed("0a004702080000000000", 0.1)
         conn.notification_delayed("08004502ff0aff00", 0.2)  # value for sensor
         self.assertEqual((255, 10.0), dev.get_sensor_data(VisionSensor.COLOR_DISTANCE_FLOAT))
-        self.assertEqual(b"0a004102080000000001", conn.writes.pop(1)[1])
+        self.assertEqual(b"0a004102080100000000", conn.writes.pop(1)[1])
         self.assertEqual(b"0500210200", conn.writes.pop(1)[1])
 
         vals = []
@@ -133,11 +133,11 @@ class MoveHubTest(unittest.TestCase):
         conn.notifications.append('0f00 04 3c 0114000200000002000000')
 
         conn.notification_delayed('12000101064c45474f204d6f766520487562', 0.1)
-        conn.notification_delayed('0b00010d06001653a0d1d4', 0.2)
-        conn.notification_delayed('060001060600', 0.3)
-        conn.notification_delayed('0600030104ff', 0.4)
+        conn.notification_delayed('0b00010d06001653a0d1d4', 0.3)
+        conn.notification_delayed('060001060600', 0.5)
+        conn.notification_delayed('0600030104ff', 0.7)
         MoveHub(conn.connect())
-        time.sleep(0.5)
+        time.sleep(1)
         conn.wait_notifications_handled()
         self.assertEqual(b"0500010105", conn.writes[1][1])
         self.assertEqual(b"0500010d05", conn.writes[2][1])

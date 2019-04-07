@@ -41,9 +41,18 @@ class PeripheralsTest(unittest.TestCase):
         hub = HubMock()
         hub.led = LEDRGB(hub, MoveHub.PORT_LED)
         hub.peripherals[MoveHub.PORT_LED] = hub.led
-        hub.connection.notification_delayed("0500 82 320a", 0.1)
+
+        hub.connection.notification_delayed("0a004732000100000000", 0.1)
+        hub.connection.notification_delayed("050082320a", 0.2)
         hub.led.set_color(COLOR_RED)
-        self.assertEqual(b"0800813211510009", hub.writes[1][1])
+        self.assertEqual(b"0a004132000100000000", hub.writes.pop(1)[1])
+        self.assertEqual(b"0800813211510009", hub.writes.pop(1)[1])
+
+        hub.connection.notification_delayed("0a004732010100000000", 0.1)
+        hub.connection.notification_delayed("050082320a", 0.2)
+        hub.led.set_color((32, 64, 96))
+        self.assertEqual(b"0a004132010100000000", hub.writes.pop(1)[1])
+        self.assertEqual(b"0a008132115101204060", hub.writes.pop(1)[1])
 
     def test_current(self):
         hub = HubMock()
@@ -68,7 +77,7 @@ class PeripheralsTest(unittest.TestCase):
 
         self.assertEqual([97.87936507936507], vals)
         self.assertEqual(b"0a00413b000100000001", hub.writes[1][1])
-        self.assertEqual(b"0a00413b000000000000", hub.writes[2][1])
+        self.assertEqual(b"0a00413b000100000000", hub.writes[2][1])
 
     def test_voltage(self):
         hub = HubMock()
@@ -93,41 +102,46 @@ class PeripheralsTest(unittest.TestCase):
 
         self.assertEqual([4.79630105317236], vals)
         self.assertEqual(b"0a00413c000100000001", hub.writes[1][1])
-        self.assertEqual(b"0a00413c000000000000", hub.writes[2][1])
+        self.assertEqual(b"0a00413c000100000000", hub.writes[2][1])
 
     def test_tilt_sensor(self):
         hub = HubMock()
         sensor = TiltSensor(hub, MoveHub.PORT_TILT_SENSOR)
         hub.peripherals[MoveHub.PORT_TILT_SENSOR] = sensor
 
-        vals = []
+        hub.connection.notification_delayed('0a00473a000100000000', 0.05)
+        hub.connection.notification_delayed('0600453a0201', 0.1)
+        self.assertEqual((2, 1), sensor.get_sensor_data(TiltSensor.MODE_2AXIS_ANGLE))
 
-        def callback(*args):
-            vals.append(args)
+        hub.connection.notification_delayed('0a00473a010100000000', 0.05)
+        hub.connection.notification_delayed('0500453a00', 0.1)
+        self.assertEqual((0,), sensor.get_sensor_data(TiltSensor.MODE_2AXIS_SIMPLE))
 
-        hub.connection.notification_delayed('0a00 47 3a 090100000001', 0.1)
-        sensor.subscribe(callback)
-        hub.connection.notification_delayed("0500453a05")
-        time.sleep(0.1)
-        hub.connection.notification_delayed('0a00 47 3a 090100000000', 0.1)
-        sensor.unsubscribe(callback)
+        hub.connection.notification_delayed('0a00473a020100000000', 0.05)
+        hub.connection.notification_delayed('0600453a0201', 0.1)
+        self.assertEqual((2,), sensor.get_sensor_data(TiltSensor.MODE_3AXIS_SIMPLE))
 
-        hub.connection.notification_delayed('0a00 47 3a 090100000001', 0.1)
-        sensor.subscribe(callback, TiltSensor.MODE_2AXIS_SIMPLE)
-        hub.connection.notification_delayed("0500453a09")
-        time.sleep(0.1)
-        hub.connection.notification_delayed('0a00 47 3a 090100000000', 0.1)
-        sensor.unsubscribe(callback)
+        hub.connection.notification_delayed('0a00473a030100000000', 0.05)
+        hub.connection.notification_delayed('0800453a00000000', 0.1)
+        self.assertEqual((0,), sensor.get_sensor_data(TiltSensor.MODE_IMPACT_COUNT))
 
-        hub.connection.notification_delayed('0a00 47 3a 090100000001', 0.1)
-        sensor.subscribe(callback, TiltSensor.MODE_2AXIS_FULL)
-        hub.connection.notification_delayed("0600453a04fe")
-        time.sleep(0.1)
-        hub.connection.notification_delayed('0a00 47 3a 090100000000', 0.1)
-        sensor.unsubscribe(callback)
+        hub.connection.notification_delayed('0a00473a040100000000', 0.05)
+        hub.connection.notification_delayed('0700453afd0140', 0.1)
+        self.assertEqual((-3, 1, 64), sensor.get_sensor_data(TiltSensor.MODE_3AXIS_ACCEL))
+
+        hub.connection.notification_delayed('0a00473a050100000000', 0.05)
+        hub.connection.notification_delayed('0500453a00', 0.1)
+        self.assertEqual((0,), sensor.get_sensor_data(TiltSensor.MODE_ORIENT_CF))
+
+        hub.connection.notification_delayed('0a00473a060100000000', 0.05)
+        hub.connection.notification_delayed('0600453a7f14', 0.1)
+        self.assertEqual((127,), sensor.get_sensor_data(TiltSensor.MODE_IMPACT_CF))
+
+        hub.connection.notification_delayed('0a00473a070100000000', 0.05)
+        hub.connection.notification_delayed('0700453a00feff', 0.1)
+        self.assertEqual((0, 254, 255), sensor.get_sensor_data(TiltSensor.MODE_CALIBRATION))
 
         hub.connection.wait_notifications_handled()
-        self.assertEqual([(5,), (9,), (4, -2)], vals)
 
     def test_motor(self):
         hub = HubMock()
@@ -214,7 +228,7 @@ class PeripheralsTest(unittest.TestCase):
         def callback(*args):
             vals.append(args)
 
-        hub.connection.notification_delayed('0a00 4701090100000001', 0.1)
+        hub.connection.notification_delayed('0a00 4701080100000001', 0.1)
         cds.subscribe(callback)
 
         hub.connection.notification_delayed("08004501ff0aff00", 0.1)

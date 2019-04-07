@@ -95,7 +95,7 @@ def demo_tilt_sensor_precise(movehub):
         demo_tilt_sensor_simple.cnt += 1
         log.info("Tilt #%s of %s: roll:%s pitch:%s yaw:%s", demo_tilt_sensor_simple.cnt, limit, pitch, roll, yaw)
 
-    movehub.tilt_sensor.subscribe(callback, mode=TiltSensor.MODE_3AXIS_FULL)
+    movehub.tilt_sensor.subscribe(callback, mode=TiltSensor.MODE_3AXIS_ACCEL)
     while demo_tilt_sensor_simple.cnt < limit:
         time.sleep(1)
 

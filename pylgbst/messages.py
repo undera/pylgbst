@@ -720,7 +720,6 @@ class MsgPortOutputFeedback(UpstreamMsg):
         assert len(msg.payload) == 2, "TODO: implement multi-port feedback message"
         msg.port = msg._byte()
         msg.status = msg._byte()
-        log.debug("Status: %s", bin(msg.status))
         return msg
 
     def is_in_progress(self):

@@ -62,7 +62,7 @@ class Peripheral(object):
         self.is_buffered = False
 
         self._subscribers = set()
-        self._port_mode = MsgPortInputFmtSingle(self.port, 0x00, 1, False)
+        self._port_mode = MsgPortInputFmtSingle(self.port, None, False, 1)
 
         self._incoming_port_data = queue.Queue(1)  # limit 1 means we drop data if we can't handle it fast enough
         thr = Thread(target=self._queue_reader)
@@ -81,9 +81,11 @@ class Peripheral(object):
 
         if send_updates is None:
             send_updates = self._port_mode.upd_enabled
+            log.debug("Implied update is enabled=%s", send_updates)
 
         if update_delta is None:
             update_delta = self._port_mode.upd_delta
+            log.debug("Implied update delta=%s", update_delta)
 
         if self._port_mode.mode == mode \
                 and self._port_mode.upd_enabled == send_updates \
@@ -439,12 +441,15 @@ class EncodedMotor(Motor):
             self._write_direct_mode(self.SENSOR_ANGLE, params)
 
 
-class TiltSensor(Peripheral):  # TODO: apply official docs to it
-    MODE_2AXIS_FULL = 0x00
+class TiltSensor(Peripheral):
+    MODE_2AXIS_ANGLE = 0x00
     MODE_2AXIS_SIMPLE = 0x01
     MODE_3AXIS_SIMPLE = 0x02
-    MODE_BUMP_COUNT = 0x03
-    MODE_3AXIS_FULL = 0x04
+    MODE_IMPACT_COUNT = 0x03
+    MODE_3AXIS_ACCEL = 0x04
+    MODE_ORIENT_CF = 0x05
+    MODE_IMPACT_CF = 0x06
+    MODE_CALIBRATION = 0x07
 
     TRI_BACK = 0x00
     TRI_UP = 0x01
@@ -481,33 +486,38 @@ class TiltSensor(Peripheral):  # TODO: apply official docs to it
 
     def _decode_port_data(self, msg):
         data = msg.payload
-        if self._port_mode.mode == self.MODE_3AXIS_SIMPLE:
+        if self._port_mode.mode == self.MODE_2AXIS_ANGLE:
+            roll = unpack('<b', data[0:1])[0]
+            pitch = unpack('<b', data[1:2])[0]
+            return (roll, pitch)
+        elif self._port_mode.mode == self.MODE_3AXIS_SIMPLE:
             state = usbyte(data, 0)
             return (state,)
         elif self._port_mode.mode == self.MODE_2AXIS_SIMPLE:
             state = usbyte(data, 0)
             return (state,)
-        elif self._port_mode.mode == self.MODE_BUMP_COUNT:
-            bump_count = ushort(data, 0)
+        elif self._port_mode.mode == self.MODE_IMPACT_COUNT:
+            bump_count = usint(data, 0)
             return (bump_count,)
-        elif self._port_mode.mode == self.MODE_2AXIS_FULL:
-            roll = self._byte2deg(usbyte(data, 0))
-            pitch = self._byte2deg(usbyte(data, 1))
-            return (roll, pitch)
-        elif self._port_mode.mode == self.MODE_3AXIS_FULL:
-            roll = self._byte2deg(usbyte(data, 0))
-            pitch = self._byte2deg(usbyte(data, 1))
-            yaw = self._byte2deg(usbyte(data, 2))  # did I get the order right?
+        elif self._port_mode.mode == self.MODE_3AXIS_ACCEL:
+            roll = unpack('<b', data[0:1])[0]
+            pitch = unpack('<b', data[1:2])[0]
+            yaw = unpack('<b', data[2:3])[0]  # did I get the order right?
             return (roll, pitch, yaw)
+        elif self._port_mode.mode == self.MODE_ORIENT_CF:
+            state = usbyte(data, 0)
+            return (state,)
+        elif self._port_mode.mode == self.MODE_IMPACT_CF:
+            state = usbyte(data, 0)
+            return (state,)
+        elif self._port_mode.mode == self.MODE_CALIBRATION:
+            return (usbyte(data, 0), usbyte(data, 1), usbyte(data, 2))
         else:
             log.debug("Got tilt sensor data while in unexpected mode: %r", self._port_mode)
             return ()
 
-    def _byte2deg(self, val):
-        if val > 90:
-            return val - 256
-        else:
-            return val
+    # TODO: add some methods from official doc, like
+    # https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-tiltconfigimpact-impactthreshold-bumpholdoff-n-a
 
 
 class VisionSensor(Peripheral):
