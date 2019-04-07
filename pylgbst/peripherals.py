@@ -6,7 +6,7 @@ from threading import Thread
 
 from pylgbst.messages import MsgHubProperties, MsgPortOutput, MsgPortInputFmtSetupSingle, MsgPortInfoRequest, \
     MsgPortModeInfoRequest, MsgPortInfo, MsgPortModeInfo, MsgPortInputFmtSingle
-from pylgbst.utilities import queue, str2hex, usbyte, ushort
+from pylgbst.utilities import queue, str2hex, usbyte, ushort, usint
 
 log = logging.getLogger('peripherals')
 
@@ -511,17 +511,18 @@ class TiltSensor(Peripheral):  # TODO: apply official docs to it
 
 
 class VisionSensor(Peripheral):
-    COLOR_ONLY = 0x00
+    COLOR_INDEX = 0x00
     DISTANCE_INCHES = 0x01
     COUNT_2INCH = 0x02
-    DISTANCE_HOW_CLOSE = 0x03
-    DISTANCE_SUBINCH_HOW_CLOSE = 0x04
+    DISTANCE_REFLECTED = 0x03
+    AMBIENT_LIGHT = 0x04
     SET_COLOR = 0x05
-    STREAM_3_VALUES = 0x06
+    COLOR_RGB = 0x06
     SET_IR_TX = 0x07
-    COLOR_DISTANCE_FLOAT = 0x08
-    LUMINOSITY = 0x09
-    CALIBRATE = 0x0a
+    COLOR_DISTANCE_FLOAT = 0x08  # it's not declared by dev's mode info
+
+    DEBUG = 0x09  # first val is by fact ambient light, second is zero
+    CALIBRATE = 0x0a  # gives constant values
 
     def __init__(self, parent, port):
         super(VisionSensor, self).__init__(parent, port)
@@ -531,38 +532,40 @@ class VisionSensor(Peripheral):
 
     def _decode_port_data(self, msg):
         data = msg.payload
-        if self._port_mode.mode == self.COLOR_DISTANCE_FLOAT:
-            color = usbyte(data, 0)
-            distance = usbyte(data, 1)
-            partial = usbyte(data, 3)
-            if partial:
-                distance += 1.0 / partial
-            return (color, float(distance))
-        elif self._port_mode.mode == self.COLOR_ONLY:
+        if self._port_mode.mode == self.COLOR_INDEX:
             color = usbyte(data, 0)
             return (color,)
+        elif self._port_mode.mode == self.COLOR_DISTANCE_FLOAT:
+            color = usbyte(data, 0)
+            val = usbyte(data, 1)
+            partial = usbyte(data, 3)
+            if partial:
+                val += 1.0 / partial
+            return (color, float(val))
         elif self._port_mode.mode == self.DISTANCE_INCHES:
-            distance = usbyte(data, 0)
-            return (distance,)
-        elif self._port_mode.mode == self.DISTANCE_HOW_CLOSE:
-            distance = usbyte(data, 0)
-            return (distance,)
-        elif self._port_mode.mode == self.DISTANCE_SUBINCH_HOW_CLOSE:
-            distance = usbyte(data, 0)
-            return (distance,)
+            val = usbyte(data, 0)
+            return (val,)
+        elif self._port_mode.mode == self.DISTANCE_REFLECTED:
+            val = usbyte(data, 0) / 100.0
+            return (val,)
+        elif self._port_mode.mode == self.AMBIENT_LIGHT:
+            val = usbyte(data, 0) / 100.0
+            return (val,)
         elif self._port_mode.mode == self.COUNT_2INCH:
-            count = unpack("<L", data[0:4])[0]  # is it all 4 bytes or just 2?
+            count = usint(data, 0)
             return (count,)
-        elif self._port_mode.mode == self.STREAM_3_VALUES:
-            # TODO: understand better meaning of these 3 values
-            val1 = ushort(data, 4)
-            val2 = ushort(data, 6)
-            val3 = ushort(data, 8)
+        elif self._port_mode.mode == self.COLOR_RGB:
+            val1 = int(255 * ushort(data, 0) / 1023.0)
+            val2 = int(255 * ushort(data, 2) / 1023.0)
+            val3 = int(255 * ushort(data, 4) / 1023.0)
             return (val1, val2, val3)
-        elif self._port_mode.mode == self.LUMINOSITY:
-            luminosity = ushort(data, 4) / 1023.0
-            return (luminosity,)
-        else:  # TODO: support whatever we forgot
+        elif self._port_mode.mode == self.DEBUG:
+            val1 = 10 * ushort(data, 0) / 1023.0
+            val2 = 10 * ushort(data, 2) / 1023.0
+            return (val1, val2)
+        elif self._port_mode.mode == self.CALIBRATE:
+            return [ushort(data, x * 2) for x in range(8)]
+        else:
             log.debug("Unhandled data in mode %s: %s", self._port_mode.mode, str2hex(data))
             return ()
 
