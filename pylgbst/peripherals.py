@@ -180,6 +180,10 @@ class Peripheral(object):
             assert isinstance(mode_combinations, MsgPortInfo)
             info['possible_mode_combinations'] = mode_combinations.possible_mode_combinations
 
+        info['modes'] = []
+        for mode in range(256):
+            info['modes'].append(self._describe_mode(mode))
+
         for mode in mode_info.output_modes:
             info['output_modes'].append(self._describe_mode(mode))
 
@@ -198,6 +202,8 @@ class Peripheral(object):
                 descr[MsgPortModeInfoRequest.INFO_TYPES[info]] = resp.value
             except RuntimeError:
                 log.debug("Got error while requesting info 0x%x: %s", info, traceback.format_exc())
+                if info == MsgPortModeInfoRequest.INFO_NAME:
+                    break
         return descr
 
 
@@ -355,9 +361,10 @@ class EncodedMotor(Motor):
     # SUBCMD_GOTO_ABSOLUTE_POSITIONC = 0x0E
     SUBCMD_PRESET_ENCODER = 0x14
 
-    SENSOR_SOMETHING1 = 0x00  # what's the meaning of it? it is not present in mode info
+    SENSOR_POWER = 0x00  # it's not input mode, hovewer returns some numbers
     SENSOR_SPEED = 0x01
     SENSOR_ANGLE = 0x02
+    SENSOR_TEST = 0x03  # exists, but neither input nor output mode
 
     def angled(self, degrees, speed_primary=1.0, speed_secondary=None, max_power=1.0, end_state=Motor.END_STATE_BRAKE,
                use_profile=0b11):

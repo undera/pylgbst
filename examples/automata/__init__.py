@@ -3,13 +3,17 @@ import time
 from collections import Counter
 
 from pylgbst.hub import MoveHub, COLOR_NONE, COLOR_BLACK, COLORS, COLOR_CYAN, COLOR_BLUE, COLOR_RED
+from pylgbst.peripherals import EncodedMotor
 
 
 class Automata(object):
+    BASE_SPEED = 0.5
 
     def __init__(self):
         super(Automata, self).__init__()
         self.__hub = MoveHub()
+        self.__hub.motor_A.set_dec_profile(0.05, 0x00)
+        self.__hub.motor_B.set_dec_profile(0.05, 0x00)
         self.__hub.vision_sensor.subscribe(self.__on_sensor)
         self._sensor = []
 
@@ -37,25 +41,31 @@ class Automata(object):
         return clr
 
     def left(self):
-        self.__hub.motor_AB.angled(270, 0.25, -0.25)
-        time.sleep(0.5)
+        self.__hub.motor_A.angled(-270, self.BASE_SPEED, end_state=EncodedMotor.END_STATE_HOLD)
+        time.sleep(0.1)
+        self.__hub.motor_A.stop()
 
     def right(self):
-        self.__hub.motor_AB.angled(-270, 0.25, -0.25)
-        time.sleep(0.5)
+        self.__hub.motor_B.angled(-320, self.BASE_SPEED, end_state=EncodedMotor.END_STATE_HOLD)
+        time.sleep(0.1)
+        self.__hub.motor_B.stop()
 
     def forward(self):
-        self.__hub.motor_AB.angled(830, 0.25)
-        time.sleep(0.5)
+        self.__hub.motor_AB.angled(-450, self.BASE_SPEED)
 
     def backward(self):
-        self.__hub.motor_AB.angled(830, -0.25)
-        time.sleep(0.5)
+        self.__hub.motor_AB.angled(450, self.BASE_SPEED)
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     bot = Automata()
+
+    bot.forward()
+    bot.backward()
+
+    exit(0)
+
     color = COLOR_NONE
     cmds = []
     while color != COLOR_RED:
