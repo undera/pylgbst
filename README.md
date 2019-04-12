@@ -106,8 +106,9 @@ Then push green button on MoveHub, so permanent BLE connection will be establish
 
 ## Roadmap & TODO
 
+- validate operations with other Hub types (train, PUP etc)
+- make connections to detect hub by UUID instead of name
 - document all API methods
-- make sure unit tests cover all important code
 - make debug server to re-establish BLE connection on loss
 
 ## Links
@@ -116,9 +117,4 @@ Then push green button on MoveHub, so permanent BLE connection will be establish
 - https://github.com/JorgePe/BOOSTreveng - initial source of protocol knowledge
 - https://github.com/nathankellenicki/node-poweredup - JavaScript version of library
 - https://github.com/spezifisch/sphero-python/blob/master/BB8joyDrive.py - example with another approach to bluetooth libs
-
-Some things around visual programming:
-- https://github.com/RealTimeWeb/blockpy
-- https://ru.wikipedia.org/wiki/App_Inventor
-- https://en.wikipedia.org/wiki/Blockly
 
