@@ -4,8 +4,8 @@ from time import sleep
 
 from pylgbst import *
 from pylgbst.comms import DebugServerConnection
-from pylgbst.movehub import MoveHub, COLORS, COLOR_BLACK
-from pylgbst.peripherals import EncodedMotor, TiltSensor, Amperage, Voltage
+from pylgbst.hub import MoveHub, math
+from pylgbst.peripherals import EncodedMotor, TiltSensor, Current, Voltage, COLORS, COLOR_BLACK
 
 log = logging.getLogger("demo")
 
@@ -95,7 +95,7 @@ def demo_tilt_sensor_precise(movehub):
         demo_tilt_sensor_simple.cnt += 1
         log.info("Tilt #%s of %s: roll:%s pitch:%s yaw:%s", demo_tilt_sensor_simple.cnt, limit, pitch, roll, yaw)
 
-    movehub.tilt_sensor.subscribe(callback, mode=TiltSensor.MODE_3AXIS_FULL)
+    movehub.tilt_sensor.subscribe(callback, mode=TiltSensor.MODE_3AXIS_ACCEL)
     while demo_tilt_sensor_simple.cnt < limit:
         time.sleep(1)
 
@@ -120,7 +120,7 @@ def demo_color_sensor(movehub):
 
 def demo_motor_sensors(movehub):
     log.info("Motor rotation sensors test. Rotate all available motors once")
-    demo_motor_sensors.states = {movehub.motor_A: None, movehub.motor_B: None}
+    demo_motor_sensors.states = {movehub.motor_A: 0, movehub.motor_B: 0, movehub.motor_external: 0}
 
     def callback_a(param1):
         demo_motor_sensors.states[movehub.motor_A] = param1
@@ -141,7 +141,7 @@ def demo_motor_sensors(movehub):
         demo_motor_sensors.states[movehub.motor_external] = None
         movehub.motor_external.subscribe(callback_e)
 
-    while None in demo_motor_sensors.states.values():
+    while not all([x is not None and abs(x) > 30 for x in demo_motor_sensors.states.values()]):
         time.sleep(1)
 
     movehub.motor_A.unsubscribe(callback_a)
@@ -159,13 +159,13 @@ def demo_voltage(movehub):
     def callback2(value):
         log.info("Voltage: %s", value)
 
-    movehub.amperage.subscribe(callback1, mode=Amperage.MODE1, granularity=0)
-    movehub.amperage.subscribe(callback1, mode=Amperage.MODE1, granularity=1)
+    movehub.current.subscribe(callback1, mode=Current.CURRENT_L, granularity=0)
+    movehub.current.subscribe(callback1, mode=Current.CURRENT_L, granularity=1)
 
-    movehub.voltage.subscribe(callback2, mode=Voltage.MODE1, granularity=0)
-    movehub.voltage.subscribe(callback2, mode=Voltage.MODE1, granularity=1)
+    movehub.voltage.subscribe(callback2, mode=Voltage.VOLTAGE_L, granularity=0)
+    movehub.voltage.subscribe(callback2, mode=Voltage.VOLTAGE_L, granularity=1)
     time.sleep(5)
-    movehub.amperage.unsubscribe(callback1)
+    movehub.current.unsubscribe(callback1)
     movehub.voltage.unsubscribe(callback2)
 
 
@@ -184,15 +184,6 @@ def demo_all(movehub):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
-    try:
-        connection = DebugServerConnection()
-    except BaseException:
-        logging.debug("Failed to use debug server: %s", traceback.format_exc())
-        connection = get_connection_auto()
-
-    try:
-        hub = MoveHub(connection)
-        sleep(1)
-        # demo_all(hub)
-    finally:
-        connection.disconnect()
+    hub = MoveHub()
+    demo_all(hub)
+    hub.disconnect()

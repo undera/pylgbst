@@ -1,0 +1,1410 @@
+{
+  "EncodedMotor on port 0x2": {
+    "mode_count": 4,
+    "input_modes": [
+      {
+        "Mode": 1,
+        "Name": "SPEED",
+        "Raw range": [
+          -100.0,
+          100.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -100.0,
+          100.0
+        ],
+        "Units": "PCT",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 2,
+        "Name": "POS",
+        "Raw range": [
+          -360.0,
+          360.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -360.0,
+          360.0
+        ],
+        "Units": "DEG",
+        "Mapping": {
+          "input": [
+            "Relative [-1..1]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "32 bit",
+          "total_figures": 6,
+          "decimals": 0
+        }
+      }
+    ],
+    "output_modes": [
+      {
+        "Mode": 0,
+        "Name": "POWER",
+        "Raw range": [
+          -100.0,
+          100.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -100.0,
+          100.0
+        ],
+        "Units": "PCT",
+        "Mapping": {
+          "input": [],
+          "output": [
+            "Absolute [min..max]",
+            "Supports Functional Mapping 2.0+"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      }
+    ],
+    "capabilities": {
+      "logically_combinable": true,
+      "synchronizable": false,
+      "can_output": true,
+      "can_input": true
+    },
+    "possible_mode_combinations": [
+      [
+        1,
+        2
+      ]
+    ]
+  },
+  "EncodedMotor on port 0x37": {
+    "mode_count": 3,
+    "input_modes": [
+      {
+        "Mode": 1,
+        "Name": "SPEED",
+        "Raw range": [
+          -100.0,
+          100.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -100.0,
+          100.0
+        ],
+        "Units": "PCT",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": [
+            "Absolute [min..max]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 2,
+        "Name": "POS",
+        "Raw range": [
+          -360.0,
+          360.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -360.0,
+          360.0
+        ],
+        "Units": "DEG",
+        "Mapping": {
+          "input": [
+            "Relative [-1..1]"
+          ],
+          "output": [
+            "Relative [-1..1]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "32 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      }
+    ],
+    "output_modes": [
+      {
+        "Mode": 0,
+        "Name": "POWER",
+        "Raw range": [
+          -100.0,
+          100.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -100.0,
+          100.0
+        ],
+        "Units": "PCT",
+        "Mapping": {
+          "input": [],
+          "output": [
+            "Absolute [min..max]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 1,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 1,
+        "Name": "SPEED",
+        "Raw range": [
+          -100.0,
+          100.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -100.0,
+          100.0
+        ],
+        "Units": "PCT",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": [
+            "Absolute [min..max]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 2,
+        "Name": "POS",
+        "Raw range": [
+          -360.0,
+          360.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -360.0,
+          360.0
+        ],
+        "Units": "DEG",
+        "Mapping": {
+          "input": [
+            "Relative [-1..1]"
+          ],
+          "output": [
+            "Relative [-1..1]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "32 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      }
+    ],
+    "capabilities": {
+      "logically_combinable": true,
+      "synchronizable": true,
+      "can_output": true,
+      "can_input": true
+    },
+    "possible_mode_combinations": [
+      [
+        1,
+        2
+      ]
+    ]
+  },
+  "EncodedMotor on port 0x38": {
+    "mode_count": 3,
+    "input_modes": [
+      {
+        "Mode": 1,
+        "Name": "SPEED",
+        "Raw range": [
+          -100.0,
+          100.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -100.0,
+          100.0
+        ],
+        "Units": "PCT",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": [
+            "Absolute [min..max]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 2,
+        "Name": "POS",
+        "Raw range": [
+          -360.0,
+          360.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -360.0,
+          360.0
+        ],
+        "Units": "DEG",
+        "Mapping": {
+          "input": [
+            "Relative [-1..1]"
+          ],
+          "output": [
+            "Relative [-1..1]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "32 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      }
+    ],
+    "output_modes": [
+      {
+        "Mode": 0,
+        "Name": "POWER",
+        "Raw range": [
+          -100.0,
+          100.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -100.0,
+          100.0
+        ],
+        "Units": "PCT",
+        "Mapping": {
+          "input": [],
+          "output": [
+            "Absolute [min..max]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 1,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 1,
+        "Name": "SPEED",
+        "Raw range": [
+          -100.0,
+          100.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -100.0,
+          100.0
+        ],
+        "Units": "PCT",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": [
+            "Absolute [min..max]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 2,
+        "Name": "POS",
+        "Raw range": [
+          -360.0,
+          360.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -360.0,
+          360.0
+        ],
+        "Units": "DEG",
+        "Mapping": {
+          "input": [
+            "Relative [-1..1]"
+          ],
+          "output": [
+            "Relative [-1..1]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "32 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      }
+    ],
+    "capabilities": {
+      "logically_combinable": true,
+      "synchronizable": true,
+      "can_output": true,
+      "can_input": true
+    },
+    "possible_mode_combinations": [
+      [
+        1,
+        2
+      ]
+    ]
+  },
+  "EncodedMotor on port 0x39 (ports 0x37 and 0x38 combined)": {
+    "mode_count": 3,
+    "input_modes": [
+      {
+        "Mode": 1,
+        "Name": "SPEED",
+        "Raw range": [
+          -100.0,
+          100.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -100.0,
+          100.0
+        ],
+        "Units": "PCT",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": [
+            "Absolute [min..max]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 2,
+        "Name": "POS",
+        "Raw range": [
+          -360.0,
+          360.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -360.0,
+          360.0
+        ],
+        "Units": "DEG",
+        "Mapping": {
+          "input": [
+            "Relative [-1..1]"
+          ],
+          "output": [
+            "Relative [-1..1]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "32 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      }
+    ],
+    "output_modes": [
+      {
+        "Mode": 0,
+        "Name": "POWER",
+        "Raw range": [
+          -100.0,
+          100.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -100.0,
+          100.0
+        ],
+        "Units": "PCT",
+        "Mapping": {
+          "input": [],
+          "output": [
+            "Absolute [min..max]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 1,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 1,
+        "Name": "SPEED",
+        "Raw range": [
+          -100.0,
+          100.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -100.0,
+          100.0
+        ],
+        "Units": "PCT",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": [
+            "Absolute [min..max]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 2,
+        "Name": "POS",
+        "Raw range": [
+          -360.0,
+          360.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -360.0,
+          360.0
+        ],
+        "Units": "DEG",
+        "Mapping": {
+          "input": [
+            "Relative [-1..1]"
+          ],
+          "output": [
+            "Relative [-1..1]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "32 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      }
+    ],
+    "capabilities": {
+      "logically_combinable": true,
+      "synchronizable": false,
+      "can_output": true,
+      "can_input": true
+    },
+    "possible_mode_combinations": [
+      [
+        1,
+        2
+      ]
+    ]
+  },
+
+  "LEDRGB on port 0x32": {
+    "mode_count": 2,
+    "input_modes": [],
+    "output_modes": [
+      {
+        "Mode": 0,
+        "Name": "COL O",
+        "Raw range": [
+          0.0,
+          10.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          10.0
+        ],
+        "Units": "",
+        "Mapping": {
+          "input": [],
+          "output": [
+            "Discrete [0, 1, 2, 3]",
+            "Supports Functional Mapping 2.0+"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 1,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 1,
+        "Name": "RGB O",
+        "Raw range": [
+          0.0,
+          255.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          255.0
+        ],
+        "Units": "",
+        "Mapping": {
+          "input": [],
+          "output": [
+            "Absolute [min..max]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 3,
+          "type": "8 bit",
+          "total_figures": 3,
+          "decimals": 0
+        }
+      }
+    ],
+    "capabilities": {
+      "logically_combinable": false,
+      "synchronizable": false,
+      "can_output": true,
+      "can_input": false
+    }
+  },
+
+  "ColorDistanceSensor on port 0x1": {
+    "mode_count": 11,
+    "input_modes": [
+      {
+        "Mode": 0,
+        "Name": "COLOR",
+        "Raw range": [
+          0.0,
+          10.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          10.0
+        ],
+        "Units": "IDX",
+        "Mapping": {
+          "input": [
+            "Discrete [0, 1, 2, 3]",
+            "Supports Functional Mapping 2.0+",
+            "Supports NULL value"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 3,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 1,
+        "Name": "PROX",
+        "Raw range": [
+          0.0,
+          10.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          10.0
+        ],
+        "Units": "DIS",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]",
+            "Supports Functional Mapping 2.0+"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 3,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 2,
+        "Name": "COUNT",
+        "Raw range": [
+          0.0,
+          100.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          100.0
+        ],
+        "Units": "CNT",
+        "Mapping": {
+          "input": [
+            "Relative [-1..1]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "32 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 3,
+        "Name": "REFLT",
+        "Raw range": [
+          0.0,
+          100.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          100.0
+        ],
+        "Units": "PCT",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 3,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 4,
+        "Name": "AMBI",
+        "Raw range": [
+          0.0,
+          100.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          100.0
+        ],
+        "Units": "PCT",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 3,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 6,
+        "Name": "RGB I",
+        "Raw range": [
+          0.0,
+          1023.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          1023.0
+        ],
+        "Units": "RAW",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 3,
+          "type": "16 bit",
+          "total_figures": 5,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 9,
+        "Name": "DEBUG",
+        "Raw range": [
+          0.0,
+          1023.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          10.0
+        ],
+        "Units": "N/A",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 2,
+          "type": "16 bit",
+          "total_figures": 5,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 10,
+        "Name": "CALIB",
+        "Raw range": [
+          0.0,
+          65535.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          65535.0
+        ],
+        "Units": "N/A",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 8,
+          "type": "16 bit",
+          "total_figures": 5,
+          "decimals": 0
+        }
+      }
+    ],
+    "output_modes": [
+      {
+        "Mode": 5,
+        "Name": "COL O",
+        "Raw range": [
+          0.0,
+          10.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          10.0
+        ],
+        "Units": "IDX",
+        "Mapping": {
+          "input": [],
+          "output": [
+            "Discrete [0, 1, 2, 3]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 3,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 7,
+        "Name": "IR Tx",
+        "Raw range": [
+          0.0,
+          65535.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          65535.0
+        ],
+        "Units": "N/A",
+        "Mapping": {
+          "input": [],
+          "output": [
+            "Discrete [0, 1, 2, 3]"
+          ]
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "16 bit",
+          "total_figures": 5,
+          "decimals": 0
+        }
+      }
+    ],
+    "capabilities": {
+      "logically_combinable": true,
+      "synchronizable": false,
+      "can_output": true,
+      "can_input": true
+    },
+    "possible_mode_combinations": [
+      [
+        0,
+        1,
+        2,
+        3,
+        6
+      ]
+    ]
+  },
+
+  "TiltSensor on port 0x3a": {
+    "mode_count": 8,
+    "input_modes": [
+      {
+        "Mode": 0,
+        "Name": "ANGLE",
+        "Raw range": [
+          -90.0,
+          90.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -90.0,
+          90.0
+        ],
+        "Units": "DEG",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]",
+            "Supports Functional Mapping 2.0+"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 2,
+          "type": "8 bit",
+          "total_figures": 3,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 1,
+        "Name": "TILT",
+        "Raw range": [
+          0.0,
+          10.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          10.0
+        ],
+        "Units": "DIR",
+        "Mapping": {
+          "input": [
+            "Discrete [0, 1, 2, 3]",
+            "Supports Functional Mapping 2.0+"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 1,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 2,
+        "Name": "ORINT",
+        "Raw range": [
+          0.0,
+          5.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          5.0
+        ],
+        "Units": "DIR",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 1,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 3,
+        "Name": "IMPCT",
+        "Raw range": [
+          0.0,
+          100.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          100.0
+        ],
+        "Units": "IMP",
+        "Mapping": {
+          "input": [
+            "Relative [-1..1]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "32 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 4,
+        "Name": "ACCEL",
+        "Raw range": [
+          -65.0,
+          65.0
+        ],
+        "Percent range": [
+          -100.0,
+          100.0
+        ],
+        "SI value range": [
+          -65.0,
+          65.0
+        ],
+        "Units": "ACC",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 3,
+          "type": "8 bit",
+          "total_figures": 3,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 5,
+        "Name": "OR_CF",
+        "Raw range": [
+          0.0,
+          6.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          6.0
+        ],
+        "Units": "SID",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "8 bit",
+          "total_figures": 1,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 6,
+        "Name": "IM_CF",
+        "Raw range": [
+          0.0,
+          255.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          255.0
+        ],
+        "Units": "SEN",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 2,
+          "type": "8 bit",
+          "total_figures": 3,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 7,
+        "Name": "CALIB",
+        "Raw range": [
+          0.0,
+          255.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          255.0
+        ],
+        "Units": "CAL",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 3,
+          "type": "8 bit",
+          "total_figures": 3,
+          "decimals": 0
+        }
+      }
+    ],
+    "output_modes": [],
+    "capabilities": {
+      "logically_combinable": true,
+      "synchronizable": false,
+      "can_output": false,
+      "can_input": true
+    },
+    "possible_mode_combinations": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    ]
+  },
+
+  "Current on port 0x3b": {
+    "mode_count": 2,
+    "input_modes": [
+      {
+        "Mode": 0,
+        "Name": "CUR L",
+        "Raw range": [
+          0.0,
+          4095.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          2444.0
+        ],
+        "Units": "mA",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "16 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 1,
+        "Name": "CUR S",
+        "Raw range": [
+          0.0,
+          4095.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          2444.0
+        ],
+        "Units": "mA",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "16 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      }
+    ],
+    "output_modes": [],
+    "capabilities": {
+      "logically_combinable": false,
+      "synchronizable": false,
+      "can_output": false,
+      "can_input": true
+    }
+  },
+  "Voltage on port 0x3c": {
+    "mode_count": 2,
+    "input_modes": [
+      {
+        "Mode": 0,
+        "Name": "VLT L",
+        "Raw range": [
+          0.0,
+          3893.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          9600.0
+        ],
+        "Units": "mV",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "16 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      },
+      {
+        "Mode": 1,
+        "Name": "VLT S",
+        "Raw range": [
+          0.0,
+          3893.0
+        ],
+        "Percent range": [
+          0.0,
+          100.0
+        ],
+        "SI value range": [
+          0.0,
+          9600.0
+        ],
+        "Units": "mV",
+        "Mapping": {
+          "input": [
+            "Absolute [min..max]"
+          ],
+          "output": []
+        },
+        "Value encoding": {
+          "datasets": 1,
+          "type": "16 bit",
+          "total_figures": 4,
+          "decimals": 0
+        }
+      }
+    ],
+    "output_modes": [],
+    "capabilities": {
+      "logically_combinable": false,
+      "synchronizable": false,
+      "can_output": false,
+      "can_input": true
+    }
+  }
+}

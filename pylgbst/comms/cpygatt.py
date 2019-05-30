@@ -2,8 +2,7 @@ import logging
 
 import pygatt
 
-from pylgbst.comms import Connection, LEGO_MOVE_HUB
-from pylgbst.constants import MOVE_HUB_HW_UUID_CHAR
+from pylgbst.comms import Connection, LEGO_MOVE_HUB, MOVE_HUB_HW_UUID_CHAR
 from pylgbst.utilities import str2hex
 
 log = logging.getLogger('comms-pygatt')

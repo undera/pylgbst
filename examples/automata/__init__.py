@@ -2,27 +2,31 @@ import logging
 import time
 from collections import Counter
 
-from pylgbst.movehub import MoveHub, COLOR_NONE, COLOR_CYAN, COLOR_BLUE, COLOR_BLACK, COLOR_RED, COLORS
-from pylgbst.peripherals import ColorDistanceSensor
+from pylgbst.hub import MoveHub, COLOR_NONE, COLOR_BLACK, COLORS, COLOR_CYAN, COLOR_BLUE, COLOR_RED
+from pylgbst.peripherals import EncodedMotor
 
 
 class Automata(object):
+    BASE_SPEED = 0.5
 
     def __init__(self):
         super(Automata, self).__init__()
         self.__hub = MoveHub()
-        self.__hub.color_distance_sensor.subscribe(self.__on_sensor, mode=ColorDistanceSensor.COLOR_ONLY)
+        self.__hub.vision_sensor.subscribe(self.__on_sensor)
         self._sensor = []
 
     def __on_sensor(self, color, distance=-1):
-        if distance < 4:
+        logging.debug("Sensor data: %s/%s", COLORS[color], distance)
+        if distance <= 4:
             if color not in (COLOR_NONE, COLOR_BLACK):
                 self._sensor.append((color, int(distance)))
-                logging.info("Sensor data: %s", COLORS[color])
+                logging.debug("Sensor data: %s", COLORS[color])
 
     def feed_tape(self):
-        self.__hub.motor_external.angled(120, 0.25)
-        time.sleep(0.2)
+        self.__hub.motor_external.angled(60, 0.5)
+        time.sleep(0.1)
+        self.__hub.motor_external.angled(60, 0.5)
+        time.sleep(0.1)
 
     def get_color(self):
         res = self._sensor
@@ -32,33 +36,47 @@ class Automata(object):
         clr = cnts.most_common(1)[0][0] if cnts else COLOR_NONE
         if clr == COLOR_CYAN:
             clr = COLOR_BLUE
-        elif clr == COLOR_BLACK:
-            clr = COLOR_NONE
         return clr
 
     def left(self):
-        self.__hub.motor_AB.angled(270, 0.25, -0.25)
-        time.sleep(0.5)
+        self.__hub.motor_A.angled(270, self.BASE_SPEED, -self.BASE_SPEED, end_state=EncodedMotor.END_STATE_HOLD)
+        time.sleep(0.1)
+        self.__hub.motor_A.stop()
 
     def right(self):
-        self.__hub.motor_AB.angled(-270, 0.25, -0.25)
-        time.sleep(0.5)
+        self.__hub.motor_B.angled(-320, self.BASE_SPEED, -self.BASE_SPEED, end_state=EncodedMotor.END_STATE_HOLD)
+        time.sleep(0.1)
+        self.__hub.motor_B.stop()
 
     def forward(self):
-        self.__hub.motor_AB.angled(830, 0.25)
-        time.sleep(0.5)
+        self.__hub.motor_AB.angled(450, self.BASE_SPEED)
 
     def backward(self):
-        self.__hub.motor_AB.angled(830, -0.25)
-        time.sleep(0.5)
+        self.__hub.motor_AB.angled(-450, self.BASE_SPEED)
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     bot = Automata()
+
+    bot.forward()
+    bot.right()
+    bot.forward()
+    bot.left()
+    bot.forward()
+
+    exit(0)
+
     color = COLOR_NONE
+    cmds = []
     while color != COLOR_RED:
         bot.feed_tape()
         color = bot.get_color()
-        print (COLORS[color])
-        break
+        logging.warning(COLORS[color])
+        cmds.append(COLORS[color])
+
+    exp = ['BLUE', 'BLUE', 'BLUE', 'WHITE', 'BLUE', 'BLUE', 'WHITE', 'BLUE', 'WHITE', 'YELLOW', 'BLUE', 'BLUE', 'BLUE',
+           'BLUE', 'YELLOW', 'WHITE', 'RED']
+    logging.info("Exp: %s", exp)
+    logging.info("Act: %s", cmds)
+    assert exp == cmds

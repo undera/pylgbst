@@ -5,6 +5,7 @@ import serial
 from pygatt import BLEAddressType
 from pygatt.backends.bgapi.bgapi import MAX_CONNECTION_ATTEMPTS
 from pygatt.backends.bgapi.device import BGAPIBLEDevice
+from pygatt.backends.bgapi.util import USBSerialDeviceInfo
 
 from pylgbst.comms.cpygatt import GattoolConnection
 from tests import log
@@ -54,6 +55,9 @@ class BlueGigaBackendMock(pygatt.BGAPIBackend):
         log.debug("Mock connect")
         device = BGAPIBLEDeviceMock("address", 0, self)
         return device
+
+    def _detect_device_port(self):
+        return USBSerialDeviceInfo().port_name
 
 
 class BlueGigaTests(unittest.TestCase):

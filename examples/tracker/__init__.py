@@ -9,10 +9,8 @@ import cv2
 import imutils as imutils
 from matplotlib import pyplot
 
-from pylgbst import get_connection_auto
-from pylgbst.comms import DebugServerConnection
-from pylgbst.constants import COLOR_RED, COLOR_BLUE, COLOR_YELLOW
-from pylgbst.movehub import MoveHub
+from pylgbst.hub import MoveHub
+from pylgbst.peripherals import COLOR_RED, COLOR_BLUE, COLOR_YELLOW
 
 cascades_dir = '/usr/share/opencv/haarcascades'
 face_cascade = cv2.CascadeClassifier(cascades_dir + '/haarcascade_frontalface_default.xml')
@@ -85,6 +83,7 @@ class FaceTracker(MoveHub):
         return res
 
     def _find_smile(self, cur_face):
+        roi_color = None
         if cur_face is not None:
             (x, y, w, h) = cur_face
             roi_color = self.cur_img[y:y + h, x:x + w]
@@ -114,8 +113,7 @@ class FaceTracker(MoveHub):
         if on and not self._is_smile_on:
             self._is_smile_on = True
             self.motor_B.angled(-90, 0.5)
-            if self.led.last_color_set != COLOR_RED:
-                self.led.set_color(COLOR_RED)
+            self.led.set_color(COLOR_RED)
 
         if not on and self._is_smile_on:
             self._is_smile_on = False
@@ -142,7 +140,7 @@ class FaceTracker(MoveHub):
         mask = cv2.erode(mask, None, iterations=5)
         mask = cv2.dilate(mask, None, iterations=5)
 
-        #if not (int(time.time()) % 2):
+        # if not (int(time.time()) % 2):
         #    self.cur_img = mask
 
         ret, thresh = cv2.threshold(mask, 20, 255, 0)
@@ -167,8 +165,8 @@ class FaceTracker(MoveHub):
         if abs(vert) < 0.15:
             vert = 0
 
-        self.motor_external.constant(horz)
-        self.motor_A.constant(-vert)
+        self.motor_external.start_power(horz)
+        self.motor_A.start_power(-vert)
 
     def main(self):
         thr = Thread(target=self.capture)
@@ -191,15 +189,15 @@ class FaceTracker(MoveHub):
 
     def _process_picture(self, plt):
         self.cur_face = self._find_face()
-        #self.cur_face = self._find_color()
+        # self.cur_face = self._find_color()
 
         if self.cur_face is None:
             self.motor_external.stop()
             self.motor_AB.stop()
-            if not self._is_smile_on and self.led.last_color_set != COLOR_BLUE:
+            if not self._is_smile_on:
                 self.led.set_color(COLOR_BLUE)
         else:
-            if not self._is_smile_on and self.led.last_color_set != COLOR_YELLOW:
+            if not self._is_smile_on:
                 self.led.set_color(COLOR_YELLOW)
 
             self._auto_pan(self.cur_face)
@@ -213,13 +211,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
     try:
-        conn = DebugServerConnection()
-    except BaseException:
-        logging.debug("Failed to use debug server: %s", traceback.format_exc())
-        conn = get_connection_auto()
-
-    try:
-        hub = FaceTracker(conn)
+        hub = FaceTracker()
         hub.main()
     finally:
         pass

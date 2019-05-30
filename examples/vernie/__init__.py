@@ -6,8 +6,7 @@ import subprocess
 import time
 
 from pylgbst import *
-from pylgbst.comms import DebugServerConnection
-from pylgbst.movehub import MoveHub
+from pylgbst.hub import MoveHub
 
 try:
     import gtts
@@ -65,17 +64,11 @@ VERNIE_SINGLE_MOVE = 430
 
 class Vernie(MoveHub):
     def __init__(self, language='en'):
-        try:
-            conn = DebugServerConnection()
-        except BaseException:
-            logging.warning("Failed to use debug server: %s", traceback.format_exc())
-            conn = get_connection_auto()
-
-        super(Vernie, self).__init__(conn)
+        super(Vernie, self).__init__()
         self.language = language
 
         while True:
-            required_devices = (self.color_distance_sensor, self.motor_external)
+            required_devices = (self.vision_sensor, self.motor_external)
             if None not in required_devices:
                 break
             log.debug("Waiting for required devices to appear: %s", required_devices)

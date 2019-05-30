@@ -10,12 +10,18 @@ from abc import abstractmethod
 from binascii import unhexlify
 from threading import Thread
 
-from pylgbst.constants import MSG_DEVICE_SHUTDOWN, ENABLE_NOTIFICATIONS_HANDLE, ENABLE_NOTIFICATIONS_VALUE
+from pylgbst.messages import MsgHubAction
 from pylgbst.utilities import str2hex
 
 log = logging.getLogger('comms')
 
 LEGO_MOVE_HUB = "LEGO Move Hub"
+MOVE_HUB_HW_UUID_SERV = '00001623-1212-efde-1623-785feabcd123'
+MOVE_HUB_HW_UUID_CHAR = '00001624-1212-efde-1623-785feabcd123'
+ENABLE_NOTIFICATIONS_HANDLE = 0x000f
+ENABLE_NOTIFICATIONS_VALUE = b'\x01\x00'
+
+MOVE_HUB_HARDWARE_HANDLE = 0x0E
 
 
 class Connection(object):
@@ -96,7 +102,7 @@ class DebugServer(object):
         self._check_shutdown(data)
 
     def _check_shutdown(self, data):
-        if data[5] == MSG_DEVICE_SHUTDOWN:
+        if data[5] == MsgHubAction.TYPE:
             log.warning("Device shutdown")
             self._running = False
 
