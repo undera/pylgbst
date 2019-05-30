@@ -18,3 +18,7 @@ There is optional `granularity` parameter for each subscription call, by default
 It is possible to subscribe with multiple times for the same sensor. Only one, very last subscribe mode is in effect, with many subscriber callbacks allowed to receive notifications. 
 
 Good practice for any program is to unsubscribe from all sensor subscriptions before exiting, especially when used with `DebugServer`.
+
+## Generic Perihpheral 
+
+In case you have used a peripheral that is not recognized by the library, it will be detected as generic `Peripheral` class. You still can use subscription and sensor info getting commands for it.  

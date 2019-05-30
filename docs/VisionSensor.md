@@ -1,5 +1,3 @@
-
-
 ### Color & Distance Sensor
 ![](https://img.bricklink.com/ItemImage/PL/6182145.png)
 

@@ -1,4 +1,3 @@
-
 ### LED
 
 `MoveHub` class has field `led` to access color LED near push button. To change its color, use `set_color(color)` method. 

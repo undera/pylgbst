@@ -1,4 +1,3 @@
-
 ### Tilt Sensor
 
 There are several modes to subscribe to sensor, providing 2-axis, 3-axis and bump detect data.

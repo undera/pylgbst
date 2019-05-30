@@ -49,7 +49,7 @@ for device in hub.peripherals:
     print(device)
 ```
 
-Each peripheral kind has own methods to do actions and/or get sensor data. See [features](#features) list for individual doc links.
+Each peripheral kind has own methods to do actions and/or get sensor data. See [features](#features) list for individual doc pages.
 
 ## Bluetooth Backend Prerequisites
 

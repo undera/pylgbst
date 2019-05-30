@@ -39,20 +39,20 @@ class Automata(object):
         return clr
 
     def left(self):
-        self.__hub.motor_A.angled(-270, self.BASE_SPEED, end_state=EncodedMotor.END_STATE_HOLD)
+        self.__hub.motor_A.angled(270, self.BASE_SPEED, -self.BASE_SPEED, end_state=EncodedMotor.END_STATE_HOLD)
         time.sleep(0.1)
         self.__hub.motor_A.stop()
 
     def right(self):
-        self.__hub.motor_B.angled(-320, self.BASE_SPEED, end_state=EncodedMotor.END_STATE_HOLD)
+        self.__hub.motor_B.angled(-320, self.BASE_SPEED, -self.BASE_SPEED, end_state=EncodedMotor.END_STATE_HOLD)
         time.sleep(0.1)
         self.__hub.motor_B.stop()
 
     def forward(self):
-        self.__hub.motor_AB.angled(-450, self.BASE_SPEED)
+        self.__hub.motor_AB.angled(450, self.BASE_SPEED)
 
     def backward(self):
-        self.__hub.motor_AB.angled(450, self.BASE_SPEED)
+        self.__hub.motor_AB.angled(-450, self.BASE_SPEED)
 
 
 if __name__ == '__main__':
@@ -60,7 +60,10 @@ if __name__ == '__main__':
     bot = Automata()
 
     bot.forward()
-    bot.backward()
+    bot.right()
+    bot.forward()
+    bot.left()
+    bot.forward()
 
     exit(0)
 
