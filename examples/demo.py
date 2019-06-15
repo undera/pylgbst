@@ -13,7 +13,7 @@ log = logging.getLogger("demo")
 def demo_led_colors(movehub):
     # LED colors demo
     log.info("LED colors demo")
-    movehub.color_distance_sensor.subscribe(lambda x, y: None)
+    movehub.led.subscribe(lambda x, y: None)
     for color in list(COLORS.keys())[1:] + [COLOR_BLACK]:
         log.info("Setting LED color to: %s", COLORS[color])
         movehub.led.set_color(color)
@@ -111,11 +111,11 @@ def demo_color_sensor(movehub):
         demo_color_sensor.cnt += 1
         log.info("#%s/%s: Color %s, distance %s", demo_color_sensor.cnt, limit, COLORS[color], distance)
 
-    movehub.color_distance_sensor.subscribe(callback)
+    movehub.vision_sensor.subscribe(callback)
     while demo_color_sensor.cnt < limit:
         time.sleep(1)
 
-    movehub.color_distance_sensor.unsubscribe(callback)
+    movehub.vision_sensor.unsubscribe(callback)
 
 
 def demo_motor_sensors(movehub):
