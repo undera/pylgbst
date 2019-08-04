@@ -1,8 +1,10 @@
 import asyncio
 import logging
+import sys
 import time
 
 import spheropy
+# noinspection PyProtectedMember
 from spheropy.spheropy import _ClientCommandPacket, _DEVICE_ID_CORE
 
 
@@ -42,23 +44,52 @@ class BB8(object):
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
 
-        print("Started waking up BB-8...")
+        print("Started to wake up BB-8...")
         self._sphero = _SpheroImproved()
         self._loop.run_until_complete(self._sphero.connect(num_retry_attempts=3, use_ble=True, search_name=name))
-        self.set_color(0, 0xFF, 0)
+        self._loop.run_until_complete(self._sphero.set_stabilization(True))
+        self.stabilize()
+        self.color(0, 0xFF, 0)
         print("BB-8 is ready for commands")
 
-    def sleep(self):
+    def disconnect(self):
         self._loop.run_until_complete(self._sphero.sleep(0))
+        self._sphero.disconnect()
 
-    def set_color(self, red, green, blue):
+    def color(self, red, green, blue):
         self._loop.run_until_complete(self._sphero.set_rgb_led(red, green, blue))
+
+    def heading(self, heading):
+        self._loop.run_until_complete(self._sphero.set_heading(heading))
+
+    def roll(self, speed=1.0):
+        speed = int(255 * speed)
+        self._loop.run_until_complete(self._sphero.roll(speed, 0))
+
+    def stop(self):
+        self._loop.run_until_complete(self._sphero.roll(0, 0))
+
+    def stabilize(self):
+        self._loop.run_until_complete(self._sphero.self_level())
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG if 'pydevd' in sys.modules else logging.WARNING)
 
     bb8 = BB8("BB-CC13")
-    bb8.set_color(0xFF, 0x00, 0xFF)
-    time.sleep(2)
-    bb8.sleep()
+    try:
+        # bb8.color(0xFF, 0x00, 0xFF)
+        bb8.color(0x00, 0x00, 0x00)
+
+        bb8._loop.run_until_complete(bb8._sphero.set_back_led(254))
+        time.sleep(3)
+
+        for x in range(0, 359, 90):
+            print(x)
+            bb8.heading(x)
+            bb8.roll(0.25)
+            time.sleep(1)
+            bb8.stop()
+            bb8.stabilize()
+    finally:
+        bb8.disconnect()
