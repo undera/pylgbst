@@ -420,9 +420,6 @@ class EncodedMotor(Motor):
         if self._port_mode.mode == self.SENSOR_ANGLE:
             angle = unpack("<l", data[0:4])[0]
             return (angle,)
-        elif self._port_mode.mode == self.SENSOR_SOMETHING1:
-            smth = usbyte(data, 0)
-            return (smth,)
         elif self._port_mode.mode == self.SENSOR_SPEED:
             speed = unpack("<b", data[0])[0]
             return (speed,)
