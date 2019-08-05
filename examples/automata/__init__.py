@@ -7,12 +7,12 @@ from pylgbst.peripherals import EncodedMotor
 
 
 class Automata(object):
-    BASE_SPEED = 0.5
+    BASE_SPEED = 0.75
 
     def __init__(self):
         super(Automata, self).__init__()
         self.__hub = MoveHub()
-        self.__hub.vision_sensor.subscribe(self.__on_sensor)
+        # self.__hub.vision_sensor.subscribe(self.__on_sensor)
         self._sensor = []
 
     def __on_sensor(self, color, distance=-1):
@@ -39,31 +39,30 @@ class Automata(object):
         return clr
 
     def left(self):
-        self.__hub.motor_A.angled(270, self.BASE_SPEED, -self.BASE_SPEED, end_state=EncodedMotor.END_STATE_HOLD)
+        self.__hub.motor_AB.angled(270, self.BASE_SPEED, -self.BASE_SPEED, end_state=EncodedMotor.END_STATE_HOLD)
         time.sleep(0.1)
-        self.__hub.motor_A.stop()
+        self.__hub.motor_AB.stop()
 
     def right(self):
-        self.__hub.motor_B.angled(-320, self.BASE_SPEED, -self.BASE_SPEED, end_state=EncodedMotor.END_STATE_HOLD)
+        self.__hub.motor_AB.angled(235, -self.BASE_SPEED, self.BASE_SPEED, end_state=EncodedMotor.END_STATE_HOLD)
         time.sleep(0.1)
-        self.__hub.motor_B.stop()
+        self.__hub.motor_AB.stop()
 
     def forward(self):
-        self.__hub.motor_AB.angled(450, self.BASE_SPEED)
+        self.__hub.motor_AB.angled(500, self.BASE_SPEED)
 
     def backward(self):
-        self.__hub.motor_AB.angled(-450, self.BASE_SPEED)
+        self.__hub.motor_AB.angled(500, -self.BASE_SPEED)
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     bot = Automata()
 
-    bot.forward()
-    bot.right()
-    bot.forward()
     bot.left()
-    bot.forward()
+    bot.left()
+    bot.left()
+    bot.left()
 
     exit(0)
 
