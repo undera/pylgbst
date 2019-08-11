@@ -66,9 +66,9 @@ class Hub(object):
             with self._sync_lock:
                 assert not self._sync_request, "Pending request %r while trying to put %r" % (self._sync_request, msg)
                 self._sync_request = msg
-                self.connection.write(self.HUB_HARDWARE_HANDLE, msgbytes)
                 log.debug("Waiting for sync reply to %r...", msg)
 
+            self.connection.write(self.HUB_HARDWARE_HANDLE, msgbytes)
             resp = self._sync_replies.get()
             log.debug("Fetched sync reply: %r", resp)
             if isinstance(resp, MsgGenericError):
