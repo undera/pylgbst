@@ -61,11 +61,12 @@ class Hub(object):
         :rtype: pylgbst.messages.UpstreamMsg
         """
         log.debug("Send message: %r", msg)
-        self.connection.write(self.HUB_HARDWARE_HANDLE, msg.bytes())
+        msgbytes = msg.bytes()
         if msg.needs_reply:
             with self._sync_lock:
                 assert not self._sync_request, "Pending request %r while trying to put %r" % (self._sync_request, msg)
                 self._sync_request = msg
+                self.connection.write(self.HUB_HARDWARE_HANDLE, msgbytes)
                 log.debug("Waiting for sync reply to %r...", msg)
 
             resp = self._sync_replies.get()
@@ -74,6 +75,7 @@ class Hub(object):
                 raise RuntimeError(resp.message())
             return resp
         else:
+            self.connection.write(self.HUB_HARDWARE_HANDLE, msgbytes)
             return None
 
     def _notify(self, handle, data):
@@ -183,12 +185,12 @@ class MoveHub(Hub):
     """
 
     # PORTS
-    PORT_C = 0x01
-    PORT_D = 0x02
+    PORT_A = 0x00
+    PORT_B = 0x01
+    PORT_C = 0x02
+    PORT_D = 0x03
+    PORT_AB = 0x10
     PORT_LED = 0x32
-    PORT_A = 0x37
-    PORT_B = 0x38
-    PORT_AB = 0x39
     PORT_TILT_SENSOR = 0x3A
     PORT_CURRENT = 0x3B
     PORT_VOLTAGE = 0x3C
