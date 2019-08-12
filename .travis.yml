@@ -27,7 +27,9 @@ addons:
       - python3-dbus
       - python3-gi
 install:
-  - pip install codecov nose-exclude gattlib pygatt gatt pexpect bluepy
+  - wget https://github.com/labapart/gattlib/releases/download/dev/gattlib_dbus_0.2-dev_x86_64.deb
+  - dpkg -i gattlib_dbus_0.2-dev_x86_64.deb
+  - pip install codecov nose-exclude pygatt gatt pexpect bluepy
 
 
 script: coverage run --source=. -m nose tests -v --exclude-dir=examples
