@@ -4,3 +4,4 @@
 build
 *.avi
 test_real.py
+.vscode/settings.json
