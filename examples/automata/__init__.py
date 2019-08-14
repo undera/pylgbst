@@ -41,7 +41,7 @@ class Automata(object):
         return clr
 
     def left(self):
-        self.__hub.motor_AB.angled(270, self.BASE_SPEED, -self.BASE_SPEED, end_state=EncodedMotor.END_STATE_FLOAT)
+        self.__hub.motor_AB.angled(290, self.BASE_SPEED, -self.BASE_SPEED, end_state=EncodedMotor.END_STATE_FLOAT)
         time.sleep(0.1)
         self.__hub.motor_AB.stop()
 
@@ -51,10 +51,10 @@ class Automata(object):
         self.__hub.motor_AB.stop()
 
     def forward(self):
-        self.__hub.motor_AB.angled(600, self.BASE_SPEED)
+        self.__hub.motor_AB.angled(500, self.BASE_SPEED)
 
     def backward(self):
-        self.__hub.motor_AB.angled(600, -self.BASE_SPEED)
+        self.__hub.motor_AB.angled(500, -self.BASE_SPEED)
 
 
 if __name__ == '__main__':
