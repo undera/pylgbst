@@ -27,10 +27,10 @@ if __name__ == "__main__":
 
 
     try:
-        # joystick.on_color_sensor(set_bb_color)
+        #joystick.on_color_sensor(set_bb_color)
         joystick.on_external_motor(set_heading)
         print("All set up")
-        time.sleep(60)
+        time.sleep(600)
     finally:
         joystick.disconnect()
         bb8.disconnect()
