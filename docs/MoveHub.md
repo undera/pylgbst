@@ -34,3 +34,10 @@ def callback(is_pressed):
 hub = MoveHub()
 hub.button.subscribe(callback)
 ```
+
+The state for button has 3 possible values: 
+- `0` - not released
+- `1` - pressed
+- `2` - pressed
+
+It is for now unknown why Hub always issues notification with `1` and immediately with `2`, after button is pressed.

@@ -660,4 +660,4 @@ class Button(Peripheral):
         :type msg: MsgHubProperties
         """
         if msg.property == MsgHubProperties.BUTTON and msg.operation == MsgHubProperties.UPSTREAM_UPDATE:
-            self._notify_subscribers(bool(usbyte(msg.parameters, 0)))
+            self._notify_subscribers(usbyte(msg.parameters, 0))
