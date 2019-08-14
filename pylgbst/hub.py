@@ -221,7 +221,7 @@ class MoveHub(Hub):
         if not get_dev_set:
             get_dev_set = lambda: (self.motor_A, self.motor_B, self.motor_AB, self.led, self.tilt_sensor,
                                    self.current, self.voltage)
-        for num in range(0, 60):
+        for num in range(0, 100):
             devices = get_dev_set()
             if all(devices):
                 log.debug("All devices are present: %s", devices)

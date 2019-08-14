@@ -22,8 +22,6 @@ if __name__ == "__main__":
 
     def set_heading(angle):
         a = int(angle) % 360
-        if a < 0:
-            a = 359 - a
         print("Angle", a)
         bb8.heading(a)
 
@@ -48,7 +46,9 @@ if __name__ == "__main__":
         joystick.on_rotation(set_heading)
         joystick.on_joystick(roll)
         print("All set up")
-        time.sleep(600)
+
+        while joystick._hub.connection.is_alive():
+            time.sleep(1)
     finally:
-        joystick.disconnect()
         bb8.disconnect()
+        joystick.disconnect()

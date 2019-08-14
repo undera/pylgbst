@@ -63,6 +63,7 @@ class BB8(object):
         print("BB-8 is ready for commands")
 
     def disconnect(self):
+        print("BB8 enters sleep")
         self._loop.run_until_complete(self._sphero.sleep(0))
         self._sphero.disconnect()
 
@@ -72,8 +73,8 @@ class BB8(object):
 
     def heading(self, heading):
         self._wait_loop()
-        self._loop.run_until_complete(self._sphero.set_heading(heading))
-        self._loop.run_until_complete(self._sphero.roll(1, 0, spheropy.RollMode.IN_PLACE_ROTATE))
+        # self._loop.run_until_complete(self._sphero.set_heading(heading))
+        self._loop.run_until_complete(self._sphero.roll(1, heading, spheropy.RollMode.IN_PLACE_ROTATE))
 
     def roll(self, speed=1.0, direction=0):
         self._wait_loop()

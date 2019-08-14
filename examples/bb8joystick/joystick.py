@@ -11,28 +11,29 @@ def _clamp(minvalue, value, maxvalue):
 
 
 class Joystick(object):
+    RANGE_A = 40
+    RANGE_C = 30
+
     def __init__(self):
         super(Joystick, self).__init__()
         self._on_joystick = set()
-        self._hub = MoveHub()
-
-        self._reset_sensors()
-
         self.button_pressed = False
-        self._hub.button.subscribe(self._on_btn)
-
         self._angle_A = 0
-        self._on_motor_a(self._on_a)
-
         self.angle_B = 0
-        self.on_rotation(self._on_b)
-
         self._angle_C = 0
+
+        print("Starting search for Joystick...")
+        self._hub = MoveHub()
+        self._reset_sensors()
+        self._hub.button.subscribe(self._on_btn)
+        self._on_motor_a(self._on_a)
+        self.on_rotation(self._on_b)
         self._on_motor_c(self._on_c)
 
-        logging.info("Done initializing")
+        print("Joystick is ready")
 
     def disconnect(self):
+        print("Joystick disconnects")
         self._hub.disconnect()
 
     def _reset_sensors(self):
@@ -55,8 +56,7 @@ class Joystick(object):
     def _on_motor_a(self, callback):
         def wrapper(angle):
             logging.debug("Raw angle: %s", angle)
-            spread = 25
-            angle = _clamp(-spread, angle, spread)
+            angle = _clamp(-self.RANGE_A, angle, self.RANGE_A)
             callback(angle)
 
         self._hub.motor_A.subscribe(wrapper)
@@ -69,15 +69,14 @@ class Joystick(object):
         def wrapper(angle):
             logging.debug("Raw angle: %s", angle)
             val = angle % 360
-            callback(val if val >= 0 else 360 - val)
+            callback(val if val >= 0 else 360 - val - 1)
 
         self._hub.motor_B.subscribe(wrapper)
 
     def _on_motor_c(self, callback):
         def wrapper(angle):
             logging.debug("Raw angle: %s", angle)
-            spread = 25
-            angle = _clamp(-spread, angle, spread)
+            angle = _clamp(-self.RANGE_C, angle, self.RANGE_C)
             callback(angle)
 
         self._hub.motor_external.subscribe(wrapper)
@@ -109,37 +108,36 @@ class Joystick(object):
         self._on_joystick.add(callback)
 
     def _calc_joystick(self):
-        norm_a = self._angle_A / 25
-        norm_b = self._angle_C / 25
-        logging.info("%s / %s", self._angle_A, self._angle_C)
-        logging.info("%s / %s", norm_a, norm_b)
-        speed = math.sqrt(norm_a ** 2 + norm_b ** 2) / math.sqrt(2)
+        norm_a = self._angle_A / self.RANGE_A
+        norm_b = self._angle_C / self.RANGE_C
+        logging.debug("%s / %s", self._angle_A, self._angle_C)
+        logging.debug("%s / %s", norm_a, norm_b)
+        speed = math.sqrt(norm_a ** 2 + norm_b ** 2)  # / math.sqrt(2)
         speed = _clamp(-1.0, speed, 1.0)
 
         maxsize = sys.maxsize if norm_a >= 0 else -sys.maxsize
         direction = math.atan(norm_a / norm_b if norm_b else maxsize)
         direction *= 180 / math.pi
         if norm_a >= 0 and norm_b >= 0:
-            logging.info("Sector 1")
             direction = 90 - direction
         elif norm_a < 0 and norm_b >= 0:
-            logging.info("Sector 2")
             direction = 90 - direction
         elif norm_a < 0 and norm_b < 0:
-            logging.info("Sector 3")
             direction = 270 - direction
         else:
-            logging.info("Sector 4")
             direction = 270 - direction
 
         for callback in self._on_joystick:
-            callback(speed, 359 - int(direction))
+            callback(speed, 360 - int(direction))
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
+
     stick = Joystick()
+
     stick.on_button(lambda x: logging.info("Button: %s" % x))
     stick.on_rotation(lambda x: logging.info("Motor B: %s" % x))
     stick.on_joystick(lambda speed, head: logging.info("Speed: %.2f, dir: %s" % (speed, head)))
+
     time.sleep(100)
