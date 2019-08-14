@@ -100,6 +100,7 @@ class GattConnection(Connection):
             for dev in devices:
                 address = dev.mac_address
                 name = dev.alias()
+                logging.debug("Device %s at %s", name, address)
                 if (not hub_mac and name == LEGO_MOVE_HUB) or hub_mac == address:
                     logging.info("Found %s at %s", name, address)
                     self._device = CustomDevice(address, self._manager)
