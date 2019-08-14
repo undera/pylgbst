@@ -18,14 +18,15 @@ class Message(object):
         see https://lego.github.io/lego-ble-wireless-protocol-docs/#common-message-header
         """
         msglen = len(self.payload) + 3
-        assert msglen < 127, "TODO: handle logner messages with 2-byte len"
+        assert msglen < 127, "TODO: handle longer messages with 2-byte len"
         return pack("<B", msglen) + pack("<B", self.hub_id) + pack("<B", self.TYPE) + self.payload
 
     def __repr__(self):
+        # assert self.bytes()  # to trigger any field changes
         data = self.__dict__
         data = {x: (str2hex(y) if isinstance(y, bytes) else y)
                 for x, y in data.items()
-                if x not in ('hub_id', 'needs_reply')}
+                if x not in ('hub_id',)}
         return self.__class__.__name__ + "(%s)" % data
 
 
@@ -125,7 +126,7 @@ class MsgHubProperties(DownstreamMsg, UpstreamMsg):
         self.parameters = parameters
 
     def bytes(self):
-        if self.operation == self.UPD_REQUEST:
+        if self.operation in (self.UPD_REQUEST, self.UPD_ENABLE):
             self.needs_reply = True
         self.payload = pack("<B", self.property) + pack("<B", self.operation) + self.parameters
         return super(MsgHubProperties, self).bytes()
