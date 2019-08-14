@@ -56,10 +56,10 @@ class BB8(object):
         print("Started to wake up BB-8...")
         self._sphero = _SpheroImproved()
         self._loop.run_until_complete(self._sphero.connect(num_retry_attempts=3, use_ble=True, search_name=name))
-        # self._loop.run_until_complete(self._sphero.set_stabilization(True))
-        # self._loop.run_until_complete(self._sphero.set_rotation_rate(1))
+        self._loop.run_until_complete(self._sphero.set_stabilization(True))
+        self._loop.run_until_complete(self._sphero.set_rotation_rate(1))
         self.color(0, 0xFF, 0)
-        # self.stabilize()
+        self.stabilize()
         print("BB-8 is ready for commands")
 
     def disconnect(self):
@@ -72,13 +72,13 @@ class BB8(object):
 
     def heading(self, heading):
         self._wait_loop()
-        self._loop.run_until_complete(self._sphero.roll(1, heading, spheropy.RollMode.IN_PLACE_ROTATE))
-        # self._loop.run_until_complete(self._sphero.set_heading(heading))
+        self._loop.run_until_complete(self._sphero.set_heading(heading))
+        self._loop.run_until_complete(self._sphero.roll(1, 0, spheropy.RollMode.IN_PLACE_ROTATE))
 
-    def roll(self, speed=1.0):
+    def roll(self, speed=1.0, direction=0):
         self._wait_loop()
         speed = int(255 * speed)
-        self._loop.run_until_complete(self._sphero.roll(speed, 0))
+        self._loop.run_until_complete(self._sphero.roll(speed, direction))
 
     def stop(self):
         self._wait_loop()

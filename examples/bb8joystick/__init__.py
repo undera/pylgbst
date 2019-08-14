@@ -13,22 +13,40 @@ if __name__ == "__main__":
     joystick = Joystick()
 
 
-    def set_bb_color(r, g, b):
-        print("Color", r, g, b)
-        bb8.color(r, g, b)
+    def set_bb_color(flag):
+        if flag:
+            bb8.color(255, 255, 255)
+        else:
+            bb8.color(0, 0, 0)
 
 
     def set_heading(angle):
         a = int(angle) % 360
         if a < 0:
-            a = 360 - a
+            a = 359 - a
         print("Angle", a)
         bb8.heading(a)
 
 
+    def roll(speed, direction):
+        print("Roll", speed, direction)
+        if speed < 0.1:
+            speed = 0
+        bb8.roll(speed, direction)
+
+
+    def stop(state):
+        if not state:
+            print("Stop")
+            bb8.roll(0, 0)
+            bb8.stabilize()
+
+
     try:
-        #joystick.on_color_sensor(set_bb_color)
-        joystick.on_external_motor(set_heading)
+        joystick.on_button(set_bb_color)
+        joystick.on_button(stop)
+        joystick.on_rotation(set_heading)
+        joystick.on_joystick(roll)
         print("All set up")
         time.sleep(600)
     finally:
