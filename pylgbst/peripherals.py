@@ -126,7 +126,7 @@ class Peripheral(object):
             self.set_port_mode(self._port_mode.mode, False)
 
     def _notify_subscribers(self, *args, **kwargs):
-        for subscriber in self._subscribers:
+        for subscriber in self._subscribers.copy():
             subscriber(*args, **kwargs)
         return args
 
