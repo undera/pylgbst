@@ -9,7 +9,7 @@ from examples.bb8joystick.joystick import Joystick
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG if 'pydevd' in sys.modules else logging.WARNING)
 
-    bb8 = BB8("BB-CC13")
+    bb8 = BB8()
     joystick = Joystick()
 
 
@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     def roll(speed, direction):
         print("Roll", speed, direction)
-        if speed < 2:
+        if speed < 3:
             speed = 0
         bb8.roll(speed, direction)
 
@@ -39,7 +39,9 @@ if __name__ == "__main__":
             bb8.roll(0, 0)
         else:
             print("Stabilize")
+            bb8.color(255, 0, 255)
             bb8.stabilize()
+            bb8.color(0, 0, 0)
 
 
     try:

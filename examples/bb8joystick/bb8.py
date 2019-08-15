@@ -48,7 +48,8 @@ class _SpheroImproved(spheropy.Sphero):
 
 
 class BB8(object):
-    def __init__(self, name):
+    def __init__(self, name="BB-CC13"):
+        self._heading = 0
         # marry sync with async https://www.aeracode.org/2018/02/19/python-async-simplified/
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
@@ -73,14 +74,18 @@ class BB8(object):
 
     def heading(self, heading):
         self._wait_loop()
-        self._loop.run_until_complete(self._sphero.set_heading(heading))
-        # self._loop.run_until_complete(self._sphero.roll(1, heading, spheropy.RollMode.IN_PLACE_ROTATE))
+        heading = 359 - heading
+        self._heading = heading
+        # self._loop.run_until_complete(self._sphero.set_heading(359 - heading))
+        self._loop.run_until_complete(self._sphero.roll(1, heading, spheropy.RollMode.IN_PLACE_ROTATE))
 
     def roll(self, speed=10, direction=0):
         self._wait_loop()
+        direction += self._heading
+        direction %= 360
         speed = int(255 * speed / 10)
-        speed *= 0.5  # throttle down a bit
-        self._loop.run_until_complete(self._sphero.roll(speed, direction))
+        speed *= 0.75  # throttle down a bit
+        self._loop.run_until_complete(self._sphero.roll(int(speed), direction))
 
     def stop(self):
         self._wait_loop()

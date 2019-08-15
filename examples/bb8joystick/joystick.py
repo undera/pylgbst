@@ -110,7 +110,7 @@ class Joystick(object):
         self._on_joystick.add(callback)
 
     def _calc_joystick(self):
-        norm_a = -self._angle_A / self.RANGE_A
+        norm_a = self._angle_A / self.RANGE_A
         norm_b = self._angle_C / self.RANGE_C
         logging.debug("%s / %s", self._angle_A, self._angle_C)
         logging.debug("%s / %s", norm_a, norm_b)
@@ -130,7 +130,7 @@ class Joystick(object):
             direction = 270 - direction
 
         for callback in self._on_joystick:
-            callback(round(10 * speed), 359 - int(direction))
+            callback(int(round(10 * speed)), int(direction))
 
 
 if __name__ == '__main__':
@@ -139,7 +139,7 @@ if __name__ == '__main__':
     stick = Joystick()
 
     stick.on_button(lambda x: logging.info("Button: %s" % x))
-    stick.on_rotation(lambda x: logging.info("Motor B: %s" % x))
-    stick.on_joystick(lambda speed, head: logging.info("Speed: %.2f, dir: %s" % (speed, head)))
+    stick.on_rotation(lambda x: logging.info("Rotation: %s" % x))
+    stick.on_joystick(lambda speed, head: logging.info("Speed: %s, Direction: %s" % (speed, head)))
 
     time.sleep(100)
