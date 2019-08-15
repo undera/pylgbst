@@ -69,7 +69,9 @@ class Joystick(object):
         def wrapper(angle):
             logging.debug("Raw angle: %s", angle)
             val = angle % 360
-            callback(val if val >= 0 else 360 - val - 1)
+            val = val if val >= 0 else 360 - val - 1
+            val = 359 - val
+            callback(val)
 
         self._hub.motor_B.subscribe(wrapper)
 
@@ -101,14 +103,14 @@ class Joystick(object):
     def on_joystick(self, callback):
         """
         Notifies about joystick change. ``callback(speed, direction)`` gets parameters:
-        - ``speed`` - float value from 0.0 to 1.0
+        - ``speed`` - int value from 0 to 10
         - ``direction`` - int value from 0 to 359
 
         """
         self._on_joystick.add(callback)
 
     def _calc_joystick(self):
-        norm_a = self._angle_A / self.RANGE_A
+        norm_a = -self._angle_A / self.RANGE_A
         norm_b = self._angle_C / self.RANGE_C
         logging.debug("%s / %s", self._angle_A, self._angle_C)
         logging.debug("%s / %s", norm_a, norm_b)
@@ -128,7 +130,7 @@ class Joystick(object):
             direction = 270 - direction
 
         for callback in self._on_joystick:
-            callback(speed, 360 - int(direction))
+            callback(round(10 * speed), 359 - int(direction))
 
 
 if __name__ == '__main__':

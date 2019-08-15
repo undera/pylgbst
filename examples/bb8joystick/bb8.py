@@ -73,12 +73,13 @@ class BB8(object):
 
     def heading(self, heading):
         self._wait_loop()
-        # self._loop.run_until_complete(self._sphero.set_heading(heading))
-        self._loop.run_until_complete(self._sphero.roll(1, heading, spheropy.RollMode.IN_PLACE_ROTATE))
+        self._loop.run_until_complete(self._sphero.set_heading(heading))
+        # self._loop.run_until_complete(self._sphero.roll(1, heading, spheropy.RollMode.IN_PLACE_ROTATE))
 
-    def roll(self, speed=1.0, direction=0):
+    def roll(self, speed=10, direction=0):
         self._wait_loop()
-        speed = int(255 * speed)
+        speed = int(255 * speed / 10)
+        speed *= 0.5  # throttle down a bit
         self._loop.run_until_complete(self._sphero.roll(speed, direction))
 
     def stop(self):

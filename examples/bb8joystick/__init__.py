@@ -28,15 +28,17 @@ if __name__ == "__main__":
 
     def roll(speed, direction):
         print("Roll", speed, direction)
-        if speed < 0.1:
+        if speed < 2:
             speed = 0
         bb8.roll(speed, direction)
 
 
     def stop(state):
-        if not state:
+        if state:
             print("Stop")
             bb8.roll(0, 0)
+        else:
+            print("Stabilize")
             bb8.stabilize()
 
 
@@ -47,8 +49,7 @@ if __name__ == "__main__":
         joystick.on_joystick(roll)
         print("All set up")
 
-        while joystick._hub.connection.is_alive():
-            time.sleep(1)
+        time.sleep(300)
     finally:
         bb8.disconnect()
         joystick.disconnect()
