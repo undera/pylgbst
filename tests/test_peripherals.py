@@ -21,10 +21,10 @@ class PeripheralsTest(unittest.TestCase):
         def callback(pressed):
             vals.append(pressed)
 
+        hub.connection.notification_delayed("060001020600", 0.1)
         button.subscribe(callback)
         time.sleep(0.1)
 
-        hub.connection.notification_delayed("060001020600", 0.1)
         hub.connection.notification_delayed("060001020601", 0.2)
         hub.connection.notification_delayed("060001020600", 0.3)
         time.sleep(0.4)
@@ -33,7 +33,7 @@ class PeripheralsTest(unittest.TestCase):
         time.sleep(0.1)
         hub.connection.wait_notifications_handled()
 
-        self.assertEqual([False, True, False], vals)
+        self.assertEqual([1, 0], vals)
         self.assertEqual(b"0500010202", hub.writes[1][1])
         self.assertEqual(b"0500010203", hub.writes[2][1])
 
