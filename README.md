@@ -14,6 +14,7 @@ If you have Vernie assembled, you might run scripts from [`examples/vernie`](exa
 [![Laser Engraver](http://img.youtube.com/vi/ZbKmqVBBMhM/0.jpg)](https://youtu.be/ZbKmqVBBMhM)
 [![Color Sorter](http://img.youtube.com/vi/829RKT8v8M0/0.jpg)](https://youtu.be/829RKT8v8M0)
 [![Face Tracker](http://img.youtube.com/vi/WUOa3j-6XfI/0.jpg)](https://youtu.be/WUOa3j-6XfI)
+[![Color Pin Bot](http://img.youtube.com/vi/QY6nRYXQw_U/0.jpg)](https://youtu.be/QY6nRYXQw_U)
 
 
 ## Features
@@ -35,7 +36,7 @@ _Please note that this library requires one of Bluetooth backend libraries to be
 
 Install library like this: 
 ```bash
-pip install https://github.com/undera/pylgbst/archive/1.0.1.tar.gz
+pip install https://github.com/undera/pylgbst/archive/2.0.0.tar.gz
 ```
 
 Then instantiate MoveHub object and start invoking its methods. Following is example to just print peripherals detected on Hub:  

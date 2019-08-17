@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(name='pylgbst',
       description='Python library to interact with LEGO Move Hub (from Lego BOOST set)',
-      version='1.0.1',
+      version='2.0.0',
       author='Andrey Pokhilko',
       author_email='apc4@ya.ru',
       packages=['pylgbst', "pylgbst.comms"],
