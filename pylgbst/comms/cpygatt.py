@@ -34,10 +34,10 @@ class GattoolConnection(Connection):
                 address = dev['address']
                 name = dev['name']
                 if address != "00:00:00:00:00:00":
-                  if (not hub_mac and name == LEGO_MOVE_HUB) or hub_mac == address:
-                      logging.info("Found %s at %s", name, address)
-                      self._conn_hnd = adapter.connect(address)
-                      break
+                    if (not hub_mac and name == LEGO_MOVE_HUB) or hub_mac == address:
+                        logging.info("Found %s at %s", name, address)
+                        self._conn_hnd = adapter.connect(address)
+                        break
 
             if self._conn_hnd:
                 break

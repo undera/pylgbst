@@ -70,10 +70,11 @@ class GattLibConnection(Connection):
             log.debug("Devices: %s", devices)
 
             for address, name in devices.items():
-                if (not hub_mac and name == LEGO_MOVE_HUB) or hub_mac == address:
-                    logging.info("Found %s at %s", name, address)
-                    self.requester = Requester(address, True, self._iface)
-                    break
+                if address != "00:00:00:00:00:00":
+                    if (not hub_mac and name == LEGO_MOVE_HUB) or hub_mac == address:
+                        logging.info("Found %s at %s", name, address)
+                        self.requester = Requester(address, True, self._iface)
+                        break
 
             if self.requester:
                 break

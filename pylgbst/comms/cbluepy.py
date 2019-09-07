@@ -29,7 +29,7 @@ class BluepyDelegate(btle.DefaultDelegate):
 
         self._handler = handler
 
-    def handleNotification(self, cHandle, data): 
+    def handleNotification(self, cHandle, data):
         log.debug('Incoming notification')
         self._handler(cHandle, data)
 
@@ -45,7 +45,7 @@ class BluepyThreadedPeripheral(object):
         self._iface_number = _get_iface_number(controller)
 
         self._disconnect_event = Event()
-                
+
         self._dispatcher_thread = Thread(target=self._dispatch_calls)
         self._dispatcher_thread.setDaemon(True)
         self._dispatcher_thread.setName("Bluepy call dispatcher")
@@ -69,7 +69,6 @@ class BluepyThreadedPeripheral(object):
                         raise
         finally:
             self._peripheral.disconnect()
-
 
     def write(self, handle, data):
         self._call_queue.put(lambda: self._peripheral.writeCharacteristic(handle, data))
@@ -103,10 +102,11 @@ class BluepyConnection(Connection):
                 name = dev.getValueText(COMPLETE_LOCAL_NAME_ADTYPE)
                 log.debug("Found dev, name: {}, address: {}".format(name, address))
 
-                if (not hub_mac and name == LEGO_MOVE_HUB) or hub_mac == address:
-                    logging.info("Found %s at %s", name, address)
-                    self._peripheral = BluepyThreadedPeripheral(address, addressType, self._controller)
-                    break
+                if address != "00:00:00:00:00:00":
+                    if (not hub_mac and name == LEGO_MOVE_HUB) or hub_mac == address:
+                        logging.info("Found %s at %s", name, address)
+                        self._peripheral = BluepyThreadedPeripheral(address, addressType, self._controller)
+                        break
 
         return self
 
@@ -122,4 +122,3 @@ class BluepyConnection(Connection):
 
     def is_alive(self):
         return True
-
