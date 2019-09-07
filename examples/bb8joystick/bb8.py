@@ -98,3 +98,13 @@ class BB8(object):
     def _wait_loop(self):
         while self._loop.is_running():
             time.sleep(0.001)
+
+
+if __name__ == '__main__':
+    bb8 = BB8()
+    bb8.color(255, 0, 0)
+    time.sleep(1)
+    bb8.color(0, 255, 0)
+    time.sleep(1)
+    bb8.color(0, 0, 255)
+    time.sleep(1)
