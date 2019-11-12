@@ -196,7 +196,7 @@ class MoveHub(Hub):
     PORT_VOLTAGE = 0x3C
 
     # noinspection PyTypeChecker
-    def __init__(self, connection=None):
+    def __init__(self, connection=None, num_peripherals=None):
         super(MoveHub, self).__init__(connection)
         self.info = {}
 
@@ -213,6 +213,7 @@ class MoveHub(Hub):
         self.motor_external = None
         self.port_C = None
         self.port_D = None
+        self.num_peripherals = num_peripherals
 
         self._wait_for_devices()
         self._report_status()
@@ -223,8 +224,10 @@ class MoveHub(Hub):
                                    self.current, self.voltage)
         for num in range(0, 100):
             devices = get_dev_set()
-            if all(devices):
-                log.debug("All devices are present: %s", devices)
+            found_peripherals = sum(dev is not None for dev in devices)
+            if all(devices) or found_peripherals >= self.num_peripherals is not None or float('inf'):
+                log.debug("Following devices are present: %s", devices)
+                self.num_peripherals = found_peripherals
                 return
             log.debug("Waiting for builtin devices to appear: %s", devices)
             time.sleep(0.1)
