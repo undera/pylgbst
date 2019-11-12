@@ -225,7 +225,7 @@ class MoveHub(Hub):
         for num in range(0, 100):
             devices = get_dev_set()
             found_peripherals = sum(dev is not None for dev in devices)
-            if all(devices) or found_peripherals >= self.num_peripherals is not None or float('inf'):
+            if all(devices) or found_peripherals >= (self.num_peripherals is not None or float('inf')):
                 log.debug("Following devices are present: %s", devices)
                 self.num_peripherals = found_peripherals
                 return
