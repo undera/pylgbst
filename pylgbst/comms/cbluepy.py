@@ -4,7 +4,7 @@ from threading import Thread, Event
 
 from bluepy import btle
 
-from pylgbst.comms import Connection, LEGO_MOVE_HUB
+from pylgbst.comms import Connection
 from pylgbst.utilities import str2hex, queue
 
 log = logging.getLogger('comms-bluepy')
@@ -100,13 +100,10 @@ class BluepyConnection(Connection):
                 address = dev.addr
                 addressType = dev.addrType
                 name = dev.getValueText(COMPLETE_LOCAL_NAME_ADTYPE)
-                log.debug("Found dev, name: {}, address: {}".format(name, address))
 
-                if address != "00:00:00:00:00:00":
-                    if (not hub_mac and name == LEGO_MOVE_HUB) or hub_mac == address:
-                        logging.info("Found %s at %s", name, address)
-                        self._peripheral = BluepyThreadedPeripheral(address, addressType, self._controller)
-                        break
+                if self._is_device_matched(address, name, hub_mac):
+                    self._peripheral = BluepyThreadedPeripheral(address, addressType, self._controller)
+                    break
 
         return self
 

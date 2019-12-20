@@ -46,6 +46,14 @@ class Connection(object):
     def enable_notifications(self):
         self.write(ENABLE_NOTIFICATIONS_HANDLE, ENABLE_NOTIFICATIONS_VALUE)
 
+    def _is_device_matched(self, address, name, hub_mac):
+        log.debug("Checking device name: %s, MAC: %s", name, address)
+        if address != "00:00:00:00:00:00":
+            if (not hub_mac and name == LEGO_MOVE_HUB) or hub_mac.lower() == address.lower():
+                log.info("Found %s at %s", name, address)
+                return True
+        return False
+
 
 class DebugServer(object):
     """

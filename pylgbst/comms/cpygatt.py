@@ -33,11 +33,9 @@ class GattoolConnection(Connection):
             for dev in devices:
                 address = dev['address']
                 name = dev['name']
-                if address != "00:00:00:00:00:00":
-                    if (not hub_mac and name == LEGO_MOVE_HUB) or hub_mac == address:
-                        logging.info("Found %s at %s", name, address)
-                        self._conn_hnd = adapter.connect(address)
-                        break
+                if self._is_device_matched(address, name, hub_mac):
+                    self._conn_hnd = adapter.connect(address)
+                    break
 
             if self._conn_hnd:
                 break
@@ -56,6 +54,7 @@ class GattoolConnection(Connection):
 
     def is_alive(self):
         return True
+
 
 
 class BlueGigaConnection(GattoolConnection):

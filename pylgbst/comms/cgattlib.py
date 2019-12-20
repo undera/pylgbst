@@ -5,7 +5,7 @@ from threading import Thread
 
 from gattlib import DiscoveryService, GATTRequester
 
-from pylgbst.comms import Connection, LEGO_MOVE_HUB
+from pylgbst.comms import Connection
 from pylgbst.utilities import queue, str2hex
 
 log = logging.getLogger('comms-gattlib')
@@ -70,11 +70,9 @@ class GattLibConnection(Connection):
             log.debug("Devices: %s", devices)
 
             for address, name in devices.items():
-                if address != "00:00:00:00:00:00":
-                    if (not hub_mac and name == LEGO_MOVE_HUB) or hub_mac == address:
-                        logging.info("Found %s at %s", name, address)
-                        self.requester = Requester(address, True, self._iface)
-                        break
+                if self._is_device_matched(address, name, hub_mac):
+                    self.requester = Requester(address, True, self._iface)
+                    break
 
             if self.requester:
                 break

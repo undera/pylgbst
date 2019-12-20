@@ -5,7 +5,7 @@ from time import sleep
 
 import gatt
 
-from pylgbst.comms import Connection, LEGO_MOVE_HUB, MOVE_HUB_HW_UUID_SERV, MOVE_HUB_HW_UUID_CHAR, \
+from pylgbst.comms import Connection, MOVE_HUB_HW_UUID_SERV, MOVE_HUB_HW_UUID_CHAR, \
     MOVE_HUB_HARDWARE_HANDLE
 from pylgbst.utilities import str2hex
 
@@ -100,12 +100,9 @@ class GattConnection(Connection):
             for dev in devices:
                 address = dev.mac_address
                 name = dev.alias()
-                logging.debug("Device %s at %s", name, address)
-                if address != "00:00:00:00:00:00":
-                    if (not hub_mac and name == LEGO_MOVE_HUB) or hub_mac == address:
-                        logging.info("Found %s at %s", name, address)
-                        self._device = CustomDevice(address, self._manager)
-                        break
+                if self._is_device_matched(address, name, hub_mac):
+                    self._device = CustomDevice(address, self._manager)
+                    break
 
             if not self._device:
                 sleep(1)
