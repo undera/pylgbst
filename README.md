@@ -1,6 +1,6 @@
 # Python library to interact with Move Hub
 
-_Move Hub is central controller block of [LEGO® Boost Robotics Set](https://www.lego.com/en-us/boost)._
+_Move Hub is central controller block of [LEGO® Boost Robotics Set](https://www.lego.com/themes/boost)._
 
 In fact, Move Hub is just Bluetooth hardware, all manipulations are done with commands passed through Bluetooth Low Energy (BLE) wireless protocol. One of ways to issue these commands is to write Python program using this library.
 
