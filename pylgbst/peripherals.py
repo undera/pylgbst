@@ -421,7 +421,7 @@ class EncodedMotor(Motor):
             angle = unpack("<l", data[0:4])[0]
             return (angle,)
         elif self._port_mode.mode == self.SENSOR_SPEED:
-            speed = unpack("<b", data[0])[0]
+            speed = unpack("<b", data[0:1])[0]
             return (speed,)
         else:
             log.debug("Got motor sensor data while in unexpected mode: %r", self._port_mode)
