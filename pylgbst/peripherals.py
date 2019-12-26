@@ -397,15 +397,15 @@ class EncodedMotor(Motor):
     def goto_position(self, degrees_primary, degrees_secondary=None, speed=1.0, max_power=1.0,
                       end_state=Motor.END_STATE_BRAKE, use_profile=0b11):
         """
-        https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startspeedfordegrees-degrees-speed-maxpower-endstate-useprofile-0x0b
+        https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-gotoabsoluteposition-abspos-speed-maxpower-endstate-useprofile-0x0d
         """
         if degrees_secondary is None:
             degrees_secondary = degrees_primary
 
         params = b""
-        params += pack("<I", degrees_primary)
+        params += pack("<i", degrees_primary)
         if self.virtual_ports:
-            params += pack("<I", degrees_secondary)
+            params += pack("<i", degrees_secondary)
 
         params += pack("<b", self._speed_abs(speed))
 
