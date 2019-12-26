@@ -1,4 +1,5 @@
-from distutils.core import setup
+#from distutils.core import setup
+from setuptools import setup
 
 setup(name='pylgbst',
       description='Python library to interact with LEGO Move Hub (from Lego BOOST set)',
@@ -8,9 +9,10 @@ setup(name='pylgbst',
       packages=['pylgbst', "pylgbst.comms"],
       requires=[],
       extras_require={
-          'gatt': ["gatt"],
+          # Note that dbus and gi are normally system packages
+          'gatt': ["gatt","dbus","gi"], 
           'gattlib': ["gattlib"],
-          'pygatt': ["pygatt"],
+          'pygatt': ["pygatt","pexpect"],
           'bluepy': ["bluepy"],
       }
       )
