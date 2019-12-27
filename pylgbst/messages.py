@@ -173,7 +173,8 @@ class MsgHubAction(DownstreamMsg, UpstreamMsg):
         return super(MsgHubAction, self).bytes()
 
     def is_reply(self, msg):
-        assert isinstance(msg, MsgHubAction)
+        if not isinstance(msg, MsgHubAction):
+            raise TypeError("Unexpected message type: %s"%(msg.__class__,))
         if self.action == self.DISCONNECT and msg.action == self.UPSTREAM_DISCONNECT:
             return True
 
