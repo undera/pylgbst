@@ -22,7 +22,8 @@ class _SpheroImproved(spheropy.Sphero):
     async def connect(self, search_name=None, address=None, port=None, bluetooth_interface=None, use_ble=False,
                       num_retry_attempts=1):
         gattool = BLEInterfaceGattool(search_name)
-        return await super().connect(search_name, address, port, gattool, use_ble, num_retry_attempts)
+        return await
+        super().connect(search_name, address, port, gattool, use_ble, num_retry_attempts)
 
     async def sleep(self, sleeptime, reset_inactivity_timeout=True, response_timeout_in_seconds=None):
         # port from https://github.com/jchadwhite/SpheroBB8-python/blob/master/BB8_driver.py#L394
@@ -33,7 +34,8 @@ class _SpheroImproved(spheropy.Sphero):
                                        wait_for_response=False,
                                        reset_inactivity_timeout=reset_inactivity_timeout)
 
-        return await self._send_command(command, response_timeout_in_seconds)
+        return await
+        self._send_command(command, response_timeout_in_seconds)
 
     async def set_rotation_rate(self, rate, reset_inactivity_timeout=True, response_timeout_in_seconds=None):
         # port from https://github.com/jchadwhite/SpheroBB8-python/blob/master/BB8_driver.py
@@ -44,7 +46,8 @@ class _SpheroImproved(spheropy.Sphero):
                                        wait_for_response=False,
                                        reset_inactivity_timeout=reset_inactivity_timeout)
 
-        return await self._send_command(command, response_timeout_in_seconds)
+        return await
+        self._send_command(command, response_timeout_in_seconds)
 
 
 class BB8(object):

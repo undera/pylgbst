@@ -622,7 +622,6 @@
       ]
     ]
   },
-
   "LEDRGB on port 0x32": {
     "mode_count": 2,
     "input_modes": [],
@@ -694,7 +693,6 @@
       "can_input": false
     }
   },
-
   "ColorDistanceSensor on port 0x1": {
     "mode_count": 11,
     "input_modes": [
@@ -1010,7 +1008,6 @@
       ]
     ]
   },
-
   "TiltSensor on port 0x3a": {
     "mode_count": 8,
     "input_modes": [
@@ -1266,7 +1263,6 @@
       ]
     ]
   },
-
   "Current on port 0x3b": {
     "mode_count": 2,
     "input_modes": [

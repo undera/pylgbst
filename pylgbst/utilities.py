@@ -19,7 +19,7 @@ queue = queue  # just to use it
 
 def check_unpack(seq, index, pattern, size):
     """Check that we got size bytes, if so, unpack using pattern"""
-    data = seq[index : index + size]
+    data = seq[index: index + size]
     if len(data) == size:
         return unpack(pattern, data)[0]
     else:

@@ -3,8 +3,7 @@ import time
 from time import sleep
 
 from pylgbst import *
-from pylgbst.comms import DebugServerConnection
-from pylgbst.hub import MoveHub, math
+from pylgbst.hub import MoveHub
 from pylgbst.peripherals import EncodedMotor, TiltSensor, Current, Voltage, COLORS, COLOR_BLACK
 
 log = logging.getLogger("demo")
@@ -13,9 +12,11 @@ log = logging.getLogger("demo")
 def demo_led_colors(movehub):
     # LED colors demo
     log.info("LED colors demo")
+
     # We get a response with payload and port, not x and y here...
     def colour_callback(**named):
         log.info("LED Color callback: %s", named)
+
     movehub.led.subscribe(colour_callback)
     for color in list(COLORS.keys())[1:] + [COLOR_BLACK]:
         log.info("Setting LED color to: %s", COLORS[color])
@@ -183,55 +184,59 @@ def demo_all(movehub):
     demo_color_sensor(movehub)
     demo_motor_sensors(movehub)
 
+
 DEMO_CHOICES = {
-    'all':demo_all,
-    'voltage':demo_voltage,
-    'led_colors':demo_led_colors,
-    'motors_timed':demo_motors_timed,
-    'motors_angled':demo_motors_angled,
-    'port_cd_motor':demo_port_cd_motor,
-    'tilt_sensor':demo_tilt_sensor_simple,
-    'tilt_sensor_precise':demo_tilt_sensor_precise,
-    'color_sensor':demo_color_sensor,
-    'motor_sensors':demo_motor_sensors,
+    'all': demo_all,
+    'voltage': demo_voltage,
+    'led_colors': demo_led_colors,
+    'motors_timed': demo_motors_timed,
+    'motors_angled': demo_motors_angled,
+    'port_cd_motor': demo_port_cd_motor,
+    'tilt_sensor': demo_tilt_sensor_simple,
+    'tilt_sensor_precise': demo_tilt_sensor_precise,
+    'color_sensor': demo_color_sensor,
+    'motor_sensors': demo_motor_sensors,
 }
 
+
 def get_options():
-    import argparse 
-    parser = argparse.ArgumentParser(
+    import argparse
+    arg_parser = argparse.ArgumentParser(
         description='Demonstrate move-hub communications',
     )
-    parser.add_argument(
-        '-c','--connection',
+    arg_parser.add_argument(
+        '-c', '--connection',
         default='auto://',
         help='''Specify connection URL to use, `protocol://mac?param=X` with protocol in:
     "gatt","pygatt","gattlib","gattool", "bluepy","bluegiga"'''
     )
-    parser.add_argument(
-        '-d','--demo',
+    arg_parser.add_argument(
+        '-d', '--demo',
         default='all',
-        choices = sorted(DEMO_CHOICES.keys()),
+        choices=sorted(DEMO_CHOICES.keys()),
         help="Run a particular demo, default all"
     )
-    return parser
+    return arg_parser
+
 
 def connection_from_url(url):
     import pylgbst
     if url == 'auto://':
-        return None 
+        return None
     try:
         from urllib.parse import urlparse, parse_qs
     except ImportError:
         from urlparse import urlparse, parse_qs
     parsed = urlparse(url)
-    name = 'get_connection_%s'%(parsed.scheme)
-    factory = getattr( pylgbst, name, None)
+    name = 'get_connection_%s' % parsed.scheme
+    factory = getattr(pylgbst, name, None)
     if not factory:
-        raise ValueError("Unrecognised URL scheme/protocol, expect a get_connection_<protocol> in pylgbst: %s"%(parsed.protocol))
+        msg = "Unrecognised URL scheme/protocol, expect a get_connection_<protocol> in pylgbst: %s"
+        raise ValueError(msg % parsed.protocol)
     params = {}
     if parsed.netloc.strip():
         params['hub_mac'] = parsed.netloc
-    for key,value in parse_qs(parsed.query).items():
+    for key, value in parse_qs(parsed.query).items():
         if len(value) == 1:
             params[key] = value[0]
         else:
@@ -239,6 +244,7 @@ def connection_from_url(url):
     return factory(
         **params
     )
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
@@ -249,8 +255,7 @@ if __name__ == '__main__':
         connection = connection_from_url(options.connection)
         parameters['connection'] = connection
     except ValueError as err:
-        parser.error(error.args[0])
-        connection 
+        parser.error(err.args[0])
 
     hub = MoveHub(**parameters)
     try:

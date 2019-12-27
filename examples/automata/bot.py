@@ -32,4 +32,3 @@ while color != COLOR_NONE:
     action_by_color(color)
 
 print(number)
-

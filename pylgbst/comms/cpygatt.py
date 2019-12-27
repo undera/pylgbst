@@ -56,7 +56,6 @@ class GattoolConnection(Connection):
         return True
 
 
-
 class BlueGigaConnection(GattoolConnection):
     def __init__(self):
         super(BlueGigaConnection, self).__init__()
