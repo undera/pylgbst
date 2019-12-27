@@ -10,7 +10,8 @@ criterion = min
 cur_luminosity = 0
 
 
-def on_change_lum(lumn):
+def on_change_lum(lumn, unknown):
+    del unknown
     global cur_luminosity
     cur_luminosity = lumn
 

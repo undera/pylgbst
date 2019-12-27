@@ -586,7 +586,7 @@ class VisionSensor(Peripheral):
         elif self._port_mode.mode == self.CALIBRATE:
             return [ushort(data, x * 2) for x in range(8)]
         else:
-            log.debug("Unhandled data in mode %s: %s", self._port_mode.mode, str2hex(data))
+            log.debug("Unhandled VisionSensor data in mode %s: %s", self._port_mode.mode, str2hex(data))
             return ()
 
     def set_color(self, color):
