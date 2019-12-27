@@ -232,6 +232,12 @@ class LEDRGB(Peripheral):
         msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
         self._send_output(msg)
 
+    def _decode_port_data(self, msg):
+        if len(msg.payload) == 3:
+            return usbyte(msg.payload, 0), usbyte(msg.payload, 1), usbyte(msg.payload, 2),
+        else:
+            return usbyte(msg.payload, 0),
+
 
 class Motor(Peripheral):
     SUBCMD_START_POWER = 0x01
