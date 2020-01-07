@@ -152,7 +152,6 @@ def demo_motor_sensors(movehub):
     movehub.motor_B.unsubscribe(callback_b)
 
     if movehub.motor_external is not None:
-        demo_motor_sensors.states[movehub.motor_external] = None
         movehub.motor_external.unsubscribe(callback_e)
 
 
