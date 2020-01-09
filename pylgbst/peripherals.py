@@ -285,17 +285,17 @@ class Motor(Peripheral):
         msg = MsgPortOutput(self.port, subcmd, params)
         self._send_output(msg)
 
-    def start_power(self, speed_primary=1.0, speed_secondary=None):
+    def start_power(self, power_primary=1.0, power_secondary=None):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startpower-power
         """
-        if speed_secondary is None:
-            speed_secondary = speed_primary
+        if power_secondary is None:
+            power_secondary = power_primary
 
         params = b""
-        params += pack("<b", self._speed_abs(speed_primary))
+        params += pack("<b", self._speed_abs(power_primary))
         if self.virtual_ports:
-            params += pack("<b", self._speed_abs(speed_secondary))
+            params += pack("<b", self._speed_abs(power_secondary))
 
         self._write_direct_mode(self.SUBCMD_START_POWER, params)
 
