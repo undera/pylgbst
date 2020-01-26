@@ -29,7 +29,7 @@ addons:
 install:
   - wget https://github.com/labapart/gattlib/releases/download/dev/gattlib_dbus_0.2-dev_x86_64.deb
   - sudo dpkg -i gattlib_dbus_0.2-dev_x86_64.deb
-  - pip install codecov nose-exclude pygatt gatt pexpect bluepy
+  - pip install codecov nose-exclude pygatt gatt pexpect bluepy unittest2
 
 
 script: coverage run --omit="examples/*" --source=. -m nose tests -v --exclude-dir=examples
