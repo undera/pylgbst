@@ -155,7 +155,7 @@ class PeripheralsTest(unittest.TestCase):
 
         hub.connection.notification_delayed('050082030a', 0.1)
         motor.stop()
-        self.assertEqual(b"090081031107006403", hub.writes.pop(1)[1])
+        self.assertEqual(b"0c0081031109000064647f03", hub.writes.pop(1)[1])
 
         hub.connection.notification_delayed('050082030a', 0.1)
         motor.set_acc_profile(1.0)
@@ -171,7 +171,7 @@ class PeripheralsTest(unittest.TestCase):
 
         hub.connection.notification_delayed('050082030a', 0.1)
         motor.stop()
-        self.assertEqual(b"090081031107006403", hub.writes.pop(1)[1])
+        self.assertEqual(b"0c0081031109000064647f03", hub.writes.pop(1)[1])
 
         logging.debug("\n\n")
         hub.connection.notification_delayed('0500820301', 0.1)
