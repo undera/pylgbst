@@ -1,8 +1,8 @@
-import unittest2
+import unittest
 
 from pylgbst.comms import *
 
-class ConnectionTestCase(unittest2.TestCase):
+class ConnectionTestCase(unittest.TestCase):
     def test_is_device_matched(self):
         conn = Connection()
 
@@ -35,5 +35,4 @@ class ConnectionTestCase(unittest2.TestCase):
         ]
 
         for address, name, hub_mac, expected in test_matrix:
-            with self.subTest(address=address, name=name, hub_mac=hub_mac, expected=expected):
-                self.assertEqual(conn._is_device_matched(address=address, name=name, hub_mac=hub_mac), expected)
+            self.assertEqual(conn._is_device_matched(address=address, name=name, hub_mac=hub_mac), expected)
