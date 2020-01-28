@@ -240,8 +240,8 @@ class LEDRGB(Peripheral):
 
 
 class Motor(Peripheral):
-    SUBCMD_START_POWER = 0x01
-    # SUBCMD_START_POWER = 0x02
+    SUBCMD_START_POWER = 0x00
+    SUBCMD_START_POWER_GROUPED = 0x03
     SUBCMD_SET_ACC_TIME = 0x05
     SUBCMD_SET_DEC_TIME = 0x06
     SUBCMD_START_SPEED = 0x07
@@ -271,9 +271,6 @@ class Motor(Peripheral):
         return int(absolute)
 
     def _write_direct_mode(self, subcmd, params):
-        if self.virtual_ports:
-            subcmd += 1  # de-facto rule
-
         params = pack("<B", subcmd) + params
         msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, params)
         self._send_output(msg)
@@ -292,15 +289,20 @@ class Motor(Peripheral):
         if power_secondary is None:
             power_secondary = power_primary
 
+        if self.virtual_ports:
+            cmd = self.SUBCMD_START_POWER_GROUPED
+        else:
+            cmd = self.SUBCMD_START_POWER
+
         params = b""
         params += pack("<b", self._speed_abs(power_primary))
         if self.virtual_ports:
             params += pack("<b", self._speed_abs(power_secondary))
 
-        self._write_direct_mode(self.SUBCMD_START_POWER, params)
+        self._write_direct_mode(cmd, params)
 
     def stop(self):
-        self.start_speed(0)
+        self.timed(0)
 
     def set_acc_profile(self, seconds, profile_no=0x00):
         """

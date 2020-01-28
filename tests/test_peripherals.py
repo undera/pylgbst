@@ -151,7 +151,7 @@ class PeripheralsTest(unittest.TestCase):
 
         hub.connection.notification_delayed('050082030a', 0.1)
         motor.start_power(1.0)
-        self.assertEqual(b"0800810311510164", hub.writes.pop(1)[1])
+        self.assertEqual(b"0800810311510064", hub.writes.pop(1)[1])
 
         hub.connection.notification_delayed('050082030a', 0.1)
         motor.stop()

@@ -1,3 +1,4 @@
+import sys
 import time
 from binascii import unhexlify
 
@@ -5,7 +6,7 @@ from pylgbst.comms import Connection
 from pylgbst.hub import MoveHub, Hub
 from pylgbst.peripherals import *
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG if 'pydevd' in sys.modules else logging.INFO)
 
 log = logging.getLogger('test')
 
