@@ -48,11 +48,18 @@ class Connection(object):
 
     def _is_device_matched(self, address, name, hub_mac):
         log.debug("Checking device name: %s, MAC: %s", name, address)
+        matched = False
         if address != "00:00:00:00:00:00":
-            if (not hub_mac and name == LEGO_MOVE_HUB) or hub_mac.lower() == address.lower():
+            if hub_mac:
+                if hub_mac.lower() == address.lower():
+                    matched = True
+            elif name == LEGO_MOVE_HUB:
+                matched = True
+
+            if matched:
                 log.info("Found %s at %s", name, address)
-                return True
-        return False
+
+        return matched
 
 
 class DebugServer(object):
