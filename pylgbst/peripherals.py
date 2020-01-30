@@ -254,10 +254,11 @@ class Motor(Peripheral):
     END_STATE_FLOAT = 0
 
     def _speed_abs(self, relative):
-        if relative is None:
+        if relative == Motor.END_STATE_BRAKE \
+            or relative == Motor.END_STATE_HOLD:
             # special value for BRAKE
             # https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startpower-power
-            return 127
+            return relative
 
         if relative < -1:
             log.warning("Speed cannot be less than -1")
