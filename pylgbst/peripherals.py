@@ -418,8 +418,8 @@ class EncodedMotor(Motor):
 
         params += pack("<b", self._speed_abs(speed))
 
-        params += pack("<B", end_state)
         params += pack("<B", int(100 * max_power))
+        params += pack("<B", end_state)
         params += pack("<B", use_profile)
 
         self._send_cmd(self.SUBCMD_GOTO_ABSOLUTE_POSITION, params)
