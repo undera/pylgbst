@@ -240,14 +240,15 @@ class LEDRGB(Peripheral):
 
 
 class Motor(Peripheral):
-    SUBCMD_START_POWER = 0x00
-    SUBCMD_START_POWER_GROUPED = 0x03
+    SUBCMD_START_POWER_GROUPED = 0x02
     SUBCMD_SET_ACC_TIME = 0x05
     SUBCMD_SET_DEC_TIME = 0x06
     SUBCMD_START_SPEED = 0x07
     # SUBCMD_START_SPEED = 0x08
     SUBCMD_START_SPEED_FOR_TIME = 0x09
     # SUBCMD_START_SPEED_FOR_TIME = 0x0A
+
+    SENSOR_POWER = 0x00
 
     END_STATE_BRAKE = 127
     END_STATE_HOLD = 126
@@ -286,21 +287,26 @@ class Motor(Peripheral):
     def start_power(self, power_primary=1.0, power_secondary=None):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startpower-power
+        StartPower(Power) uses the WriteDirectModeData.
+        StartPower(Power1, Power2) uses the Port Output Command.
         """
         if power_secondary is None:
             power_secondary = power_primary
 
         if self.virtual_ports:
-            cmd = self.SUBCMD_START_POWER_GROUPED
+            cmd = self.SUBCMD_START_POWER_GROUPED - 1 # _send_cmd() de-facto rule adds 1
         else:
-            cmd = self.SUBCMD_START_POWER
+            cmd = self.SENSOR_POWER
 
         params = b""
         params += pack("<b", self._speed_abs(power_primary))
         if self.virtual_ports:
             params += pack("<b", self._speed_abs(power_secondary))
 
-        self._write_direct_mode(cmd, params)
+        if self.virtual_ports:
+            self._send_cmd(cmd, params)
+        else:
+            self._write_direct_mode(cmd, params)
 
     def stop(self):
         self.timed(0)
