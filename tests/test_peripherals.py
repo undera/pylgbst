@@ -191,7 +191,7 @@ class PeripheralsTest(unittest.TestCase):
         hub.connection.notification_delayed('0500820301', 0.1)
         hub.connection.notification_delayed('050082030a', 0.2)
         motor.goto_position(0)
-        self.assertEqual(b"0e008103110d00000000647f6403", hub.writes.pop(1)[1])
+        self.assertEqual(b"0e008103110d0000000064647f03", hub.writes.pop(1)[1])
 
         hub.connection.wait_notifications_handled()
 
