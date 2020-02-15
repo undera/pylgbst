@@ -2,6 +2,8 @@ import logging
 import traceback
 
 from pylgbst.comms import DebugServer
+from pylgbst.hub import MoveHub
+from tests import HubMock, EncodedMotor
 
 log = logging.getLogger('pylgbst')
 
