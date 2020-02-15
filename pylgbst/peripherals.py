@@ -240,8 +240,8 @@ class LEDRGB(Peripheral):
 
 
 class Motor(Peripheral):
-    SUBCMD_START_POWER = 0x00
-    SUBCMD_START_POWER_GROUPED = 0x03
+    SUBCMD_START_POWER = 0x01
+    SUBCMD_START_POWER_GROUPED = 0x02
     SUBCMD_SET_ACC_TIME = 0x05
     SUBCMD_SET_DEC_TIME = 0x06
     SUBCMD_START_SPEED = 0x07
@@ -254,8 +254,7 @@ class Motor(Peripheral):
     END_STATE_FLOAT = 0
 
     def _speed_abs(self, relative):
-        if relative == Motor.END_STATE_BRAKE \
-            or relative == Motor.END_STATE_HOLD:
+        if relative == Motor.END_STATE_BRAKE or relative == Motor.END_STATE_HOLD:
             # special value for BRAKE
             # https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startpower-power
             return relative
@@ -291,7 +290,7 @@ class Motor(Peripheral):
             power_secondary = power_primary
 
         if self.virtual_ports:
-            cmd = self.SUBCMD_START_POWER_GROUPED
+            cmd = self.SUBCMD_START_POWER_GROUPED - 1  # because _send_cmd will do +1
         else:
             cmd = self.SUBCMD_START_POWER
 
@@ -300,7 +299,7 @@ class Motor(Peripheral):
         if self.virtual_ports:
             params += pack("<b", self._speed_abs(power_secondary))
 
-        self._write_direct_mode(cmd, params)
+        self._send_cmd(cmd, params)
 
     def stop(self):
         self.timed(0)
