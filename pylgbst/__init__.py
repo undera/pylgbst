@@ -2,7 +2,6 @@ import logging
 import traceback
 
 from pylgbst.comms import DebugServer
-from pylgbst.hub import MoveHub
 
 log = logging.getLogger('pylgbst')
 
