@@ -4,7 +4,7 @@ import queue
 import threading
 import time
 
-from pylgbst.comms import Connection, LEGO_MOVE_HUB, MOVE_HUB_HW_UUID_CHAR
+from pylgbst.comms import Connection, MOVE_HUB_HW_UUID_CHAR
 from bleak import discover
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
@@ -17,7 +17,9 @@ req_queue = queue.Queue()
 
 
 class BleakDriver(object):
-
+    """
+    Driver that provides interface between API and Bleak
+    """
     def __init__(self, hub_mac=None):
         self.hub_mac = hub_mac
         self._handler = None
@@ -79,9 +81,9 @@ class BleakDriver(object):
 
 
 class BleakConnection(Connection):
-    def is_alive(self):
-        pass
-
+    """
+    Bleak driver for communicating with BLE device
+    """
     def __init__(self):
         Connection.__init__(self)
         self.loop = asyncio.get_event_loop()
@@ -128,3 +130,6 @@ class BleakConnection(Connection):
             log.debug(f'RSP {handle} {[hex(x) for x in data]}')
             handler(handle, data)
         await self._client.start_notify(MOVE_HUB_HW_UUID_CHAR, c)
+
+    def is_alive(self):
+        pass
