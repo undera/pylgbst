@@ -16,13 +16,13 @@ req_queue = queue.Queue()
 
 
 class BleakDriver(object):
-    """
-    Driver that provides interface between API and Bleak.
-    """
+
+    """Driver that provides interface between API and Bleak."""
 
     def __init__(self, hub_mac=None):
         """
-        Initialize new object of Bleak Driver class
+        Initialize new object of Bleak Driver class.
+
         :param hub_mac: Optional Lego HUB MAC to connect to.
         """
         self.hub_mac = hub_mac
@@ -33,7 +33,8 @@ class BleakDriver(object):
 
     def set_notify_handler(self, handler):
         """
-        Sets handler function used to communicate with an API
+        Set handler function used to communicate with an API.
+
         :param handler: Handler function called by driver when received data
         :return: None
         """
@@ -41,8 +42,9 @@ class BleakDriver(object):
 
     def enable_notifications(self):
         """
-        Enables notifications, in our cases starts communication threads.
-        We cannot do this earlier, because API need to fist set notification handler
+        Enable notifications, in our cases starts communication threads.
+
+        We cannot do this earlier, because API need to fist set notification handler.
         :return: None
         """
         self._connection_thread = threading.Thread(target=lambda: asyncio.run(self._bleak_thread()))
@@ -80,7 +82,8 @@ class BleakDriver(object):
 
     def write(self, handle, data):
         """
-        Sends data to given handle number.
+        Send data to given handle number.
+
         :param handle: Handle number that will be translated into characteristic uuid
         :param data: data to send
         :raises ConnectionError" When internal threads are not working
@@ -93,7 +96,8 @@ class BleakDriver(object):
 
     def disconnect(self):
         """
-        Disconnects and stops communication threads.
+        Disconnect and stops communication threads.
+
         :return: None
         """
         self._abort = True
@@ -101,6 +105,7 @@ class BleakDriver(object):
     def is_alive(self):
         """
         Indicate whether driver is functioning or not.
+
         :return: True if driver is functioning; False otherwise.
         """
         if self._connection_thread is not None and self._processing_thread is not None:
@@ -110,11 +115,11 @@ class BleakDriver(object):
 
 
 class BleakConnection(Connection):
-    """
-    Bleak driver for communicating with BLE device
-    """
+
+    """Bleak driver for communicating with BLE device."""
+
     def __init__(self):
-        """Initializes new instance of BleakConnection class."""
+        """Initialize new instance of BleakConnection class."""
         Connection.__init__(self)
         self.loop = asyncio.get_event_loop()
 
@@ -124,7 +129,8 @@ class BleakConnection(Connection):
 
     async def connect(self, hub_mac=None):
         """
-        Connects to device
+        Connect to device.
+
         :param hub_mac: Optional Lego HUB MAC to connect to.
         :raises ConnectionError: When cannot connect to given MAC or name matching fails.
         :return: None
@@ -151,7 +157,8 @@ class BleakConnection(Connection):
 
     async def write(self, handle, data):
         """
-        Sends data to given handle number.
+        Send data to given handle number.
+
         If handle cannot be found in service description, hardcoded LEGO uuid will be used.
         :param handle: Handle number that will be translated into characteristic uuid
         :param data: data to send
@@ -167,7 +174,8 @@ class BleakConnection(Connection):
 
     async def write_char(self, characteristic_uuid, data):
         """
-        Sends data to given handle number.
+        Send data to given handle number.
+
         :param characteristic_uuid: Characteristic uuid used to send data
         :param data: data to send
         :return: None
@@ -176,7 +184,8 @@ class BleakConnection(Connection):
 
     async def set_notify_handler(self, handler):
         """
-        Sets notification handler.
+        Set notification handler.
+
         :param handler: Handle function to be called when receive any data.
         :return: None
         """
@@ -188,6 +197,7 @@ class BleakConnection(Connection):
     def is_alive(self):
         """
         To keep compatibility with the driver interface.
+
         This method does nothing.
         :return: None.
         """
