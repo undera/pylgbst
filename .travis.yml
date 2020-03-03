@@ -26,10 +26,13 @@ addons:
       - python-gi
       - python3-dbus
       - python3-gi
+      - bluez
 install:
   - wget https://github.com/labapart/gattlib/releases/download/dev/gattlib_dbus_0.2-dev_x86_64.deb
   - sudo dpkg -i gattlib_dbus_0.2-dev_x86_64.deb
   - pip install codecov codacy-coverage nose-exclude pygatt gatt pexpect bluepy
+  - pip install --upgrade attrs
+  - pip install bleak
 
 
 script:

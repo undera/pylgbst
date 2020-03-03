@@ -38,6 +38,13 @@ def get_connection_bluepy(controller='hci0', hub_mac=None):
 
 
 def get_connection_bleak(controller='hci0', hub_mac=None):
+    """
+    Returns connection based with Bleak API as an endpoint.
+    :param controller: Not used, kept for compatibility with others.
+    :param hub_mac: Optional Lego HUB MAC to connect to.
+    :return: Driver object.
+    """
+    del controller  # to prevent code analysis warning
     from pylgbst.comms.cbleak import BleakDriver
 
     return BleakDriver(hub_mac)

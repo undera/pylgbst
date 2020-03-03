@@ -19,5 +19,6 @@ setup(
         "gattlib": ["gattlib"],
         "pygatt": ["pygatt", "pexpect"],
         "bluepy": ["bluepy"],
+        "bleak": ["bleak"],
     },
 )
