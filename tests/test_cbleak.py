@@ -12,7 +12,7 @@ bleak.BleakClient = object()
 bleak.discover = object()
 
 last_response = None
-lt37 = version.parse(sys.version) < version.parse("3.7")
+lt37 = version.parse(sys.version.split(' ')[0]) < version.parse("3.7")
 
 
 class BleakDriverTest(unittest.TestCase):
