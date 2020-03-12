@@ -2,11 +2,14 @@ import sys
 import time
 import unittest
 
+import bleak
 from packaging import version
 
 import pylgbst
 import pylgbst.comms.cbleak as cbleak
-from pylgbst.comms.cbleak import BleakDriver
+
+bleak.BleakClient = object()
+bleak.discover = object()
 
 last_response = None
 lt37 = version.parse(sys.version) < version.parse("3.7")
@@ -15,12 +18,12 @@ lt37 = version.parse(sys.version) < version.parse("3.7")
 class BleakDriverTest(unittest.TestCase):
     def test_driver_creation(self):
         connection = pylgbst.get_connection_bleak()
-        self.assertIsInstance(connection, BleakDriver)
+        self.assertIsInstance(connection, cbleak.BleakDriver)
         self.assertFalse(connection.is_alive(), 'Checking that factory returns not started driver')
 
     @unittest.skipIf(lt37, "Python version is too low")
     def test_communication(self):
-        driver = BleakDriver()
+        driver = cbleak.BleakDriver()
 
         async def fake_thread():
             print('Fake thread initialized')
