@@ -1,14 +1,9 @@
 sudo: false
 language: python
-virtualenv:
-  system_site_packages: true
-
-matrix:
-  include:
-    - os: linux
-      python: 3.6
-    - os: linux
-      python: 3.8
+python:
+- 2.7
+- 3.6
+- 3.8
 
 addons:
   apt:
