@@ -1,8 +1,8 @@
 sudo: false
 language: python
 python:
-- 3.6
-- 3.8
+  - 3.6
+  - 3.8
 
 addons:
   apt:
@@ -25,6 +25,8 @@ install:
   - pip install codecov codacy-coverage nose-exclude pygatt gatt pexpect bluepy bleak packaging
   - pip install --upgrade attrs
 
+env:
+  - READTHEDOCS=True
 
 script:
   - coverage run --omit="examples/*" --source=. -m nose tests -v --exclude-dir=examples
