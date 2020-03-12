@@ -1,7 +1,6 @@
 sudo: false
 language: python
 python:
-- 2.7
 - 3.6
 - 3.8
 
@@ -25,8 +24,8 @@ addons:
 install:
   - wget https://github.com/labapart/gattlib/releases/download/dev/gattlib_dbus_0.2-dev_x86_64.deb
   - sudo dpkg -i gattlib_dbus_0.2-dev_x86_64.deb
-  - pip install codecov codacy-coverage nose-exclude pygatt gatt pexpect bluepy
-  - pip install --upgrade attrs bleak
+  - pip install codecov codacy-coverage nose-exclude pygatt gatt pexpect bluepy bleak packaging
+  - pip install --upgrade attrs
 
 
 script:
