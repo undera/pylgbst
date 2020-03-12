@@ -6,9 +6,9 @@ virtualenv:
 matrix:
   include:
     - os: linux
-      python: 2.7
+      python: 3.6
     - os: linux
-      python: 3.5
+      python: 3.8
 
 addons:
   apt:
@@ -31,8 +31,7 @@ install:
   - wget https://github.com/labapart/gattlib/releases/download/dev/gattlib_dbus_0.2-dev_x86_64.deb
   - sudo dpkg -i gattlib_dbus_0.2-dev_x86_64.deb
   - pip install codecov codacy-coverage nose-exclude pygatt gatt pexpect bluepy
-  - pip install --upgrade attrs
-  - pip install bleak
+  - pip install --upgrade attrs bleak
 
 
 script:
