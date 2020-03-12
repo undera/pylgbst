@@ -18,8 +18,6 @@ addons:
 
       - python-dbus
       - python-gi
-      - python3-dbus
-      - python3-gi
       - bluez
 install:
   - wget https://github.com/labapart/gattlib/releases/download/dev/gattlib_dbus_0.2-dev_x86_64.deb

@@ -4,9 +4,9 @@ import queue
 import threading
 import time
 
+from bleak import BleakClient, discover
+
 from pylgbst.comms import Connection, MOVE_HUB_HW_UUID_CHAR
-from bleak import discover
-from bleak import BleakClient
 
 log = logging.getLogger('comms-bleak')
 
@@ -16,7 +16,6 @@ req_queue = queue.Queue()
 
 
 class BleakDriver(object):
-
     """Driver that provides interface between API and Bleak."""
 
     def __init__(self, hub_mac=None):
@@ -115,7 +114,6 @@ class BleakDriver(object):
 
 
 class BleakConnection(Connection):
-
     """Bleak driver for communicating with BLE device."""
 
     def __init__(self):
@@ -189,9 +187,11 @@ class BleakConnection(Connection):
         :param handler: Handle function to be called when receive any data.
         :return: None
         """
+
         def c(handle, data):
             log.debug('Response: {handle} {payload}'.format(handle=handle, payload=[hex(x) for x in data]))
             handler(handle, data)
+
         await self._client.start_notify(MOVE_HUB_HW_UUID_CHAR, c)
 
     def is_alive(self):
