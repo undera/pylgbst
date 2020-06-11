@@ -1,4 +1,4 @@
-# Python library to interact with Move Hub
+# Python library to interact with Move Hub / PoweredUp Hubs
 
 _Move Hub is central controller block of [LEGO® Boost Robotics Set](https://www.lego.com/themes/boost)._
 
