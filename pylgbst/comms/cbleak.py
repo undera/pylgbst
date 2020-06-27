@@ -57,7 +57,7 @@ class BleakDriver(object):
 
     async def _bleak_thread(self):
         bleak = BleakConnection()
-        await bleak.connect(self.hub_mac)
+        await bleak.connect(self.hub_mac, self.hub_name)
         await bleak.set_notify_handler(self._safe_handler)
         # After connecting, need to send any data or hub will drop the connection,
         # below command is Advertising name request update
@@ -67,6 +67,8 @@ class BleakDriver(object):
             if req_queue.qsize() != 0:
                 data = req_queue.get()
                 await bleak.write(data[0], data[1])
+
+        logging.info("Communications thread has exited")
 
     @staticmethod
     def _safe_handler(handler, data):
@@ -78,7 +80,8 @@ class BleakDriver(object):
                 msg = resp_queue.get()
                 self._handler(msg[0], msg[1])
 
-            time.sleep(0.1)
+            time.sleep(0.01)
+        logging.info("Processing thread has exited")
 
     def write(self, handle, data):
         """
@@ -124,7 +127,8 @@ class BleakConnection(Connection):
 
         self._device = None
         self._client = None
-        logging.getLogger('bleak.backends.dotnet.client').setLevel(logging.getLogger().level)
+        logging.getLogger('bleak.backends.dotnet.client').setLevel(logging.WARNING)
+        logging.getLogger('bleak.backends.bluezdbus.client').setLevel(logging.WARNING)
 
     async def connect(self, hub_mac=None, hub_name=None):
         """
@@ -134,8 +138,8 @@ class BleakConnection(Connection):
         :raises ConnectionError: When cannot connect to given MAC or name matching fails.
         :return: None
         """
-        log.info("Discovering devices... Press Green button on lego MoveHub")
-        devices = await discover()
+        log.info("Discovering devices... Press green button on Hub")
+        devices = await discover(timeout=10)
         log.debug("Devices: %s", devices)
 
         for dev in devices:
@@ -164,6 +168,10 @@ class BleakConnection(Connection):
         """
         log.debug('Request: {handle} {payload}'.format(handle=handle, payload=[hex(x) for x in data]))
         desc = self._client.services.get_descriptor(handle)
+
+        if not isinstance(data, bytearray):
+            data = bytearray(data)
+
         if desc is None:
             # dedicated handle not found, try to send by using LEGO Move Hub default characteristic
             await self._client.write_gatt_char(MOVE_HUB_HW_UUID_CHAR, data)

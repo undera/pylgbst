@@ -56,9 +56,9 @@ def get_connection_auto(controller='hci0', hub_mac=None, hub_name=None):
         get_connection_bluepy,
         get_connection_bluegiga,
         get_connection_gatt,
+        get_connection_bleak,
         get_connection_gattool,
         get_connection_gattlib,
-        get_connection_bleak,
     ]
 
     conn = None
