@@ -21,14 +21,14 @@ addons:
 install:
   - wget https://github.com/labapart/gattlib/releases/download/dev/gattlib_dbus_0.2-dev_x86_64.deb
   - sudo dpkg -i gattlib_dbus_0.2-dev_x86_64.deb
-  - pip install codecov codacy-coverage nose-exclude pygatt gatt pexpect bluepy bleak packaging dbus-python pygobject
+  - pip install codecov codacy-coverage pytest pygatt gatt pexpect bluepy bleak packaging dbus-python pygobject
   - pip install --upgrade attrs
 
 env:
   - READTHEDOCS=True
 
 script:
-  - coverage run --omit="examples/*" --source=. -m nose tests -v --exclude-dir=examples
+  - coverage run --omit="examples/*" --source=. -m pytest -v --ignore=examples --log-level=INFO tests
 
 after_success:
   - coverage report -m

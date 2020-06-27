@@ -1,5 +1,7 @@
+import logging
+
+from examples.vernie import Vernie
 from pylgbst.peripherals import VisionSensor
-from . import *
 
 logging.basicConfig(level=logging.INFO)
 
