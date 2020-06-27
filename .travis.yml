@@ -28,7 +28,7 @@ env:
   - READTHEDOCS=True
 
 script:
-  - coverage run --omit="examples/*" --source=. -m pytest tests -v --ignore=examples
+  - coverage run --omit="examples/*" --source=. -m pytest -v --ignore=examples --log-level=INFO tests
 
 after_success:
   - coverage report -m
