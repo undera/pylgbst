@@ -2,7 +2,7 @@
 
 _Move Hub is central controller block of [LEGO® Boost Robotics Set](https://www.lego.com/themes/boost)._
 
-In fact, Move Hub is just Bluetooth hardware, all manipulations are made with commands passed through Bluetooth Low Energy (BLE) wireless protocol. One of ways to issue these commands is to write Python program using this library.
+In fact, Move Hub is just a Bluetooth hardware piece, and all manipulations with it are made by commands passed through Bluetooth Low Energy (BLE) wireless protocol. One of the ways to issue these commands is to write Python program using this library.
 
 The best way to start is to look into [`demo.py`](examples/demo.py) file, and run it (assuming you have installed library).
 
@@ -81,7 +81,7 @@ There is an optional parameter for `MoveHub` class constructor, accepting instan
 - use `BleakConnection()` - if you use Bleak backend (`bleak` library prerequisite)
 - pass instance of `DebugServerConnection` if you are using [Debug Server](#debug-server) (more details below).
 
-All the functions above have optional arguments to specify adapter name and MoveHub mac address. Please look function source code for details.
+All the functions above have optional arguments to specify adapter name and Hub name (or mac address). Please take a look at functions source code for details.
 
 If you want to specify name for Bluetooth interface to use on local computer, you can pass that to class or function of getting a connection. Then pass connection object to `MoveHub` constructor. Like this:
 ```python
