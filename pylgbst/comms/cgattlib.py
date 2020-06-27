@@ -61,7 +61,7 @@ class GattLibConnection(Connection):
         self.requester = None
         self._iface = bt_iface_name
 
-    def connect(self, hub_mac=None):
+    def connect(self, hub_mac=None, hub_name=None):
         service = DiscoveryService(self._iface)
 
         while not self.requester:
@@ -70,7 +70,7 @@ class GattLibConnection(Connection):
             log.debug("Devices: %s", devices)
 
             for address, name in devices.items():
-                if self._is_device_matched(address, name, hub_mac):
+                if self._is_device_matched(address, name, hub_mac, hub_name):
                     self.requester = Requester(address, True, self._iface)
                     break
 

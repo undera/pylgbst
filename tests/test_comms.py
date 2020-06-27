@@ -35,4 +35,4 @@ class ConnectionTestCase(unittest.TestCase):
         ]
 
         for address, name, hub_mac, expected in test_matrix:
-            self.assertEqual(conn._is_device_matched(address=address, name=name, hub_mac=hub_mac), expected)
+            self.assertEqual(conn._is_device_matched(address=address, dev_name=name, hub_mac=hub_mac), expected)

@@ -4,8 +4,8 @@ import time
 from pylgbst import get_connection_auto
 from pylgbst.messages import *
 from pylgbst.peripherals import *
-from pylgbst.utilities import str2hex, usbyte, ushort
 from pylgbst.utilities import queue
+from pylgbst.utilities import str2hex, usbyte, ushort
 
 log = logging.getLogger('hub')
 
@@ -43,7 +43,7 @@ class Hub(object):
         self.add_message_handler(MsgHubAction, self._handle_action)
 
         if not connection:
-            connection = get_connection_auto()
+            connection = get_connection_auto()  # TODO: how to identify the hub?
         self.connection = connection
         self.connection.set_notify_handler(self._notify)
         self.connection.enable_notifications()
@@ -197,6 +197,9 @@ class MoveHub(Hub):
 
     # noinspection PyTypeChecker
     def __init__(self, connection=None):
+        if connection is None:
+            connection = get_connection_auto(hub_name="LEGO Move Hub")
+
         super(MoveHub, self).__init__(connection)
         self.info = {}
 
@@ -273,3 +276,10 @@ class MoveHub(Hub):
                 self.vision_sensor = self.peripherals[port]
             elif type(self.peripherals[port]) == EncodedMotor and port not in (self.PORT_A, self.PORT_B, self.PORT_AB):
                 self.motor_external = self.peripherals[port]
+
+
+class TrainHub(Hub):
+    def __init__(self, connection=None):
+        if connection is None:
+            connection = get_connection_auto(hub_name='TrainHub')
+        super(TrainHub, self).__init__(connection)

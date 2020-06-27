@@ -18,13 +18,14 @@ req_queue = queue.Queue()
 class BleakDriver(object):
     """Driver that provides interface between API and Bleak."""
 
-    def __init__(self, hub_mac=None):
+    def __init__(self, hub_mac=None, hub_name=None):
         """
         Initialize new object of Bleak Driver class.
 
         :param hub_mac: Optional Lego HUB MAC to connect to.
         """
         self.hub_mac = hub_mac
+        self.hub_name = hub_name
         self._handler = None
         self._abort = False
         self._connection_thread = None
@@ -125,7 +126,7 @@ class BleakConnection(Connection):
         self._client = None
         logging.getLogger('bleak.backends.dotnet.client').setLevel(logging.getLogger().level)
 
-    async def connect(self, hub_mac=None):
+    async def connect(self, hub_mac=None, hub_name=None):
         """
         Connect to device.
 
@@ -141,12 +142,11 @@ class BleakConnection(Connection):
             log.debug(dev)
             address = dev.address
             name = dev.name
-            if self._is_device_matched(address, name, hub_mac):
-                log.info('Device matched')
+            if self._is_device_matched(address, name, hub_mac, hub_name):
+                log.info('Device matched: %r', dev)
                 self._device = dev
                 break
-
-        if not self._device:
+        else:
             raise ConnectionError('Device not found.')
 
         self._client = BleakClient(self._device.address, self.loop)

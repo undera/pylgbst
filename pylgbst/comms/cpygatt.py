@@ -2,7 +2,7 @@ import logging
 
 import pygatt
 
-from pylgbst.comms import Connection, LEGO_MOVE_HUB, MOVE_HUB_HW_UUID_CHAR
+from pylgbst.comms import Connection, MOVE_HUB_HW_UUID_CHAR
 from pylgbst.utilities import str2hex
 
 log = logging.getLogger('comms-pygatt')
@@ -20,20 +20,21 @@ class GattoolConnection(Connection):
         self.backend = lambda: pygatt.GATTToolBackend(hci_device=controller)
         self._conn_hnd = None
 
-    def connect(self, hub_mac=None):
+    def connect(self, hub_mac=None, hub_name=None):
         log.debug("Trying to connect client to MoveHub with MAC: %s", hub_mac)
         adapter = self.backend()
-        adapter.start()
+        adapter.start(reset_on_start=False)  # enable or disable restart? What's the best?
 
         while not self._conn_hnd:
             log.info("Discovering devices...")
             devices = adapter.scan(1)
             log.debug("Devices: %s", devices)
 
+            # Pass each device found to _is_device_matched( ) to see if it the device we want
             for dev in devices:
                 address = dev['address']
                 name = dev['name']
-                if self._is_device_matched(address, name, hub_mac):
+                if self._is_device_matched(address, name, hub_mac, hub_name):
                     self._conn_hnd = adapter.connect(address)
                     break
 
