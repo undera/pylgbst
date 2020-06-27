@@ -14,7 +14,7 @@ def demo_led_colors(movehub):
     log.info("LED colors demo")
 
     # We get a response with payload and port, not x and y here...
-    def colour_callback(**named):
+    def colour_callback(named):
         log.info("LED Color callback: %s", named)
 
     movehub.led.subscribe(colour_callback)

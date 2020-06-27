@@ -2,9 +2,9 @@
 
 _Move Hub is central controller block of [LEGO® Boost Robotics Set](https://www.lego.com/themes/boost)._
 
-In fact, Move Hub is just Bluetooth hardware, all manipulations are done with commands passed through Bluetooth Low Energy (BLE) wireless protocol. One of ways to issue these commands is to write Python program using this library.
+In fact, Move Hub is just Bluetooth hardware, all manipulations are made with commands passed through Bluetooth Low Energy (BLE) wireless protocol. One of ways to issue these commands is to write Python program using this library.
 
-Best way to start is to look into [`demo.py`](examples/demo.py) file, and run it (assuming you have installed library).
+The best way to start is to look into [`demo.py`](examples/demo.py) file, and run it (assuming you have installed library).
 
 If you have Vernie assembled, you might run scripts from [`examples/vernie`](examples/vernie) directory.
 
@@ -55,12 +55,13 @@ Each peripheral kind has own methods to do actions and/or get sensor data. See [
 
 ## Bluetooth Backend Prerequisites
 
-You have following options to install as Bluetooth backend:
+You have following options to install as Bluetooth backend (some of them might require `sudo` on Linux):
 
 - `pip install pygatt` - [pygatt](https://github.com/peplin/pygatt) lib, works on both Windows and Linux  
 - `pip install gatt` - [gatt](https://github.com/getsenic/gatt-python) lib, supports Linux, does not work on Windows
 - `pip install gattlib` - [gattlib](https://bitbucket.org/OscarAcena/pygattlib) - supports Linux, does not work on Windows, requires `sudo`
 - `pip install bluepy` - [bluepy](https://github.com/IanHarvey/bluepy) lib, supports Linux, including Raspbian, which allows connection to the hub from the Raspberry PI
+- `pip install bleak` - [bleak](https://github.com/hbldh/bleak) lib, supports Linux/Windows/MacOS
 
 Running on Windows requires [Bluegiga BLED112 Bluetooth Smart Dongle](https://www.silabs.com/products/wireless/bluetooth/bluetooth-low-energy-modules/bled112-bluetooth-smart-dongle) hardware piece, because no other hardware currently works on Windows with Python+BLE.
 
@@ -69,7 +70,7 @@ _Please let author know if you have discovered any compatibility/preprequisite d
 Depending on backend type, you might need Linux `sudo` to be used when running Python.
 
 ### Bluetooth Connection Options
-There is optional parameter for `MoveHub` class constructor, accepting instance of `Connection` object. By default, it will try to use whatever `get_connection_auto()` returns. You have several options to manually control that:
+There is an optional parameter for `MoveHub` class constructor, accepting instance of `Connection` object. By default, it will try to use whatever `get_connection_auto()` returns. You have several options to manually control that:
 
 - use `pylgbst.get_connection_auto()` to attempt backend auto-choice, autodetect uses 
 - use `BlueGigaConnection()` - if you use BlueGiga Adapter (`pygatt` library prerequisite)
@@ -77,6 +78,7 @@ There is optional parameter for `MoveHub` class constructor, accepting instance 
 - use `GattoolConnection()` - if you use GattTool Backend on Linux (`pygatt` library prerequisite)
 - use `GattLibConnection()` - if you use GattLib Backend on Linux (`gattlib` library prerequisite)
 - use `BluepyConnection()` - if you use Bluepy backend on Linux/Raspbian (`bluepy` library prerequisite)
+- use `BleakConnection()` - if you use Bleak backend (`bleak` library prerequisite)
 - pass instance of `DebugServerConnection` if you are using [Debug Server](#debug-server) (more details below).
 
 All the functions above have optional arguments to specify adapter name and MoveHub mac address. Please look function source code for details.
