@@ -23,7 +23,7 @@ class GattoolConnection(Connection):
     def connect(self, hub_mac=None, hub_name=None):
         log.debug("Trying to connect client to MoveHub with MAC: %s", hub_mac)
         adapter = self.backend()
-        adapter.start(reset_on_start=False)  # enable or disable restart? What's the best?
+        adapter.start()  # enable or disable restart? What's the best?
 
         while not self._conn_hnd:
             log.info("Discovering devices...")
