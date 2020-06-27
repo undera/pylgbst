@@ -173,15 +173,15 @@ def demo_voltage(movehub):
 
 
 def demo_all(movehub):
-    demo_voltage(movehub)
-    demo_led_colors(movehub)
     demo_motors_timed(movehub)
     demo_motors_angled(movehub)
     demo_port_cd_motor(movehub)
+    demo_led_colors(movehub)
     demo_tilt_sensor_simple(movehub)
     demo_tilt_sensor_precise(movehub)
     demo_color_sensor(movehub)
     demo_motor_sensors(movehub)
+    demo_voltage(movehub)
 
 
 DEMO_CHOICES = {
