@@ -1,14 +1,8 @@
 sudo: false
 language: python
-virtualenv:
-  system_site_packages: true
-
-matrix:
-  include:
-    - os: linux
-      python: 2.7
-    - os: linux
-      python: 3.5
+python:
+  - 3.6
+  - 3.8
 
 addons:
   apt:
@@ -21,16 +15,17 @@ addons:
       - libdbus-1-dev
       - libdbus-glib-1-dev
       - libgirepository-1.0-1
+      - libgirepository1.0-dev
 
-      - python-dbus
-      - python-gi
-      - python3-dbus
-      - python3-gi
+      - bluez
 install:
   - wget https://github.com/labapart/gattlib/releases/download/dev/gattlib_dbus_0.2-dev_x86_64.deb
   - sudo dpkg -i gattlib_dbus_0.2-dev_x86_64.deb
-  - pip install codecov codacy-coverage nose-exclude pygatt gatt pexpect bluepy
+  - pip install codecov codacy-coverage nose-exclude pygatt gatt pexpect bluepy bleak packaging dbus-python pygobject
+  - pip install --upgrade attrs
 
+env:
+  - READTHEDOCS=True
 
 script:
   - coverage run --omit="examples/*" --source=. -m nose tests -v --exclude-dir=examples
