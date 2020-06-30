@@ -207,7 +207,7 @@ def get_options():
         '-c', '--connection',
         default='auto://',
         help='''Specify connection URL to use, `protocol://mac?param=X` with protocol in:
-    "gatt","pygatt","gattlib","gattool", "bluepy","bluegiga"'''
+    "gatt", "pygatt", "gattlib", "gattool", "bluepy", "bluegiga", "bleak"'''
     )
     arg_parser.add_argument(
         '-d', '--demo',
@@ -246,7 +246,7 @@ def connection_from_url(url):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO, format='%(relativeCreated)d\t%(levelname)s\t%(name)s\t%(message)s')
+    logging.basicConfig(level=logging.DEBUG, format='%(relativeCreated)d\t%(levelname)s\t%(name)s\t%(message)s')
     parser = get_options()
     options = parser.parse_args()
     parameters = {}
@@ -256,7 +256,7 @@ if __name__ == '__main__':
     except ValueError as err:
         parser.error(err.args[0])
 
-    hub = MoveHub(**parameters)
+    hub = MoveHub(get_connection_bleak(hub_name='LEGO Move Hub'))
     try:
         demo = DEMO_CHOICES[options.demo]
         demo(hub)

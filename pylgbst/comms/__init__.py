@@ -24,7 +24,7 @@ MOVE_HUB_HARDWARE_HANDLE = 0x0E
 
 
 class Connection(object):
-    def connect(self, hub_mac=None):
+    def connect(self, hub_mac=None, hub_name=None):
         pass
 
     @abstractmethod

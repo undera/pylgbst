@@ -15,6 +15,91 @@ resp_queue = queue.Queue()
 req_queue = queue.Queue()
 
 
+
+
+class BleakConnection2(Connection):
+    """
+    :type _client: BleakClient
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._abort = False
+        self._loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self._loop)
+        self._client = None  # noqa
+        self._notify_queue = queue.Queue()
+
+    def connect(self, hub_mac=None, hub_name=None):
+        #logging.getLogger('bleak.backends.dotnet.client').setLevel(logging.WARNING)
+        #logging.getLogger('bleak.backends.bluezdbus.client').setLevel(logging.WARNING)
+        #logging.getLogger('bleak.backends.dotnet.discovery').setLevel(logging.WARNING)
+        #logging.getLogger('bleak.backends.bluezdbus.discovery').setLevel(logging.WARNING)
+
+        log.info("Discovering devices... Press green button on Hub")
+        for i in range(0, 30):
+            devices = self._loop.run_until_complete(discover(timeout=1))
+            log.debug("Devices: %s", devices)
+            for dev in devices:
+                log.debug(dev)
+                address = dev.address
+                name = dev.name
+                if self._is_device_matched(address, name, hub_mac, hub_name):
+                    log.info('Device matched: %r', dev)
+                    device = dev
+                    break
+            else:
+                continue
+
+            break
+        else:
+            raise ConnectionError('Device not found.')
+
+        self._client = BleakClient(device.address, self._loop)
+        status = self._loop.run_until_complete(self._client.connect())
+        log.debug('Connection status: %s', status)
+
+        def enqueue(handle, data):
+            log.debug("Put into queue: %s", data)
+            self._notify_queue.put((handle, data))
+
+        self._loop.run_until_complete(self._client.start_notify(MOVE_HUB_HW_UUID_CHAR, enqueue))
+
+        return self
+
+    def disconnect(self):
+        self._abort = True
+        if self.is_alive():
+            log.debug("Disconnecting bleak connection")
+            self._loop.run_until_complete(self._client.disconnect())
+
+    def is_alive(self):
+        log.debug("Checking if bleak conn is alive")
+        return self._loop.run_until_complete(self._client.is_connected())
+
+    def write(self, handle, data):
+        desc = self._client.services.get_descriptor(handle)
+
+        if not isinstance(data, bytearray):
+            data = bytearray(data)
+
+        if desc is None:
+            # dedicated handle not found, try to send by using LEGO Move Hub default characteristic
+            self._loop.run_until_complete(self._client.write_gatt_char(MOVE_HUB_HW_UUID_CHAR, data))
+        else:
+            self._loop.run_until_complete(self._client.write_gatt_char(desc.characteristic_uuid, data))
+
+    def set_notify_handler(self, handler):
+        def _processing():
+            while not self._abort:
+                handle, data = self._notify_queue.get(block=True)
+                handler(handle, data)
+
+            log.info("Processing thread has exited")
+
+        threading.Thread(target=_processing, daemon=True).start()
+
+
 class BleakDriver(object):
     """Driver that provides interface between API and Bleak."""
 
@@ -68,7 +153,7 @@ class BleakDriver(object):
                 data = req_queue.get()
                 await bleak.write(data[0], data[1])
 
-        logging.info("Communications thread has exited")
+        log.info("Communications thread has exited")
 
     @staticmethod
     def _safe_handler(handler, data):
@@ -81,7 +166,7 @@ class BleakDriver(object):
                 self._handler(msg[0], msg[1])
 
             time.sleep(0.01)
-        logging.info("Processing thread has exited")
+        log.info("Processing thread has exited")
 
     def write(self, handle, data):
         """
@@ -122,7 +207,7 @@ class BleakConnection(Connection):
 
     def __init__(self):
         """Initialize new instance of BleakConnection class."""
-        Connection.__init__(self)
+        super().__init__(self)
         self.loop = asyncio.get_event_loop()
 
         self._device = None
@@ -209,4 +294,4 @@ class BleakConnection(Connection):
         This method does nothing.
         :return: None.
         """
-        pass
+        return self._client.is_connected()

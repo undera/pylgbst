@@ -2,6 +2,7 @@ import logging
 import traceback
 
 from pylgbst.comms import DebugServer
+from pylgbst.comms.cbleak import BleakConnection, BleakConnection2
 
 log = logging.getLogger('pylgbst')
 
@@ -48,7 +49,7 @@ def get_connection_bleak(controller='hci0', hub_mac=None, hub_name=None):
     del controller  # to prevent code analysis warning
     from pylgbst.comms.cbleak import BleakDriver
 
-    return BleakDriver(hub_mac, hub_name)
+    return BleakConnection2().connect(hub_mac, hub_name)
 
 
 def get_connection_auto(controller='hci0', hub_mac=None, hub_name=None):

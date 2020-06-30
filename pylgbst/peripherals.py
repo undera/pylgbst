@@ -55,6 +55,8 @@ class Peripheral(object):
         :type port: int
         """
         super(Peripheral, self).__init__()
+        self.sw_revision = None
+        self.hw_revision = None
         self.virtual_ports = ()
         self.hub = parent
         self.port = port
