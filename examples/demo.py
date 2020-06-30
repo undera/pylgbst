@@ -246,7 +246,7 @@ def connection_from_url(url):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO, format='%(relativeCreated)d\t%(levelname)s\t%(name)s\t%(message)s')
     parser = get_options()
     options = parser.parse_args()
     parameters = {}
