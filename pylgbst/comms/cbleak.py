@@ -224,17 +224,21 @@ class BleakConnection(Connection):
         :return: None
         """
         log.info("Discovering devices... Press green button on Hub")
-        devices = await discover(timeout=10)
-        log.debug("Devices: %s", devices)
+        for i in range(0, 30):
+            devices = await discover(timeout=1)
+            log.debug("Devices: %s", devices)
+            for dev in devices:
+                log.debug(dev)
+                address = dev.address
+                name = dev.name
+                if self._is_device_matched(address, name, hub_mac, hub_name):
+                    log.info('Device matched: %r', dev)
+                    self._device = dev
+                    break
+            else:
+                continue
 
-        for dev in devices:
-            log.debug(dev)
-            address = dev.address
-            name = dev.name
-            if self._is_device_matched(address, name, hub_mac, hub_name):
-                log.info('Device matched: %r', dev)
-                self._device = dev
-                break
+            break
         else:
             raise ConnectionError('Device not found.')
 

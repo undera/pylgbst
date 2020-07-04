@@ -251,7 +251,7 @@ if __name__ == '__main__':
     options = parser.parse_args()
     parameters = {}
     try:
-        connection = connection_from_url(options.connection)
+        connection = connection_from_url(options.connection)  # get_connection_bleak(hub_name=MoveHub.DEFAULT_NAME)
         parameters['connection'] = connection
     except ValueError as err:
         parser.error(err.args[0])
