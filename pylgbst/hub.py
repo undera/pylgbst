@@ -184,6 +184,8 @@ class MoveHub(Hub):
     :type motor_external: EncodedMotor
     """
 
+    DEFAULT_NAME = "LEGO Move Hub"
+
     # PORTS
     PORT_A = 0x00
     PORT_B = 0x01
@@ -198,7 +200,7 @@ class MoveHub(Hub):
     # noinspection PyTypeChecker
     def __init__(self, connection=None):
         if connection is None:
-            connection = get_connection_auto(hub_name="LEGO Move Hub")
+            connection = get_connection_auto(hub_name=self.DEFAULT_NAME)
 
         super(MoveHub, self).__init__(connection)
         self.info = {}
@@ -279,7 +281,9 @@ class MoveHub(Hub):
 
 
 class TrainHub(Hub):
+    DEFAULT_NAME = 'TrainHub'
+
     def __init__(self, connection=None):
         if connection is None:
-            connection = get_connection_auto(hub_name='TrainHub')
+            connection = get_connection_auto(hub_name=self.DEFAULT_NAME)
         super(TrainHub, self).__init__(connection)
