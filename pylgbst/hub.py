@@ -19,6 +19,13 @@ PERIPHERAL_TYPES = {
     MsgHubAttachedIO.DEV_TILT_INTERNAL: TiltSensor,
     MsgHubAttachedIO.DEV_CURRENT: Current,
     MsgHubAttachedIO.DEV_VOLTAGE: Voltage,
+    MsgHubAttachedIO.DEV_MOTOR_L_CONTROL_PLUS: EncodedMotor,
+    MsgHubAttachedIO.DEV_MOTOR_XL_CONTROL_PLUS: EncodedMotor,
+    MsgHubAttachedIO.DEV_CONTROL_PLUS_TILT: TiltSensor,
+    MsgHubAttachedIO.DEV_CONTROL_PLUS_ACCELEROMETER_A: Accelerometer,
+    MsgHubAttachedIO.DEV_CONTROL_PLUS_ACCELEROMETER_B: Accelerometer,
+    MsgHubAttachedIO.DEV_CONTROL_PLUS_UNKNOWN_1: Peripheral,
+    MsgHubAttachedIO.DEV_CONTROL_PLUS_UNKNOWN_2: Peripheral
 }
 
 
@@ -287,3 +294,126 @@ class TrainHub(Hub):
         if connection is None:
             connection = get_connection_auto(hub_name=self.DEFAULT_NAME)
         super(TrainHub, self).__init__(connection)
+
+class ControlPlusHub(Hub):
+    """
+    Class implementing Lego Control + Hub
+    :type motor_A: EncodedMotor
+    :type motor_B: EncodedMotor
+    :type motor_C: EncodedMotor
+    :type motor_D: EncodedMotor
+    :type led: LEDRGB
+    :type current: Current
+    :type voltage: Voltage
+    :type button: Button
+    :type tilt_sensor: TiltSensor  
+    :type accelerometer: Accelerometer
+    :type unknown: Periphiral, that's used for unknown ports  
+    """
+    DEFAULT_NAME = "LEGO Control + Hub"
+
+    # PORTS
+    PORT_A = 0x00
+    PORT_B = 0x01
+    PORT_C = 0x02
+    PORT_D = 0x03
+    PORT_LED = 0x32
+    PORT_CURRENT = 0x3B
+    PORT_VOLTAGE = 0x3C
+    PORT_TILT_SENSOR = 0x63
+    PORT_ACCELEROMETER_A = 0x62
+    PORT_ACCELEROMETER_B = 0x61
+    PORT_UNKNOWN_A = 0x3d 
+    PORT_UNKNOWN_B = 0x60
+    PORT_UNKNOWN_C = 0x64
+
+    # noinspection PyTypeChecker
+    def __init__(self, connection=None):
+        if connection is None:
+            connection = get_connection_auto(hub_name=self.DEFAULT_NAME)
+            
+        super(ControlPlusHub, self).__init__(connection)
+        self.info = {}
+
+        # shorthand fields
+        self.button = Button(self)
+        self.led = None
+        self.current = None
+        self.voltage = None
+        self.motor_A = None
+        self.motor_B = None
+        self.motor_C = None
+        self.motor_D = None
+        self.tilt_sensor = None
+        self.accelerometer_A = None
+        self.accelerometer_B = None
+        self.unknown_A = None
+        self.unknown_B = None
+        self.unknown_C = None
+        
+        self._wait_for_devices()
+        self._report_status()
+
+    def _wait_for_devices(self, get_dev_set=None):
+        
+        if not get_dev_set:
+            get_dev_set = lambda: (self.motor_A, self.motor_B, self.motor_C, self.motor_D, self.led, self.current, self.voltage, self.tilt_sensor, self.accelerometer_A, self.accelerometer_B, self.unknown_A, self.unknown_B, self.unknown_C)
+        
+        for num in range(0, 30):
+            
+            devices = get_dev_set()
+            if all(devices):
+                log.warning("All devices are present: %s", devices)
+                return
+            log.debug("Waiting for builtin devices to appear: %s", devices)
+            time.sleep(0.1)
+        log.warning("Got only these devices: %s", get_dev_set())
+
+    def _report_status(self):
+        # maybe add firmware version
+        name = self.send(MsgHubProperties(MsgHubProperties.ADVERTISE_NAME, MsgHubProperties.UPD_REQUEST))
+        mac = self.send(MsgHubProperties(MsgHubProperties.PRIMARY_MAC, MsgHubProperties.UPD_REQUEST))
+        log.info("%s on %s", name.payload, str2hex(mac.payload))
+
+        voltage = self.send(MsgHubProperties(MsgHubProperties.VOLTAGE_PERC, MsgHubProperties.UPD_REQUEST))
+        assert isinstance(voltage, MsgHubProperties)
+        log.info("Voltage: %s%%", usbyte(voltage.parameters, 0))
+
+        voltage = self.send(MsgHubAlert(MsgHubAlert.LOW_VOLTAGE, MsgHubAlert.UPD_REQUEST))
+        assert isinstance(voltage, MsgHubAlert)
+        if not voltage.is_ok():
+            log.warning("Low voltage, check power source (maybe replace battery)")
+
+    # noinspection PyTypeChecker
+    def _handle_device_change(self, msg):
+        super(ControlPlusHub, self)._handle_device_change(msg)
+        if isinstance(msg, MsgHubAttachedIO) and msg.event != MsgHubAttachedIO.EVENT_DETACHED:
+            
+            
+            port = msg.port
+            if port == self.PORT_A:
+                self.motor_A = self.peripherals[port]
+            elif port == self.PORT_B:
+                self.motor_B = self.peripherals[port]
+            elif port == self.PORT_C:
+                self.motor_C = self.peripherals[port]
+            elif port == self.PORT_D:
+                self.motor_D = self.peripherals[port]
+            elif port == self.PORT_LED:
+                self.led = self.peripherals[port]
+            elif port == self.PORT_TILT_SENSOR:
+                self.tilt_sensor = self.peripherals[port]
+            elif port == self.PORT_CURRENT:
+                self.current = self.peripherals[port]
+            elif port == self.PORT_VOLTAGE:
+                self.voltage = self.peripherals[port]
+            elif port == self.PORT_ACCELEROMETER_A:
+                self.accelerometer_A = self.peripherals[port]
+            elif port == self.PORT_ACCELEROMETER_B:
+                self.accelerometer_B = self.peripherals[port]
+            elif port == self.PORT_UNKNOWN_A:
+                self.unknown_A = self.peripherals[port]
+            elif port == self.PORT_UNKNOWN_B:
+                self.unknown_B = self.peripherals[port]
+            elif port == self.PORT_UNKNOWN_C:
+                self.unknown_C = self.peripherals[port]
