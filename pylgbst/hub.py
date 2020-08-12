@@ -137,7 +137,7 @@ class Hub(object):
         if dev_type in PERIPHERAL_TYPES:
             self.peripherals[port] = PERIPHERAL_TYPES[dev_type](self, port)
         else:
-            log.warning("Have not dedicated class for peripheral type 0x%x on port 0x%x", dev_type, port)
+            log.warning("Have not dedicated class for peripheral type %x on port %x", dev_type, port)
             self.peripherals[port] = Peripheral(self, port)
 
         log.info("Attached peripheral: %s", self.peripherals[msg.port])
@@ -199,6 +199,7 @@ class MoveHub(Hub):
 
     # noinspection PyTypeChecker
     def __init__(self, connection=None):
+        self._comm_lock = threading.RLock()
         if connection is None:
             connection = get_connection_auto(hub_name=self.DEFAULT_NAME)
 
@@ -252,32 +253,34 @@ class MoveHub(Hub):
 
     # noinspection PyTypeChecker
     def _handle_device_change(self, msg):
-        super(MoveHub, self)._handle_device_change(msg)
-        if isinstance(msg, MsgHubAttachedIO) and msg.event != MsgHubAttachedIO.EVENT_DETACHED:
-            port = msg.port
-            if port == self.PORT_A:
-                self.motor_A = self.peripherals[port]
-            elif port == self.PORT_B:
-                self.motor_B = self.peripherals[port]
-            elif port == self.PORT_AB:
-                self.motor_AB = self.peripherals[port]
-            elif port == self.PORT_C:
-                self.port_C = self.peripherals[port]
-            elif port == self.PORT_D:
-                self.port_D = self.peripherals[port]
-            elif port == self.PORT_LED:
-                self.led = self.peripherals[port]
-            elif port == self.PORT_TILT_SENSOR:
-                self.tilt_sensor = self.peripherals[port]
-            elif port == self.PORT_CURRENT:
-                self.current = self.peripherals[port]
-            elif port == self.PORT_VOLTAGE:
-                self.voltage = self.peripherals[port]
+        with self._comm_lock:
+            super(MoveHub, self)._handle_device_change(msg)
+            if isinstance(msg, MsgHubAttachedIO) and msg.event != MsgHubAttachedIO.EVENT_DETACHED:
+                port = msg.port
+                if port == self.PORT_A:
+                    self.motor_A = self.peripherals[port]
+                elif port == self.PORT_B:
+                    self.motor_B = self.peripherals[port]
+                elif port == self.PORT_AB:
+                    self.motor_AB = self.peripherals[port]
+                elif port == self.PORT_C:
+                    self.port_C = self.peripherals[port]
+                elif port == self.PORT_D:
+                    self.port_D = self.peripherals[port]
+                elif port == self.PORT_LED:
+                    self.led = self.peripherals[port]
+                elif port == self.PORT_TILT_SENSOR:
+                    self.tilt_sensor = self.peripherals[port]
+                elif port == self.PORT_CURRENT:
+                    self.current = self.peripherals[port]
+                elif port == self.PORT_VOLTAGE:
+                    self.voltage = self.peripherals[port]
 
-            if type(self.peripherals[port]) == VisionSensor:
-                self.vision_sensor = self.peripherals[port]
-            elif type(self.peripherals[port]) == EncodedMotor and port not in (self.PORT_A, self.PORT_B, self.PORT_AB):
-                self.motor_external = self.peripherals[port]
+                if type(self.peripherals[port]) == VisionSensor:
+                    self.vision_sensor = self.peripherals[port]
+                elif type(self.peripherals[port]) == EncodedMotor \
+                        and port not in (self.PORT_A, self.PORT_B, self.PORT_AB):
+                    self.motor_external = self.peripherals[port]
 
 
 class TrainHub(Hub):
