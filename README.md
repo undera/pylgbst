@@ -72,13 +72,13 @@ Depending on backend type, you might need Linux `sudo` to be used when running P
 ### Bluetooth Connection Options
 There is an optional parameter for `MoveHub` class constructor, accepting instance of `Connection` object. By default, it will try to use whatever `get_connection_auto()` returns. You have several options to manually control that:
 
-- use `pylgbst.get_connection_auto()` to attempt backend auto-detection 
-- use `pylgbst.get_connection_bluegiga()` - if you use BlueGiga Adapter (`pygatt` library prerequisite)
-- use `pylgbst.get_connection_gatt()` - if you use Gatt Backend on Linux (`gatt` library prerequisite)
-- use `pylgbst.get_connection_gattool()` - if you use GattTool Backend on Linux (`pygatt` library prerequisite)
-- use `pylgbst.get_connection_gattlib()` - if you use GattLib Backend on Linux (`gattlib` library prerequisite)
-- use `pylgbst.get_connection_bluepy()` - if you use Bluepy backend on Linux/Raspbian (`bluepy` library prerequisite)
-- use `pylgbst.get_connection_bleak()` - if you use Bleak backend (`bleak` library prerequisite)
+- use `get_connection_auto()` to attempt backend auto-detection 
+- use `get_connection_bluegiga()` - if you use BlueGiga Adapter (`pygatt` library prerequisite)
+- use `get_connection_gatt()` - if you use Gatt Backend on Linux (`gatt` library prerequisite)
+- use `get_connection_gattool()` - if you use GattTool Backend on Linux (`pygatt` library prerequisite)
+- use `get_connection_gattlib()` - if you use GattLib Backend on Linux (`gattlib` library prerequisite)
+- use `get_connection_bluepy()` - if you use Bluepy backend on Linux/Raspbian (`bluepy` library prerequisite)
+- use `get_connection_bleak()` - if you use Bleak backend (`bleak` library prerequisite)
 - pass instance of `DebugServerConnection` if you are using [Debug Server](#debug-server) (more details below).
 
 All the functions above have optional arguments to specify adapter name and Hub name (or mac address). Please take a look at functions source code for details.
