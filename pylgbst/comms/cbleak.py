@@ -78,7 +78,7 @@ class BleakDriver(object):
         while not self._abort:
             if resp_queue.qsize() != 0:
                 msg = resp_queue.get()
-                self._handler(msg[0], msg[1])
+                self._handler(msg[0], bytes(msg[1]))
 
             time.sleep(0.01)
         logging.info("Processing thread has exited")
