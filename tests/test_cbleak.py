@@ -45,7 +45,7 @@ class BleakDriverTest(unittest.TestCase):
         driver.write(handle, data)
         time.sleep(0.5)  # processing time
         self.assertEqual(handle, last_response[0], 'Verifying response handle')
-        self.assertEqual(data, last_response[1], 'Verifying response data')
+        self.assertEqual(bytes(data), last_response[1], 'Verifying response data')
 
         driver.disconnect()
         time.sleep(0.5)  # processing time
