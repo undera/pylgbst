@@ -92,15 +92,15 @@ def demo_tilt_sensor_simple(movehub):
 
 def demo_tilt_sensor_precise(movehub):
     log.info("Tilt sensor precise test. Turn device in different ways.")
-    demo_tilt_sensor_simple.cnt = 0
+    demo_tilt_sensor_precise.cnt = 0
     limit = 50
 
     def callback(pitch, roll, yaw):
-        demo_tilt_sensor_simple.cnt += 1
-        log.info("Tilt #%s of %s: roll:%s pitch:%s yaw:%s", demo_tilt_sensor_simple.cnt, limit, pitch, roll, yaw)
+        demo_tilt_sensor_precise.cnt += 1
+        log.info("Tilt #%s of %s: roll:%s pitch:%s yaw:%s", demo_tilt_sensor_precise.cnt, limit, pitch, roll, yaw)
 
     movehub.tilt_sensor.subscribe(callback, mode=TiltSensor.MODE_3AXIS_ACCEL)
-    while demo_tilt_sensor_simple.cnt < limit:
+    while demo_tilt_sensor_precise.cnt < limit:
         time.sleep(1)
 
     movehub.tilt_sensor.unsubscribe(callback)
