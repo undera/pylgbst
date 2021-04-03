@@ -63,7 +63,7 @@ You have following options to install as Bluetooth backend (some of them might r
 - `pip install bluepy` - [bluepy](https://github.com/IanHarvey/bluepy) lib, supports Linux, including Raspbian, which allows connection to the hub from the Raspberry PI
 - `pip install bleak` - [bleak](https://github.com/hbldh/bleak) lib, supports Linux/Windows/MacOS
 
-Running on Windows requires [Bluegiga BLED112 Bluetooth Smart Dongle](https://www.silabs.com/products/wireless/bluetooth/bluetooth-low-energy-modules/bled112-bluetooth-smart-dongle) hardware piece, because no other hardware currently works on Windows with Python+BLE.
+Windows users may first turn to the Bleak backend, which should support any internal or external Bluetooth adapter recognized by the OS. The Windows version of pygatt will only work with a [Bluegiga BLED112 Bluetooth Smart Dongle](https://www.silabs.com/products/wireless/bluetooth/bluetooth-low-energy-modules/bled112-bluetooth-smart-dongle).
 
 _Please let author know if you have discovered any compatibility/preprequisite details, so we will update this section to help future users_
 
