@@ -1,12 +1,12 @@
-dist: focal
+dist: xenial
 branches:
   only:
     - master
     - /(\d+\.?)+/
 language: python
-python:
-  - 3.6
-  - 3.8
+#python:
+#  - 3.6
+#  - 3.8
 addons:
   apt:
     packages:
@@ -26,7 +26,7 @@ addons:
 install:
   - dpkg -l | grep cairo
   - wget https://github.com/labapart/gattlib/releases/download/dev/gattlib_dbus_0.2-dev_x86_64.deb && sudo dpkg -i gattlib_dbus_0.2-dev_x86_64.deb
-  - pip install codecov codacy-coverage pytest pygatt gatt pexpect bluepy bleak packaging dbus-python # pygobject
+  - pip install codecov codacy-coverage pytest pygatt gatt pexpect bluepy bleak packaging dbus-python pygobject
   - pip install --upgrade attrs
 
 env:
