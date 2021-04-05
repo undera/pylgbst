@@ -123,7 +123,6 @@ class BleakConnection(Connection):
     def __init__(self):
         """Initialize new instance of BleakConnection class."""
         Connection.__init__(self)
-        self.loop = asyncio.get_event_loop()
 
         self._device = None
         self._client = None
@@ -157,7 +156,7 @@ class BleakConnection(Connection):
         else:
             raise ConnectionError('Device not found.')
 
-        self._client = BleakClient(self._device.address, self.loop)
+        self._client = BleakClient(self._device.address)
         status = await self._client.connect()
         log.debug('Connection status: {status}'.format(status=status))
 
