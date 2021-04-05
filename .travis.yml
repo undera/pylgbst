@@ -1,4 +1,3 @@
-sudo: false
 language: python
 python:
   - 3.6
@@ -17,8 +16,11 @@ addons:
       - libgirepository-1.0-1
       - libgirepository1.0-dev
 
+      - libcairo2-dev
+
       - bluez
 install:
+  - dpkg -l | grep cairo
   - wget https://github.com/labapart/gattlib/releases/download/dev/gattlib_dbus_0.2-dev_x86_64.deb
   - sudo dpkg -i gattlib_dbus_0.2-dev_x86_64.deb
   - pip install codecov codacy-coverage pytest pygatt gatt pexpect bluepy bleak packaging dbus-python pygobject
