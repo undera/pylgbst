@@ -143,10 +143,8 @@ class Hub(object):
         log.info("Attached peripheral: %s", self.peripherals[msg.port])
 
         if msg.event == msg.EVENT_ATTACHED:
-            hw_revision = reversed([usbyte(msg.payload, x) for x in range(2, 6)])
-            sw_revision = reversed([usbyte(msg.payload, x) for x in range(6, 10)])
-            # what to do with this info? it's useless, I guess
-            del hw_revision, sw_revision
+            self.peripherals[port].hw_revision = reversed([usbyte(msg.payload, x) for x in range(2, 6)])
+            self.peripherals[port].sw_revision = reversed([usbyte(msg.payload, x) for x in range(6, 10)])
         elif msg.event == msg.EVENT_ATTACHED_VIRTUAL:
             self.peripherals[port].virtual_ports = (usbyte(msg.payload, 2), usbyte(msg.payload, 3))
 
@@ -207,7 +205,6 @@ class MoveHub(Hub):
         self.info = {}
 
         # shorthand fields
-        self.button = Button(self)
         self.led = None
         self.current = None
         self.voltage = None
@@ -219,6 +216,14 @@ class MoveHub(Hub):
         self.motor_external = None
         self.port_C = None
         self.port_D = None
+
+        self.info = {}
+
+        if connection is None:
+            connection = get_connection_auto(hub_name="LEGO Move Hub")
+
+        super(MoveHub, self).__init__(connection)
+        self.button = Button(self)
 
         self._wait_for_devices()
         self._report_status()
@@ -233,7 +238,7 @@ class MoveHub(Hub):
                 log.debug("All devices are present: %s", devices)
                 return
             log.debug("Waiting for builtin devices to appear: %s", devices)
-            time.sleep(0.1)
+            time.sleep(0.2)
         log.warning("Got only these devices: %s", get_dev_set())
 
     def _report_status(self):
