@@ -1,8 +1,12 @@
+dist: focal
+branches:
+  only:
+    - main
+    - /(\d+\.?)+/
 language: python
 python:
   - 3.6
   - 3.8
-
 addons:
   apt:
     packages:
@@ -36,3 +40,10 @@ after_success:
   - coverage xml
   - codecov
   - python-codacy-coverage -r coverage.xml
+
+deploy:
+  edge: true  # use latest v2 deploy
+  provider: pypi
+  #  skip_cleanup: true
+  on:
+    tags: true
