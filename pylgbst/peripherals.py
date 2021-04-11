@@ -669,3 +669,15 @@ class Button(Peripheral):
         """
         if msg.property == MsgHubProperties.BUTTON and msg.operation == MsgHubProperties.UPSTREAM_UPDATE:
             self._notify_subscribers(usbyte(msg.parameters, 0))
+
+class Accelerometer(Peripheral):
+
+    def __init__(self, parent, port):
+        super(Accelerometer, self).__init__(parent, port)
+
+    def _decode_port_data(self, msg):
+        data = msg.payload
+        x = ushort(msg.payload, 0)
+        y = ushort(msg.payload, 2)
+        z = ushort(msg.payload, 4)
+        return (x, y, z)
