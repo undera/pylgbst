@@ -8,21 +8,21 @@ An example:
 from pylgbst.hub import MoveHub, TiltSensor
 import time
 
-def callback(pitch, roll, yaw):
-    print("Pitch: %s / Roll: %s / Yaw: %s" % (pitch, roll, yaw))
+def callback(roll, pitch, yaw):
+    print("Roll: %s / Pitch: %s / Yaw: %s" % (roll, pitch, yaw))
 
 hub = MoveHub()
 
-hub.tilt_sensor.subscribe(callback, mode=TiltSensor.MODE_3AXIS_SIMPLE)
+hub.tilt_sensor.subscribe(callback, mode=TiltSensor.MODE_3AXIS_ACCEL)
 time.sleep(60) # turn MoveHub block in different ways
 hub.tilt_sensor.unsubscribe(callback)
 ```
 
 `TiltSensor` sensor mode constants:
 - `MODE_2AXIS_SIMPLE` - use `callback(state)` for 2-axis simple state detect
-- `MODE_2AXIS_FULL` - use `callback(roll, pitch)` for 2-axis roll&pitch degree values
+- `MODE_2AXIS_ANGLE` - use `callback(roll, pitch)` for 2-axis roll&pitch degree values
 - `MODE_3AXIS_SIMPLE` - use `callback(state)` for 3-axis simple state detect
-- `MODE_3AXIS_FULL` - use `callback(roll, pitch)` for 2-axis roll&pitch degree values
+- `MODE_3AXIS_ACCEL` - use `callback(roll, pitch, yaw)` for 3-axis roll&pitch&yaw degree values
 - `MODE_BUMP_COUNT` - use `callback(count)` to detect bumps
 
 There are tilt sensor constants for "simple" states, for 2-axis mode their names are also available through `TiltSensor.DUO_STATES`:
