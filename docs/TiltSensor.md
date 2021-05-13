@@ -23,7 +23,7 @@ hub.tilt_sensor.unsubscribe(callback)
 - `MODE_2AXIS_ANGLE` - use `callback(roll, pitch)` for 2-axis roll&pitch degree values
 - `MODE_3AXIS_SIMPLE` - use `callback(state)` for 3-axis simple state detect
 - `MODE_3AXIS_ACCEL` - use `callback(roll, pitch, yaw)` for 3-axis roll&pitch&yaw degree values
-- `MODE_BUMP_COUNT` - use `callback(count)` to detect bumps
+- `MODE_IMPACT_COUNT` - use `callback(count)` to detect bumps
 
 There are tilt sensor constants for "simple" states, for 2-axis mode their names are also available through `TiltSensor.DUO_STATES`:
 - `DUO_HORIZ` - "HORIZONTAL"
