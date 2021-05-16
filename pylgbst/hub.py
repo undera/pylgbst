@@ -10,15 +10,39 @@ from pylgbst.utilities import str2hex, usbyte, ushort
 log = logging.getLogger('hub')
 
 PERIPHERAL_TYPES = {
-    MsgHubAttachedIO.DEV_MOTOR: Motor,
-    MsgHubAttachedIO.DEV_MOTOR_EXTERNAL_TACHO: EncodedMotor,
-    MsgHubAttachedIO.DEV_MOTOR_INTERNAL_TACHO: EncodedMotor,
-    MsgHubAttachedIO.DEV_VISION_SENSOR: VisionSensor,
-    MsgHubAttachedIO.DEV_RGB_LIGHT: LEDRGB,
-    MsgHubAttachedIO.DEV_TILT_EXTERNAL: TiltSensor,
-    MsgHubAttachedIO.DEV_TILT_INTERNAL: TiltSensor,
-    MsgHubAttachedIO.DEV_CURRENT: Current,
-    MsgHubAttachedIO.DEV_VOLTAGE: Voltage,
+    DevTypes.MOTOR: Motor,
+    DevTypes.MOTOR_EXTERNAL_TACHO: EncodedMotor,
+    DevTypes.MOTOR_INTERNAL_TACHO: EncodedMotor,
+    DevTypes.VISION_SENSOR: VisionSensor,
+    DevTypes.RGB_LIGHT: LEDRGB,
+    DevTypes.TILT_EXTERNAL: TiltSensor,
+    DevTypes.TILT_INTERNAL: TiltSensor,
+    DevTypes.CURRENT: Current,
+    DevTypes.VOLTAGE: Voltage,
+
+    DevTypes.DUPLO_TRAIN_BASE_MOTOR.value: Motor,
+    # DUPLO_TRAIN_BASE_SPEAKER = 42
+    DevTypes.DUPLO_TRAIN_BASE_COLOR_SENSOR: VisionSensor,
+    # DUPLO_TRAIN_BASE_SPEEDOMETER = 44
+    DevTypes.TECHNIC_LARGE_LINEAR_MOTOR: EncodedMotor,
+    DevTypes.TECHNIC_XLARGE_LINEAR_MOTOR: EncodedMotor,
+    DevTypes.TECHNIC_MEDIUM_ANGULAR_MOTOR: EncodedMotor,
+    DevTypes.TECHNIC_LARGE_ANGULAR_MOTOR: EncodedMotor,
+    # DevTypes.TECHNIC_MEDIUM_HUB_GEST_SENSOR: 54
+    # DevTypes.REMOTE_CONTROL_BUTTON: 55
+    # DevTypes.REMOTE_CONTROL_RSSI: 56
+    # DevTypes.TECHNIC_MEDIUM_HUB_ACCELEROMETER: 57
+    # DevTypes.TECHNIC_MEDIUM_HUB_GYRO_SENSOR: 58
+    DevTypes.TECHNIC_MEDIUM_HUB_TILT_SENSOR: TiltSensor,
+    # DevTypes.TECHNIC_MEDIUM_HUB_TEMPERATURE_SENSOR: 60
+    DevTypes.TECHNIC_COLOR_SENSOR: VisionSensor,
+    DevTypes.TECHNIC_DISTANCE_SENSOR: VisionSensor,
+    # DevTypes.TECHNIC_FORCE_SENSOR: 63  # Spike Prime
+    # DevTypes.MARIO_ACCELEROMETER: 71
+    # DevTypes.MARIO_BARCODE_SENSOR: 73
+    # DevTypes.MARIO_PANTS_SENSOR: 74
+    DevTypes.TECHNIC_MEDIUM_ANGULAR_MOTOR_GREY: EncodedMotor,
+    DevTypes.TECHNIC_LARGE_ANGULAR_MOTOR_GREY: EncodedMotor,
 }
 
 
@@ -132,12 +156,15 @@ class Hub(object):
 
         assert msg.event in (msg.EVENT_ATTACHED, msg.EVENT_ATTACHED_VIRTUAL)
         port = msg.port
-        dev_type = ushort(msg.payload, 0)
+        dev_type_raw = ushort(msg.payload, 0)
+        dev_type = DevTypes(dev_type_raw) if DevTypes.has_value(dev_type_raw) else DevTypes.UNKNOWN
 
         if dev_type in PERIPHERAL_TYPES:
             self.peripherals[port] = PERIPHERAL_TYPES[dev_type](self, port)
         else:
-            log.warning("Have not dedicated class for peripheral type %x on port %x", dev_type, port)
+            log.warning("Have no dedicated class for peripheral type 0x%x (%s) on port 0x%x",
+                        dev_type_raw, DevTypes(dev_type).name, port)
+
             self.peripherals[port] = Peripheral(self, port)
 
         log.info("Attached peripheral: %s", self.peripherals[msg.port])

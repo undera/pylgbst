@@ -1,4 +1,5 @@
 import logging
+from enum import Enum, unique
 from struct import pack, unpack
 
 from pylgbst.utilities import str2hex
@@ -243,6 +244,59 @@ class MsgHubAlert(DownstreamMsg, UpstreamMsg):
                and msg.operation == self.UPSTREAM_UPDATE and msg.atype == self.atype
 
 
+@unique
+class DevTypes(Enum):
+    # thankfully borrowed some knowledge
+    # from https://github.com/nathankellenicki/node-poweredup/blob/master/src/consts.ts
+
+    UNKNOWN = 0x0000
+
+    # TODO: either dec or hex, not both
+    MOTOR = 0x0001
+    SYSTEM_TRAIN_MOTOR = 0x0002
+    BUTTON = 0x0005
+    LED_LIGHT = 0x0008
+    VOLTAGE = 0x0014
+    CURRENT = 0x0015
+    PIEZO_SOUND = 0x0016
+    RGB_LIGHT = 0x0017
+    TILT_EXTERNAL = 0x0022
+    MOTION_SENSOR = 0x0023
+    VISION_SENSOR = 0x0025
+    MOTOR_EXTERNAL_TACHO = 0x0026
+    MOTOR_INTERNAL_TACHO = 0x0027
+    TILT_INTERNAL = 0x0028
+
+    DUPLO_TRAIN_BASE_MOTOR = 41
+    DUPLO_TRAIN_BASE_SPEAKER = 42
+    DUPLO_TRAIN_BASE_COLOR_SENSOR = 43
+    DUPLO_TRAIN_BASE_SPEEDOMETER = 44
+    TECHNIC_LARGE_LINEAR_MOTOR = 46  # Technic Control+
+    TECHNIC_XLARGE_LINEAR_MOTOR = 47  # Technic Control+
+    TECHNIC_MEDIUM_ANGULAR_MOTOR = 48  # Spike Prime
+    TECHNIC_LARGE_ANGULAR_MOTOR = 49  # Spike Prime
+    TECHNIC_MEDIUM_HUB_GEST_SENSOR = 54
+    REMOTE_CONTROL_BUTTON = 55
+    REMOTE_CONTROL_RSSI = 56
+    TECHNIC_MEDIUM_HUB_ACCELEROMETER = 57
+    TECHNIC_MEDIUM_HUB_GYRO_SENSOR = 58
+    TECHNIC_MEDIUM_HUB_TILT_SENSOR = 59
+    TECHNIC_MEDIUM_HUB_TEMPERATURE_SENSOR = 60
+    TECHNIC_COLOR_SENSOR = 61  # Spike Prime
+    TECHNIC_DISTANCE_SENSOR = 62  # Spike Prime
+    TECHNIC_FORCE_SENSOR = 63  # Spike Prime
+    MARIO_ACCELEROMETER = 71
+    MARIO_BARCODE_SENSOR = 73
+    MARIO_PANTS_SENSOR = 74
+    TECHNIC_MEDIUM_ANGULAR_MOTOR_GREY = 75  # Mindstorms
+    TECHNIC_LARGE_ANGULAR_MOTOR_GREY = 76  # Technic Control+
+
+    @classmethod
+    def has_value(cls, value):
+        values = set(item.value for item in cls.__members__.values())
+        return value in values
+
+
 class MsgHubAttachedIO(UpstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#hub-attached-i-o
@@ -252,22 +306,6 @@ class MsgHubAttachedIO(UpstreamMsg):
     EVENT_DETACHED = 0x00
     EVENT_ATTACHED = 0x01
     EVENT_ATTACHED_VIRTUAL = 0x02
-
-    # DEVICE TYPES
-    DEV_MOTOR = 0x0001
-    DEV_SYSTEM_TRAIN_MOTOR = 0x0002
-    DEV_BUTTON = 0x0005
-    DEV_LED_LIGHT = 0x0008
-    DEV_VOLTAGE = 0x0014
-    DEV_CURRENT = 0x0015
-    DEV_PIEZO_SOUND = 0x0016
-    DEV_RGB_LIGHT = 0x0017
-    DEV_TILT_EXTERNAL = 0x0022
-    DEV_MOTION_SENSOR = 0x0023
-    DEV_VISION_SENSOR = 0x0025
-    DEV_MOTOR_EXTERNAL_TACHO = 0x0026
-    DEV_MOTOR_INTERNAL_TACHO = 0x0027
-    DEV_TILT_INTERNAL = 0x0028
 
     def __init__(self):
         super(MsgHubAttachedIO, self).__init__()
