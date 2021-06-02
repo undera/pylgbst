@@ -64,9 +64,9 @@ class Connection(object):
         return matched
 
 
-@deprecation.deprecated()
 class DebugServer(object):
     """
+    WARNING: deprecated class
     Starts TCP server to be used with DebugServerConnection to speed-up development process
     It holds BLE connection to Move Hub, so no need to re-start it every time
     Usage: DebugServer(BLEConnection().connect()).start()
@@ -157,9 +157,10 @@ class DebugServer(object):
             raise ValueError("Unhandled cmd: %s", cmd)
 
 
-@deprecation.deprecated()
+
 class DebugServerConnection(Connection):
     """
+    WARNING: deprecated class
     Connection type to be used with DebugServer, replaces BLEConnection
     """
 
