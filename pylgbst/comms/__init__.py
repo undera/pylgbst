@@ -10,8 +10,6 @@ from abc import abstractmethod
 from binascii import unhexlify
 from threading import Thread
 
-import deprecation
-
 from pylgbst.messages import MsgHubAction
 from pylgbst.utilities import str2hex
 
