@@ -10,6 +10,8 @@ from abc import abstractmethod
 from binascii import unhexlify
 from threading import Thread
 
+import deprecation
+
 from pylgbst.messages import MsgHubAction
 from pylgbst.utilities import str2hex
 
@@ -62,6 +64,7 @@ class Connection(object):
         return matched
 
 
+@deprecation.deprecated()
 class DebugServer(object):
     """
     Starts TCP server to be used with DebugServerConnection to speed-up development process
@@ -154,6 +157,7 @@ class DebugServer(object):
             raise ValueError("Unhandled cmd: %s", cmd)
 
 
+@deprecation.deprecated()
 class DebugServerConnection(Connection):
     """
     Connection type to be used with DebugServer, replaces BLEConnection

@@ -28,7 +28,6 @@ If you have Vernie assembled, you might run scripts from [`examples/vernie`](exa
 - [RGB LED](docs/LED.md) color change
 - [push button](docs/MoveHub.md#push-button) status subscription
 - [battery voltage and current](docs/VoltageCurrent.md) subscription available
-- permanent Bluetooth connection server for faster debugging
 
 
 ## Usage
@@ -79,7 +78,6 @@ There is an optional parameter for `MoveHub` class constructor, accepting instan
 - use `get_connection_gattlib()` - if you use GattLib Backend on Linux (`gattlib` library prerequisite)
 - use `get_connection_bluepy()` - if you use Bluepy backend on Linux/Raspbian (`bluepy` library prerequisite)
 - use `get_connection_bleak()` - if you use Bleak backend (`bleak` library prerequisite)
-- pass instance of `DebugServerConnection` if you are using [Debug Server](#debug-server) (more details below).
 
 All the functions above have optional arguments to specify adapter name and Hub name (or mac address). Please take a look at functions source code for details.
 
@@ -92,26 +90,11 @@ conn = get_connection_gatt(hub_mac='AA:BB:CC:DD:EE:FF')
 hub = MoveHub(conn)
 ```
 
-
-## Debug Server
-Running debug server opens permanent BLE connection to Hub and listening on TCP port for communications. This avoids the need to re-start Hub all the time. 
-
-There is `DebugServerConnection` class that you can use with it, instead of `BLEConnection`. 
-
-Starting debug server is done like this (you may need to run it with `sudo`, depending on your BLE backend):
-```bash
-python -c "import logging; logging.basicConfig(level=logging.DEBUG); \
-                import pylgbst; pylgbst.start_debug_server()"
-```
-
-Then push green button on MoveHub, so permanent BLE connection will be established.
-
 ## Roadmap & TODO
 
 - validate operations with other Hub types (train, PUP etc)
 - make connections to detect hub by UUID instead of name
 - document all API methods
-- make debug server to re-establish BLE connection on loss
 
 ## Links
 
