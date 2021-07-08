@@ -1,8 +1,13 @@
 from setuptools import setup
+import os
+
+version = "1.2.2"
+tag = os.getenv("TRAVIS_TAG")
+assert not tag or tag==version, "Travis tag has to match version: %r!=%r" % (tag, version)
 
 setup(
     name="pylgbst",
-    version="1.2.0",
+    version=version,
 
     author="Andrey Pokhilko",
     author_email="apc4@ya.ru",
