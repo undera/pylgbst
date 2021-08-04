@@ -155,7 +155,6 @@ class DebugServer(object):
             raise ValueError("Unhandled cmd: %s", cmd)
 
 
-
 class DebugServerConnection(Connection):
     """
     WARNING: deprecated class
