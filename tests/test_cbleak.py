@@ -29,10 +29,10 @@ class BleakDriverTest(unittest.TestCase):
             print('Fake thread initialized')
             while not driver._abort:
                 time.sleep(0.1)
-                if cbleak.req_queue.qsize() != 0:
+                if driver.req_queue.qsize() != 0:
                     print('Received data, sending back')
-                    data = cbleak.req_queue.get()
-                    cbleak.resp_queue.put(data)
+                    data = driver.req_queue.get()
+                    driver.resp_queue.put(data)
 
         driver._bleak_thread = fake_thread
         driver.set_notify_handler(BleakDriverTest.validation_handler)

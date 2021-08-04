@@ -10,10 +10,6 @@ from pylgbst.comms import Connection, MOVE_HUB_HW_UUID_CHAR
 
 log = logging.getLogger('comms-bleak')
 
-# Queues to handle request / responses. Acts as a buffer between API and async BLE driver
-resp_queue = queue.Queue()
-req_queue = queue.Queue()
-
 
 class BleakDriver(object):
     """Driver that provides interface between API and Bleak."""
@@ -30,6 +26,10 @@ class BleakDriver(object):
         self._abort = False
         self._connection_thread = None
         self._processing_thread = None
+
+        # Queues to handle request / responses. Acts as a buffer between API and async BLE driver
+        self.resp_queue = queue.Queue()
+        self.req_queue = queue.Queue()
 
     def set_notify_handler(self, handler):
         """
@@ -58,26 +58,26 @@ class BleakDriver(object):
     async def _bleak_thread(self):
         bleak = BleakConnection()
         await bleak.connect(self.hub_mac, self.hub_name)
-        await bleak.set_notify_handler(self._safe_handler)
+        await bleak.set_notify_handler((self._safe_handler, self.resp_queue))
         # After connecting, need to send any data or hub will drop the connection,
         # below command is Advertising name request update
         await bleak.write_char(MOVE_HUB_HW_UUID_CHAR, bytearray([0x05, 0x00, 0x01, 0x01, 0x05]))
         while not self._abort:
             await asyncio.sleep(0.1)
-            if req_queue.qsize() != 0:
-                data = req_queue.get()
+            if self.req_queue.qsize() != 0:
+                data = self.req_queue.get()
                 await bleak.write(data[0], data[1])
 
         logging.info("Communications thread has exited")
 
     @staticmethod
-    def _safe_handler(handler, data):
+    def _safe_handler(handler, data, resp_queue):
         resp_queue.put((handler, data))
 
     def _processing(self):
         while not self._abort:
-            if resp_queue.qsize() != 0:
-                msg = resp_queue.get()
+            if self.resp_queue.qsize() != 0:
+                msg = self.resp_queue.get()
                 self._handler(msg[0], bytes(msg[1]))
 
             time.sleep(0.01)
@@ -95,7 +95,7 @@ class BleakDriver(object):
         if not self._connection_thread.is_alive() or not self._processing_thread.is_alive():
             raise ConnectionError('Something went wrong, communication threads not functioning.')
 
-        req_queue.put((handle, data))
+        self.req_queue.put((handle, data))
 
     def disconnect(self):
         """
@@ -191,17 +191,18 @@ class BleakConnection(Connection):
         """
         await self._client.write_gatt_char(characteristic_uuid, data)
 
-    async def set_notify_handler(self, handler):
+    async def set_notify_handler(self, inputs):
         """
         Set notification handler.
 
         :param handler: Handle function to be called when receive any data.
         :return: None
         """
+        handler, resp_queue = inputs
 
         def c(handle, data):
             log.debug('Response: {handle} {payload}'.format(handle=handle, payload=[hex(x) for x in data]))
-            handler(handle, data)
+            handler(handle, data, resp_queue)
 
         await self._client.start_notify(MOVE_HUB_HW_UUID_CHAR, c)
 
