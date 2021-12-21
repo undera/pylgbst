@@ -15,6 +15,7 @@ PERIPHERAL_TYPES = {
     DevTypes.MOTOR_INTERNAL_TACHO: EncodedMotor,
     DevTypes.VISION_SENSOR: VisionSensor,
     DevTypes.RGB_LIGHT: LEDRGB,
+    DevTypes.LED_LIGHT: LEDLight,
     DevTypes.TILT_EXTERNAL: TiltSensor,
     DevTypes.TILT_INTERNAL: TiltSensor,
     DevTypes.CURRENT: Current,

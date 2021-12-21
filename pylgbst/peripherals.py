@@ -239,6 +239,27 @@ class LEDRGB(Peripheral):
             return usbyte(msg.payload, 0),
 
 
+class LEDLight(Peripheral):
+    """Support of headlight kit (LPF2-LIGHT)"""
+    MODE_BRIGHTNESS = 0x00
+
+    def __init__(self, parent, port):
+        super(LEDLight, self).__init__(parent, port)
+
+    def set_brightness(self, brightness):
+        if not isinstance(brightness, (int, float)) or brightness > 100 or brightness < 0:
+            raise ValueError("Brightness must be a number between 0 and 100")
+
+        self.set_port_mode(self.MODE_BRIGHTNESS)
+        payload = pack("<B", self.MODE_BRIGHTNESS) + pack("<B", int(brightness))
+
+        msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
+        self._send_output(msg)
+
+    def _decode_port_data(self, msg):
+        return (usbyte(msg.payload, 0),)
+
+
 class Motor(Peripheral):
     SUBCMD_START_POWER = 0x01
     SUBCMD_START_POWER_GROUPED = 0x02
