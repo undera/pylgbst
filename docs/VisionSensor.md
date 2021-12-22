@@ -1,7 +1,6 @@
 ### Color & Distance Sensor
-![](https://img.bricklink.com/ItemImage/PL/6182145.png)
 
- Sensor has number of different modes to subscribe. 
+Sensor has number of different modes to subscribe.
 
 Colors that are detected are part of `COLORS` map (see [LED](#led) section). Only several colors are possible to detect: `BLACK`, `BLUE`, `CYAN`, `YELLOW`, `RED`, `WHITE`. Sensor does its best to detect best color, but only works when sample is very close to sensor.
 
@@ -13,8 +12,8 @@ Simple example of subscribing to sensor:
 from pylgbst.hub import MoveHub, VisionSensor
 import time
 
-def callback(clr, distance):
-    print("Color: %s / Distance: %s" % (clr, distance))
+def callback(color, distance):
+    print("Color: %s / Distance: %s" % (color, distance))
 
 hub = MoveHub()
 
