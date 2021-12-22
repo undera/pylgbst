@@ -754,7 +754,7 @@ class Voltage(Peripheral):
     def voltage(self):
         """Get the measured voltage of the battery
 
-        :return: Return the value in Volts of the VOLTAGE_L mode by default.
+        :return: Return the value (in Volts) of the VOLTAGE_L mode by default.
         :rtype: <float>
         """
         return self.get_sensor_data(self.VOLTAGE_L)[0]
@@ -777,7 +777,7 @@ class Current(Peripheral):
     def current(self):
         """Get the measured current of the battery
 
-        :return: Return the value in mA of the CURRENT_L mode by default.
+        :return: Return the value (in mA) of the CURRENT_L mode by default.
         :rtype: <float>
         """
         return self.get_sensor_data(self.CURRENT_L)[0]
