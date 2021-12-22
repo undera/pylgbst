@@ -683,6 +683,7 @@ class VisionSensor(Peripheral):
 
 
 class Voltage(Peripheral):
+    """Retrieve voltage information from the hub"""
     # sensor says there are "L" and "S" values, but what are they?
     VOLTAGE_L = 0x00
     VOLTAGE_S = 0x01
@@ -696,8 +697,18 @@ class Voltage(Peripheral):
         volts = 9600.0 * val / 3893.0 / 1000.0
         return (volts,)
 
+    @property
+    def voltage(self):
+        """Get the measured voltage of the battery
+
+        :return: Return the value in Volts of the VOLTAGE_L mode by default.
+        :rtype: <float>
+        """
+        return self.get_sensor_data(self.VOLTAGE_L)[0]
+
 
 class Current(Peripheral):
+    """Retrieve current information from the hub"""
     CURRENT_L = 0x00
     CURRENT_S = 0x01
 
@@ -708,6 +719,15 @@ class Current(Peripheral):
         val = ushort(msg.payload, 0)
         milliampers = 2444 * val / 4095.0
         return (milliampers,)
+
+    @property
+    def current(self):
+        """Get the measured current of the battery
+
+        :return: Return the value in mA of the CURRENT_L mode by default.
+        :rtype: <float>
+        """
+        return self.get_sensor_data(self.CURRENT_L)[0]
 
 
 class Button(Peripheral):
