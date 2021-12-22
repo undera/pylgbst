@@ -26,6 +26,7 @@ If you have Vernie assembled, you might run scripts from [`examples/vernie`](exa
 - [vision sensor](docs/VisionSensor.md): several modes to measure distance, color and luminosity
 - [tilt sensor](docs/TiltSensor.md) subscription: 2 axis, 3 axis, bump detect modes
 - [RGB LED](docs/LED.md) color change
+- [Headlight](docs/Headlight.md) brightness change
 - [push button](docs/MoveHub.md#push-button) status subscription
 - [battery voltage and current](docs/VoltageCurrent.md) subscription available
 

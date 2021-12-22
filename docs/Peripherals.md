@@ -4,6 +4,7 @@ Here is the list of peripheral devices that have dedicated classes in library:
 
 - [Motors](Motor.md)
 - [RGB LED](LED.md)
+- [Headlight](Headlight.md)
 - [Tilt Sensor](TiltSensor.md)
 - [Vision Sensor](VisionSensor.md) (color and/or distance)
 - [Voltage and Current Sensors](VoltageCurrent.md)
@@ -19,6 +20,6 @@ It is possible to subscribe with multiple times for the same sensor. Only one, v
 
 Good practice for any program is to unsubscribe from all sensor subscriptions before exiting, especially when used with `DebugServer`.
 
-## Generic Perihpheral 
+## Generic Peripheral
 
 In case you have used a peripheral that is not recognized by the library, it will be detected as generic `Peripheral` class. You still can use subscription and sensor info getting commands for it.  
