@@ -214,6 +214,17 @@ class LEDRGB(Peripheral):
         super().__init__(parent, port)
 
     def set_color(self, color):
+        """Set color of the RGB LED
+
+        :param color: Accept 2 types of data:
+            - RGB: tuple of 3 values,
+            - index: 1 value choosen among 12 color values:
+            `COLOR_BLACK, COLOR_PINK, COLOR_PURPLE, COLOR_BLUE, COLOR_LIGHTBLUE,
+            COLOR_CYAN, COLOR_GREEN, COLOR_YELLOW, COLOR_ORANGE, COLOR_RED,
+            COLOR_WHITE, COLOR_NONE`.
+            Note that `COLOR_BLACK` and `COLOR_NONE` turn LED off.
+        :type color: <tuple> or <int> or constant
+        """
         if isinstance(color, (list, tuple)):
             assert len(color) == 3, "RGB color has to have 3 values"
             self.set_port_mode(self.MODE_RGB)
@@ -231,6 +242,25 @@ class LEDRGB(Peripheral):
         msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
         self._send_output(msg)
 
+    @property
+    def color(self):
+        """Get color as RGB, or index form
+
+        The type of data depends of the data set (RGB: tuple of 3 values,
+        index: tuple of 1 value); default mode is "index".
+        """
+        return self.get_sensor_data(
+            self._port_mode.mode if self._port_mode.mode else self.MODE_INDEX
+        )
+
+    @color.setter
+    def color(self, color):
+        """Set color of the RGB LED
+
+        .. seealso: `set_color`
+        """
+        self.set_color(color)
+
     def _decode_port_data(self, msg):
         if len(msg.payload) == 3:
             return usbyte(msg.payload, 0), usbyte(msg.payload, 1), usbyte(msg.payload, 2),
@@ -246,6 +276,11 @@ class LEDLight(Peripheral):
         super(LEDLight, self).__init__(parent, port)
 
     def set_brightness(self, brightness):
+        """Set brightness of LEDs
+
+        :param brightness: Number between 0 and 100%.
+        :type brightness: <int> or <float>
+        """
         if not isinstance(brightness, (int, float)) or brightness > 100 or brightness < 0:
             raise ValueError("Brightness must be a number between 0 and 100")
 
@@ -254,6 +289,20 @@ class LEDLight(Peripheral):
 
         msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
         self._send_output(msg)
+
+    @property
+    def brightness(self):
+        """Get current brightness value
+        :rtype: <int>
+        """
+        return self.get_sensor_data(LEDLight.MODE_BRIGHTNESS)[0]
+
+    @brightness.setter
+    def brightness(self, value):
+        """Set brightness of LEDs
+        .. seealso:: `set_brightness`
+        """
+        self.set_brightness(value)
 
     def _decode_port_data(self, msg):
         return (usbyte(msg.payload, 0),)
