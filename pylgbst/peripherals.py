@@ -541,7 +541,7 @@ class VisionSensor(Peripheral):
     SET_COLOR = 0x05
     COLOR_RGB = 0x06
     SET_IR_TX = 0x07
-    COLOR_DISTANCE_FLOAT = 0x08  # it's not declared by dev's mode info
+    COLOR_DISTANCE_FLOAT = 0x08
 
     DEBUG = 0x09  # first val is by fact ambient light, second is zero
     CALIBRATE = 0x0a  # gives constant values
