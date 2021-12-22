@@ -136,7 +136,7 @@ class Peripheral:
             log.debug("Dropped port data: %r", msg)
 
     def _decode_port_data(self, msg):
-        """
+        """Return the sensor value according to the current sensor mode
         :rtype: tuple
         """
         log.warning("Unhandled port data: %r", msg)
