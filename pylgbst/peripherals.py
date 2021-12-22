@@ -42,7 +42,7 @@ COLORS = {
 # TODO: support more types of peripherals from
 # https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#io-type-id
 
-class Peripheral(object):
+class Peripheral:
     """
     :type parent: pylgbst.hub.Hub
     :type _incoming_port_data: queue.Queue
@@ -54,7 +54,6 @@ class Peripheral(object):
         :type parent: pylgbst.hub.Hub
         :type port: int
         """
-        super(Peripheral, self).__init__()
         self.virtual_ports = ()
         self.hub = parent
         self.port = port
@@ -212,7 +211,7 @@ class LEDRGB(Peripheral):
     MODE_RGB = 0x01
 
     def __init__(self, parent, port):
-        super(LEDRGB, self).__init__(parent, port)
+        super().__init__(parent, port)
 
     def set_color(self, color):
         if isinstance(color, (list, tuple)):
@@ -457,7 +456,7 @@ class EncodedMotor(Motor):
             return ()
 
     def subscribe(self, callback, mode=SENSOR_ANGLE, granularity=1):
-        super(EncodedMotor, self).subscribe(callback, mode, granularity)
+        super().subscribe(callback, mode, granularity)
 
     def preset_encoder(self, degrees=0, degrees_secondary=None, only_combined=False):
         """
@@ -515,7 +514,7 @@ class TiltSensor(Peripheral):
     }
 
     def subscribe(self, callback, mode=MODE_3AXIS_SIMPLE, granularity=1):
-        super(TiltSensor, self).subscribe(callback, mode, granularity)
+        super().subscribe(callback, mode, granularity)
 
     def _decode_port_data(self, msg):
         data = msg.payload
@@ -568,10 +567,10 @@ class VisionSensor(Peripheral):
     CALIBRATE = 0x0a  # gives constant values
 
     def __init__(self, parent, port):
-        super(VisionSensor, self).__init__(parent, port)
+        super().__init__(parent, port)
 
     def subscribe(self, callback, mode=COLOR_DISTANCE_FLOAT, granularity=1):
-        super(VisionSensor, self).subscribe(callback, mode, granularity)
+        super().subscribe(callback, mode, granularity)
 
     def _decode_port_data(self, msg):
         data = msg.payload
@@ -640,7 +639,7 @@ class Voltage(Peripheral):
     VOLTAGE_S = 0x01
 
     def __init__(self, parent, port):
-        super(Voltage, self).__init__(parent, port)
+        super().__init__(parent, port)
 
     def _decode_port_data(self, msg):
         data = msg.payload
@@ -654,7 +653,7 @@ class Current(Peripheral):
     CURRENT_S = 0x01
 
     def __init__(self, parent, port):
-        super(Current, self).__init__(parent, port)
+        super().__init__(parent, port)
 
     def _decode_port_data(self, msg):
         val = ushort(msg.payload, 0)
@@ -668,7 +667,7 @@ class Button(Peripheral):
     """
 
     def __init__(self, parent):
-        super(Button, self).__init__(parent, 0)  # fake port 0
+        super().__init__(parent, 0)  # fake port 0
         self.hub.add_message_handler(MsgHubProperties, self._props_msg)
 
     def subscribe(self, callback, mode=None, granularity=1):
