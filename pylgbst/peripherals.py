@@ -4,11 +4,19 @@ import traceback
 from struct import pack, unpack
 from threading import Thread
 
-from pylgbst.messages import MsgHubProperties, MsgPortOutput, MsgPortInputFmtSetupSingle, MsgPortInfoRequest, \
-    MsgPortModeInfoRequest, MsgPortInfo, MsgPortModeInfo, MsgPortInputFmtSingle
+from pylgbst.messages import (
+    MsgHubProperties,
+    MsgPortOutput,
+    MsgPortInputFmtSetupSingle,
+    MsgPortInfoRequest,
+    MsgPortModeInfoRequest,
+    MsgPortInfo,
+    MsgPortModeInfo,
+    MsgPortInputFmtSingle,
+)
 from pylgbst.utilities import queue, str2hex, usbyte, ushort, usint
 
-log = logging.getLogger('peripherals')
+log = logging.getLogger("peripherals")
 
 # COLORS
 COLOR_BLACK = 0x00
@@ -21,7 +29,7 @@ COLOR_GREEN = 0x06
 COLOR_YELLOW = 0x07
 COLOR_ORANGE = 0x08
 COLOR_RED = 0x09
-COLOR_WHITE = 0x0a
+COLOR_WHITE = 0x0A
 COLOR_NONE = 0xFF
 COLORS = {
     COLOR_BLACK: "BLACK",
@@ -35,12 +43,13 @@ COLORS = {
     COLOR_ORANGE: "ORANGE",
     COLOR_RED: "RED",
     COLOR_WHITE: "WHITE",
-    COLOR_NONE: "NONE"
+    COLOR_NONE: "NONE",
 }
 
 
 # TODO: support more types of peripherals from
 # https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#io-type-id
+
 
 class Peripheral:
     """
@@ -86,9 +95,11 @@ class Peripheral:
             update_delta = self._port_mode.upd_delta
             log.debug("Implied update delta=%s", update_delta)
 
-        if self._port_mode.mode == mode \
-                and self._port_mode.upd_enabled == send_updates \
-                and self._port_mode.upd_delta == update_delta:
+        if (
+            self._port_mode.mode == mode
+            and self._port_mode.upd_enabled == send_updates
+            and self._port_mode.upd_delta == update_delta
+        ):
             log.debug("Already in target mode, no need to switch")
             return
         else:
@@ -110,7 +121,10 @@ class Peripheral:
 
     def subscribe(self, callback, mode=0x00, granularity=1):
         if self._port_mode.mode != mode and self._subscribers:
-            raise ValueError("Port is in active mode %r, unsubscribe all subscribers first" % self._port_mode)
+            raise ValueError(
+                "Port is in active mode %r, unsubscribe all subscribers first"
+                % self._port_mode
+            )
         self.set_port_mode(mode, True, granularity)
         if callback:
             self._subscribers.add(callback)
@@ -171,23 +185,25 @@ class Peripheral:
                 "synchronizable": mode_info.is_synchronizable(),
                 "can_output": mode_info.is_output(),
                 "can_input": mode_info.is_input(),
-            }
+            },
         }
 
         if mode_info.is_combinable():
-            mode_combinations = self.hub.send(MsgPortInfoRequest(self.port, MsgPortInfoRequest.INFO_MODE_COMBINATIONS))
+            mode_combinations = self.hub.send(
+                MsgPortInfoRequest(self.port, MsgPortInfoRequest.INFO_MODE_COMBINATIONS)
+            )
             assert isinstance(mode_combinations, MsgPortInfo)
             info['possible_mode_combinations'] = mode_combinations.possible_mode_combinations
 
-        info['modes'] = []
+        info["modes"] = []
         for mode in range(256):
-            info['modes'].append(self._describe_mode(mode))
+            info["modes"].append(self._describe_mode(mode))
 
         for mode in mode_info.output_modes:
-            info['output_modes'].append(self._describe_mode(mode))
+            info["output_modes"].append(self._describe_mode(mode))
 
         for mode in mode_info.input_modes:
-            info['input_modes'].append(self._describe_mode(mode))
+            info["input_modes"].append(self._describe_mode(mode))
 
         log.debug("Port info for 0x%x: %s", self.port, info)
         return info
@@ -228,7 +244,12 @@ class LEDRGB(Peripheral):
         if isinstance(color, (list, tuple)):
             assert len(color) == 3, "RGB color has to have 3 values"
             self.set_port_mode(self.MODE_RGB)
-            payload = pack("<B", self.MODE_RGB) + pack("<B", color[0]) + pack("<B", color[1]) + pack("<B", color[2])
+            payload = (
+                pack("<B", self.MODE_RGB)
+                + pack("<B", color[0])
+                + pack("<B", color[1])
+                + pack("<B", color[2])
+            )
         else:
             if color == COLOR_NONE:
                 color = COLOR_BLACK
@@ -263,13 +284,18 @@ class LEDRGB(Peripheral):
 
     def _decode_port_data(self, msg):
         if len(msg.payload) == 3:
-            return usbyte(msg.payload, 0), usbyte(msg.payload, 1), usbyte(msg.payload, 2),
+            return (
+                usbyte(msg.payload, 0),
+                usbyte(msg.payload, 1),
+                usbyte(msg.payload, 2),
+            )
         else:
-            return usbyte(msg.payload, 0),
+            return (usbyte(msg.payload, 0),)
 
 
 class LEDLight(Peripheral):
     """Support of headlight kit (LPF2-LIGHT)"""
+
     MODE_BRIGHTNESS = 0x00
 
     def __init__(self, parent, port):
@@ -281,7 +307,11 @@ class LEDLight(Peripheral):
         :param brightness: Number between 0 and 100%.
         :type brightness: <int> or <float>
         """
-        if not isinstance(brightness, (int, float)) or brightness > 100 or brightness < 0:
+        if (
+            not isinstance(brightness, (int, float))
+            or brightness > 100
+            or brightness < 0
+        ):
             raise ValueError("Brightness must be a number between 0 and 100")
 
         self.set_port_mode(self.MODE_BRIGHTNESS)
@@ -568,8 +598,8 @@ class TiltSensor(Peripheral):
     def _decode_port_data(self, msg):
         data = msg.payload
         if self._port_mode.mode == self.MODE_2AXIS_ANGLE:
-            roll = unpack('<b', data[0:1])[0]
-            pitch = unpack('<b', data[1:2])[0]
+            roll = unpack("<b", data[0:1])[0]
+            pitch = unpack("<b", data[1:2])[0]
             return (roll, pitch)
         elif self._port_mode.mode == self.MODE_3AXIS_SIMPLE:
             state = usbyte(data, 0)
@@ -581,9 +611,9 @@ class TiltSensor(Peripheral):
             bump_count = usint(data, 0)
             return (bump_count,)
         elif self._port_mode.mode == self.MODE_3AXIS_ACCEL:
-            roll = unpack('<b', data[0:1])[0]
-            pitch = unpack('<b', data[1:2])[0]
-            yaw = unpack('<b', data[2:3])[0]  # did I get the order right?
+            roll = unpack("<b", data[0:1])[0]
+            pitch = unpack("<b", data[1:2])[0]
+            yaw = unpack("<b", data[2:3])[0]  # did I get the order right?
             return (roll, pitch, yaw)
         elif self._port_mode.mode == self.MODE_ORIENT_CF:
             state = usbyte(data, 0)
@@ -613,7 +643,7 @@ class VisionSensor(Peripheral):
     COLOR_DISTANCE_FLOAT = 0x08
 
     DEBUG = 0x09  # first val is by fact ambient light, second is zero
-    CALIBRATE = 0x0a  # gives constant values
+    CALIBRATE = 0x0A  # gives constant values
 
     def __init__(self, parent, port):
         super().__init__(parent, port)
@@ -737,6 +767,7 @@ class VisionSensor(Peripheral):
 
 class Voltage(Peripheral):
     """Retrieve voltage information from the hub"""
+
     # sensor says there are "L" and "S" values, but what are they?
     VOLTAGE_L = 0x00
     VOLTAGE_S = 0x01
@@ -762,6 +793,7 @@ class Voltage(Peripheral):
 
 class Current(Peripheral):
     """Retrieve current information from the hub"""
+
     CURRENT_L = 0x00
     CURRENT_S = 0x01
 
@@ -809,5 +841,8 @@ class Button(Peripheral):
         """
         :type msg: MsgHubProperties
         """
-        if msg.property == MsgHubProperties.BUTTON and msg.operation == MsgHubProperties.UPSTREAM_UPDATE:
+        if (
+            msg.property == MsgHubProperties.BUTTON
+            and msg.operation == MsgHubProperties.UPSTREAM_UPDATE
+        ):
             self._notify_subscribers(usbyte(msg.parameters, 0))

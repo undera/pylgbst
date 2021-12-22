@@ -4,7 +4,7 @@ from struct import pack, unpack
 
 from pylgbst.utilities import str2hex
 
-log = logging.getLogger('hub')
+log = logging.getLogger("hub")
 
 
 class Message:
@@ -25,14 +25,15 @@ class Message:
     def __repr__(self):
         # assert self.bytes()  # to trigger any field changes
         data = self.__dict__
-        data = {x: (str2hex(y) if isinstance(y, bytes) else y)
-                for x, y in data.items()
-                if x not in ('hub_id',)}
+        data = {
+            x: (str2hex(y) if isinstance(y, bytes) else y)
+            for x, y in data.items()
+            if x not in ("hub_id",)
+        }
         return self.__class__.__name__ + "(%s)" % data
 
 
 class DownstreamMsg(Message):
-
     def __init__(self):
         super().__init__()
         self.needs_reply = False
@@ -43,7 +44,6 @@ class DownstreamMsg(Message):
 
 
 class UpstreamMsg(Message):
-
     def __init__(self):
         super().__init__()
 
@@ -94,6 +94,7 @@ class MsgHubProperties(DownstreamMsg, UpstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#hub-properties
     """
+
     TYPE = 0x01
 
     ADVERTISE_NAME = 0x01
@@ -142,14 +143,18 @@ class MsgHubProperties(DownstreamMsg, UpstreamMsg):
         return msg
 
     def is_reply(self, msg):
-        return isinstance(msg, MsgHubProperties) \
-               and msg.operation == self.UPSTREAM_UPDATE and msg.property == self.property
+        return (
+            isinstance(msg, MsgHubProperties)
+            and msg.operation == self.UPSTREAM_UPDATE
+            and msg.property == self.property
+        )
 
 
 class MsgHubAction(DownstreamMsg, UpstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#hub-actions
     """
+
     TYPE = 0x02
 
     SWITCH_OFF = 0x01
@@ -194,6 +199,7 @@ class MsgHubAlert(DownstreamMsg, UpstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#hub-alerts
     """
+
     TYPE = 0x03
 
     LOW_VOLTAGE = 0x01
@@ -205,7 +211,7 @@ class MsgHubAlert(DownstreamMsg, UpstreamMsg):
         LOW_VOLTAGE: "low voltage",
         HIGH_CURRENT: "high current",
         LOW_SIGNAL: "low signal",
-        OVER_POWER: "over power"
+        OVER_POWER: "over power",
     }
 
     UPD_ENABLE = 0x01
@@ -240,8 +246,11 @@ class MsgHubAlert(DownstreamMsg, UpstreamMsg):
         return not self.status
 
     def is_reply(self, msg):
-        return isinstance(msg, MsgHubAlert) \
-               and msg.operation == self.UPSTREAM_UPDATE and msg.atype == self.atype
+        return (
+            isinstance(msg, MsgHubAlert)
+            and msg.operation == self.UPSTREAM_UPDATE
+            and msg.atype == self.atype
+        )
 
 
 @unique
@@ -301,6 +310,7 @@ class MsgHubAttachedIO(UpstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#hub-attached-i-o
     """
+
     TYPE = 0x04
 
     EVENT_DETACHED = 0x00
@@ -325,6 +335,7 @@ class MsgGenericError(UpstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#generic-error-messages
     """
+
     TYPE = 0x05
 
     ERR_ACK = 0x01  # ACK
@@ -369,6 +380,7 @@ class MsgPortInfoRequest(DownstreamMsg):
     This is sync request for value on port
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#port-information-request
     """
+
     TYPE = 0x21
 
     INFO_PORT_VALUE = 0x00
@@ -399,6 +411,7 @@ class MsgPortModeInfoRequest(DownstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#port-mode-information-request
     """
+
     TYPE = 0x22
 
     INFO_NAME = 0x00
@@ -436,7 +449,11 @@ class MsgPortModeInfoRequest(DownstreamMsg):
         if not isinstance(msg, MsgPortModeInfo):
             return False
 
-        if msg.port != self.port or msg.mode != self.mode or msg.info_type != self.info_type:
+        if (
+            msg.port != self.port
+            or msg.mode != self.mode
+            or msg.info_type != self.info_type
+        ):
             return False
 
         return True
@@ -446,6 +463,7 @@ class MsgPortInputFmtSetupSingle(DownstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#port-input-format-setup-single
     """
+
     TYPE = 0x41
 
     def __init__(self, port, mode, delta=1, update_enable=0):
@@ -483,6 +501,7 @@ class MsgPortInfo(UpstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#port-information
     """
+
     TYPE = 0x43
 
     CAP_OUTPUT = 0b00000001
@@ -541,6 +560,7 @@ class MsgPortModeInfo(UpstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#port-mode-information
     """
+
     TYPE = 0x44
 
     MAPPING_FLAGS = {
@@ -610,6 +630,7 @@ class MsgPortValueSingle(UpstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#port-value-single
     """
+
     TYPE = 0x45
 
     def __init__(self):
@@ -628,6 +649,7 @@ class MsgPortValueCombined(UpstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#port-value-combinedmode
     """
+
     TYPE = 0x46
 
     def __init__(self):
@@ -646,6 +668,7 @@ class MsgPortInputFmtSingle(UpstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#port-input-format-single
     """
+
     TYPE = 0x47
 
     def __init__(self, port=None, mode=None, upd_enabled=None, upd_delta=None):
@@ -672,6 +695,7 @@ class MsgPortInputFmtCombined(UpstreamMsg):  # TODO
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#port-input-format-combinedmode
     """
+
     TYPE = 0x48
 
     def __init__(self):
@@ -691,6 +715,7 @@ class MsgVirtualPortSetup(DownstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#virtual-port-setup
     """
+
     TYPE = 0x61
 
     CMD_DISCONNECT = 0x00
@@ -711,6 +736,7 @@ class MsgPortOutput(DownstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#port-output-command
     """
+
     TYPE = 0x81
 
     SC_NO_BUFFER = 0b00000001
@@ -736,13 +762,20 @@ class MsgPortOutput(DownstreamMsg):
             startup_completion_flags |= self.SC_FEEDBACK
             self.needs_reply = True
 
-        self.payload = pack("<B", self.port) + pack("<B", startup_completion_flags) \
-                       + pack("<B", self.subcommand) + self.params
+        self.payload = (
+            pack("<B", self.port)
+            + pack("<B", startup_completion_flags)
+            + pack("<B", self.subcommand)
+            + self.params
+        )
         return super().bytes()
 
     def is_reply(self, msg):
-        return isinstance(msg, MsgPortOutputFeedback) and msg.port == self.port \
-               and (msg.is_completed() or self.is_buffered)
+        return (
+            isinstance(msg, MsgPortOutputFeedback)
+            and msg.port == self.port
+            and (msg.is_completed() or self.is_buffered)
+        )
 
 
 class MsgPortOutputFeedback(UpstreamMsg):
