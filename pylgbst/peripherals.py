@@ -661,6 +661,11 @@ class VisionSensor(Peripheral):
             return ()
 
     def set_color(self, color):
+        """Set color of the RGB LED on the sensor
+
+        :param color:
+            Note that `COLOR_BLACK` and `COLOR_NONE` turn LED off.
+        """
         if color == COLOR_NONE:
             color = COLOR_BLACK
 
@@ -680,6 +685,54 @@ class VisionSensor(Peripheral):
 
         msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
         self._send_output(msg)
+
+    @property
+    def color(self):
+        """Get index of the current color
+        :return: See values of `COLORS` module variable.
+        :rtype: <int>
+        """
+        return self.get_sensor_data(self.COLOR_INDEX)[0]
+
+    @property
+    def distance(self):
+        """Get measured distance of an object to the sensor
+        :return: Value from 0 to 10
+        :rtype: <int>
+        """
+        return self.get_sensor_data(self.DISTANCE_INCHES)[0]
+
+    @property
+    def reflected_light(self):
+        """Get measured reflected light
+        :return: Value from 0 to 1.0
+        :rtype: <float>
+        """
+        return self.get_sensor_data(self.DISTANCE_REFLECTED)[0]
+
+    @property
+    def luminosity(self):
+        """Get the current luminosity in lux
+        :return: Value from 0 to 1.0
+        :rtype: <float>
+        """
+        return self.get_sensor_data(self.AMBIENT_LIGHT)[0]
+
+    @property
+    def detection_count(self):
+        """Get the number of object detections ~2 inches in front of sensor
+        :rtype: <int>
+        """
+        return self.get_sensor_data(self.COUNT_2INCH)[0]
+
+    @property
+    def rgb_color(self):
+        """Get detected RGB channels
+
+        :return: Tuple of 3 values for RGB channels
+        :rtype: <tuple <float>, <float>, <float>>
+        """
+        return self.get_sensor_data(self.COLOR_RGB)
 
 
 class Voltage(Peripheral):
