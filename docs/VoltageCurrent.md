@@ -9,6 +9,6 @@ def callback(value):
     print("Voltage: %s" % value)
 
 hub = MoveHub()
-print ("Value L: " % hub.voltage.get_sensor_data(Voltage.VOLTAGE_L))
-print ("Value S: " % hub.voltage.get_sensor_data(Voltage.VOLTAGE_S))
+print ("Value L: %s" % hub.voltage.get_sensor_data(Voltage.VOLTAGE_L))
+print ("Value S: %s" % hub.voltage.get_sensor_data(Voltage.VOLTAGE_S))
 ```

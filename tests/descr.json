@@ -693,7 +693,7 @@
       "can_input": false
     }
   },
-  "ColorDistanceSensor on port 0x1": {
+  "VisionSensor on port 0x1": {
     "mode_count": 11,
     "input_modes": [
       {
