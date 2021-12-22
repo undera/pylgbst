@@ -273,7 +273,7 @@ class LEDLight(Peripheral):
     MODE_BRIGHTNESS = 0x00
 
     def __init__(self, parent, port):
-        super(LEDLight, self).__init__(parent, port)
+        super().__init__(parent, port)
 
     def set_brightness(self, brightness):
         """Set brightness of LEDs

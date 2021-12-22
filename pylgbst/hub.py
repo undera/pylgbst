@@ -47,7 +47,7 @@ PERIPHERAL_TYPES = {
 }
 
 
-class Hub(object):
+class Hub:
     """
     :type connection: pylgbst.comms.Connection
     :type peripherals: dict[int,Peripheral]
@@ -231,7 +231,7 @@ class MoveHub(Hub):
         if connection is None:
             connection = get_connection_auto(hub_name=self.DEFAULT_NAME)
 
-        super(MoveHub, self).__init__(connection)
+        super().__init__(connection)
         self.info = {}
 
         # shorthand fields
@@ -282,7 +282,7 @@ class MoveHub(Hub):
     # noinspection PyTypeChecker
     def _handle_device_change(self, msg):
         with self._comm_lock:
-            super(MoveHub, self)._handle_device_change(msg)
+            super()._handle_device_change(msg)
             if isinstance(msg, MsgHubAttachedIO) and msg.event != MsgHubAttachedIO.EVENT_DETACHED:
                 port = msg.port
                 if port == self.PORT_A:
@@ -335,7 +335,7 @@ class SmartHub(Hub):
         if connection is None:
             connection = get_connection_auto(hub_name=self.DEFAULT_NAME)
 
-        super(SmartHub, self).__init__(connection)
+        super().__init__(connection)
 
         self.button = Button(self)
         self.led = None
@@ -360,7 +360,7 @@ class SmartHub(Hub):
 
     # noinspection PyTypeChecker
     def _handle_device_change(self, msg):
-        super(SmartHub, self)._handle_device_change(msg)
+        super()._handle_device_change(msg)
         if isinstance(msg, MsgHubAttachedIO) and msg.event != MsgHubAttachedIO.EVENT_DETACHED:
             port = msg.port
             if port == self.PORT_A:

@@ -23,7 +23,7 @@ ENABLE_NOTIFICATIONS_VALUE = b'\x01\x00'
 MOVE_HUB_HARDWARE_HANDLE = 0x0E
 
 
-class Connection(object):
+class Connection:
     def connect(self, hub_mac=None):
         pass
 
@@ -62,7 +62,7 @@ class Connection(object):
         return matched
 
 
-class DebugServer(object):
+class DebugServer:
     """
     WARNING: deprecated class
     Starts TCP server to be used with DebugServerConnection to speed-up development process
@@ -162,7 +162,7 @@ class DebugServerConnection(Connection):
     """
 
     def __init__(self, port=9090):
-        super(DebugServerConnection, self).__init__()
+        super().__init__()
         self.notify_handler = None
         self.buf = ""
         self.sock = socket.socket()
