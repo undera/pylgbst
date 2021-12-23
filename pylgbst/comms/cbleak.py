@@ -4,7 +4,7 @@ import queue
 import threading
 import time
 
-from bleak import BleakClient, discover
+import bleak
 
 from pylgbst.comms import Connection, MOVE_HUB_HW_UUID_CHAR
 
@@ -139,7 +139,7 @@ class BleakConnection(Connection):
         """
         log.info("Discovering devices... Press green button on Hub")
         for i in range(0, 30):
-            devices = await discover(timeout=1)
+            devices = await bleak.discover(timeout=1)
             log.debug("Devices: %s", devices)
             for dev in devices:
                 log.debug(dev)
@@ -156,7 +156,7 @@ class BleakConnection(Connection):
         else:
             raise ConnectionError('Device not found.')
 
-        self._client = BleakClient(self._device.address)
+        self._client = bleak.BleakClient(self._device.address)
         status = await self._client.connect()
         log.debug('Connection status: {status}'.format(status=status))
 
