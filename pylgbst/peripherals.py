@@ -760,7 +760,7 @@ class VisionSensor(Peripheral):
         """Get detected RGB channels
 
         :return: Tuple of 3 values for RGB channels
-        :rtype: <tuple <float>, <float>, <float>>
+        :rtype: <tuple <int>, <int>, <int>>
         """
         return self.get_sensor_data(self.COLOR_RGB)
 
