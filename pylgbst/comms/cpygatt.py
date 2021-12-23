@@ -59,5 +59,5 @@ class GattoolConnection(Connection):
 
 class BlueGigaConnection(GattoolConnection):
     def __init__(self):
-        super(BlueGigaConnection, self).__init__()
+        super().__init__()
         self.backend = lambda: pygatt.BGAPIBackend()

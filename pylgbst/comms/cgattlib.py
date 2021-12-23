@@ -18,7 +18,7 @@ class Requester(GATTRequester):
     """
 
     def __init__(self, p_object, *args, **kwargs):
-        super(Requester, self).__init__(p_object, *args, **kwargs)
+        super().__init__(p_object, *args, **kwargs)
         self.notification_sink = None
 
         self._notify_queue = queue.Queue()  # this queue is to minimize time spent in gattlib C code
@@ -57,7 +57,7 @@ class GattLibConnection(Connection):
     """
 
     def __init__(self, bt_iface_name='hci0'):
-        super(GattLibConnection, self).__init__()
+        super().__init__()
         self.requester = None
         self._iface = bt_iface_name
 

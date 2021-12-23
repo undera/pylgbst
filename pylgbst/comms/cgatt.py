@@ -12,7 +12,7 @@ from pylgbst.utilities import str2hex
 log = logging.getLogger('comms-gatt')
 
 
-class CustomDevice(gatt.Device, object):
+class CustomDevice(gatt.Device):
     def __init__(self, mac_address, manager):
         gatt.Device.__init__(self, mac_address=mac_address, manager=manager)
         self._notify_callback = lambda hnd, val: None
@@ -76,7 +76,7 @@ class GattConnection(Connection):
     """
 
     def __init__(self, bt_iface_name='hci0'):
-        super(GattConnection, self).__init__()
+        super().__init__()
         self._device = None
         self._iface = bt_iface_name
         try:

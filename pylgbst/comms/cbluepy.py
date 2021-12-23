@@ -34,10 +34,10 @@ class BluepyDelegate(btle.DefaultDelegate):
         self._handler(cHandle, data)
 
 
-# We need a separate thread to wait for notifications, 
+# We need a separate thread to wait for notifications,
 # but calling peripheral's methods from different threads creates issues,
 # so we will wrap all the calls into a thread
-class BluepyThreadedPeripheral(object):
+class BluepyThreadedPeripheral:
     def __init__(self, addr, addrType, controller):
         self._call_queue = queue.Queue()
         self._addr = addr

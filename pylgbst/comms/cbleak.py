@@ -11,7 +11,7 @@ from pylgbst.comms import Connection, MOVE_HUB_HW_UUID_CHAR
 log = logging.getLogger('comms-bleak')
 
 
-class BleakDriver(object):
+class BleakDriver:
     """Driver that provides interface between API and Bleak."""
 
     def __init__(self, hub_mac=None, hub_name=None):

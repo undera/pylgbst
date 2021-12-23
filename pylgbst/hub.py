@@ -7,7 +7,7 @@ from pylgbst.peripherals import *
 from pylgbst.utilities import queue
 from pylgbst.utilities import str2hex, usbyte, ushort
 
-log = logging.getLogger('hub')
+log = logging.getLogger("hub")
 
 PERIPHERAL_TYPES = {
     DevTypes.MOTOR: Motor,
@@ -20,7 +20,6 @@ PERIPHERAL_TYPES = {
     DevTypes.TILT_INTERNAL: TiltSensor,
     DevTypes.CURRENT: Current,
     DevTypes.VOLTAGE: Voltage,
-
     DevTypes.DUPLO_TRAIN_BASE_MOTOR.value: Motor,
     # DUPLO_TRAIN_BASE_SPEAKER = 42
     DevTypes.DUPLO_TRAIN_BASE_COLOR_SENSOR: VisionSensor,
@@ -47,11 +46,12 @@ PERIPHERAL_TYPES = {
 }
 
 
-class Hub(object):
+class Hub:
     """
     :type connection: pylgbst.comms.Connection
     :type peripherals: dict[int,Peripheral]
     """
+
     HUB_HARDWARE_HANDLE = 0x0E
 
     def __init__(self, connection=None):
@@ -231,7 +231,7 @@ class MoveHub(Hub):
         if connection is None:
             connection = get_connection_auto(hub_name=self.DEFAULT_NAME)
 
-        super(MoveHub, self).__init__(connection)
+        super().__init__(connection)
         self.info = {}
 
         # shorthand fields
@@ -282,8 +282,11 @@ class MoveHub(Hub):
     # noinspection PyTypeChecker
     def _handle_device_change(self, msg):
         with self._comm_lock:
-            super(MoveHub, self)._handle_device_change(msg)
-            if isinstance(msg, MsgHubAttachedIO) and msg.event != MsgHubAttachedIO.EVENT_DETACHED:
+            super()._handle_device_change(msg)
+            if (
+                isinstance(msg, MsgHubAttachedIO)
+                and msg.event != MsgHubAttachedIO.EVENT_DETACHED
+            ):
                 port = msg.port
                 if port == self.PORT_A:
                     self.motor_A = self.peripherals[port]
@@ -306,8 +309,11 @@ class MoveHub(Hub):
 
                 if type(self.peripherals[port]) == VisionSensor:
                     self.vision_sensor = self.peripherals[port]
-                elif type(self.peripherals[port]) == EncodedMotor \
-                        and port not in (self.PORT_A, self.PORT_B, self.PORT_AB):
+                elif type(self.peripherals[port]) == EncodedMotor and port not in (
+                    self.PORT_A,
+                    self.PORT_B,
+                    self.PORT_AB,
+                ):
                     self.motor_external = self.peripherals[port]
 
 
@@ -322,7 +328,7 @@ class SmartHub(Hub):
     :type port_B: Peripheral
     """
 
-    DEFAULT_NAME = 'Smart Hub'
+    DEFAULT_NAME = "Smart Hub"
 
     # PORTS
     PORT_A = 0x00
@@ -335,7 +341,7 @@ class SmartHub(Hub):
         if connection is None:
             connection = get_connection_auto(hub_name=self.DEFAULT_NAME)
 
-        super(SmartHub, self).__init__(connection)
+        super().__init__(connection)
 
         self.button = Button(self)
         self.led = None
@@ -360,8 +366,11 @@ class SmartHub(Hub):
 
     # noinspection PyTypeChecker
     def _handle_device_change(self, msg):
-        super(SmartHub, self)._handle_device_change(msg)
-        if isinstance(msg, MsgHubAttachedIO) and msg.event != MsgHubAttachedIO.EVENT_DETACHED:
+        super()._handle_device_change(msg)
+        if (
+            isinstance(msg, MsgHubAttachedIO)
+            and msg.event != MsgHubAttachedIO.EVENT_DETACHED
+        ):
             port = msg.port
             if port == self.PORT_A:
                 self.port_A = self.peripherals[port]

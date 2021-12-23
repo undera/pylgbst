@@ -4,11 +4,19 @@ import traceback
 from struct import pack, unpack
 from threading import Thread
 
-from pylgbst.messages import MsgHubProperties, MsgPortOutput, MsgPortInputFmtSetupSingle, MsgPortInfoRequest, \
-    MsgPortModeInfoRequest, MsgPortInfo, MsgPortModeInfo, MsgPortInputFmtSingle
+from pylgbst.messages import (
+    MsgHubProperties,
+    MsgPortOutput,
+    MsgPortInputFmtSetupSingle,
+    MsgPortInfoRequest,
+    MsgPortModeInfoRequest,
+    MsgPortInfo,
+    MsgPortModeInfo,
+    MsgPortInputFmtSingle,
+)
 from pylgbst.utilities import queue, str2hex, usbyte, ushort, usint
 
-log = logging.getLogger('peripherals')
+log = logging.getLogger("peripherals")
 
 # COLORS
 COLOR_BLACK = 0x00
@@ -21,7 +29,7 @@ COLOR_GREEN = 0x06
 COLOR_YELLOW = 0x07
 COLOR_ORANGE = 0x08
 COLOR_RED = 0x09
-COLOR_WHITE = 0x0a
+COLOR_WHITE = 0x0A
 COLOR_NONE = 0xFF
 COLORS = {
     COLOR_BLACK: "BLACK",
@@ -35,14 +43,15 @@ COLORS = {
     COLOR_ORANGE: "ORANGE",
     COLOR_RED: "RED",
     COLOR_WHITE: "WHITE",
-    COLOR_NONE: "NONE"
+    COLOR_NONE: "NONE",
 }
 
 
 # TODO: support more types of peripherals from
 # https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#io-type-id
 
-class Peripheral(object):
+
+class Peripheral:
     """
     :type parent: pylgbst.hub.Hub
     :type _incoming_port_data: queue.Queue
@@ -54,7 +63,6 @@ class Peripheral(object):
         :type parent: pylgbst.hub.Hub
         :type port: int
         """
-        super(Peripheral, self).__init__()
         self.virtual_ports = ()
         self.hub = parent
         self.port = port
@@ -87,9 +95,11 @@ class Peripheral(object):
             update_delta = self._port_mode.upd_delta
             log.debug("Implied update delta=%s", update_delta)
 
-        if self._port_mode.mode == mode \
-                and self._port_mode.upd_enabled == send_updates \
-                and self._port_mode.upd_delta == update_delta:
+        if (
+            self._port_mode.mode == mode
+            and self._port_mode.upd_enabled == send_updates
+            and self._port_mode.upd_delta == update_delta
+        ):
             log.debug("Already in target mode, no need to switch")
             return
         else:
@@ -111,7 +121,10 @@ class Peripheral(object):
 
     def subscribe(self, callback, mode=0x00, granularity=1):
         if self._port_mode.mode != mode and self._subscribers:
-            raise ValueError("Port is in active mode %r, unsubscribe all subscribers first" % self._port_mode)
+            raise ValueError(
+                "Port is in active mode %r, unsubscribe all subscribers first"
+                % self._port_mode
+            )
         self.set_port_mode(mode, True, granularity)
         if callback:
             self._subscribers.add(callback)
@@ -137,7 +150,7 @@ class Peripheral(object):
             log.debug("Dropped port data: %r", msg)
 
     def _decode_port_data(self, msg):
-        """
+        """Return the sensor value according to the current sensor mode
         :rtype: tuple
         """
         log.warning("Unhandled port data: %r", msg)
@@ -172,23 +185,25 @@ class Peripheral(object):
                 "synchronizable": mode_info.is_synchronizable(),
                 "can_output": mode_info.is_output(),
                 "can_input": mode_info.is_input(),
-            }
+            },
         }
 
         if mode_info.is_combinable():
-            mode_combinations = self.hub.send(MsgPortInfoRequest(self.port, MsgPortInfoRequest.INFO_MODE_COMBINATIONS))
+            mode_combinations = self.hub.send(
+                MsgPortInfoRequest(self.port, MsgPortInfoRequest.INFO_MODE_COMBINATIONS)
+            )
             assert isinstance(mode_combinations, MsgPortInfo)
             info['possible_mode_combinations'] = mode_combinations.possible_mode_combinations
 
-        info['modes'] = []
+        info["modes"] = []
         for mode in range(256):
-            info['modes'].append(self._describe_mode(mode))
+            info["modes"].append(self._describe_mode(mode))
 
         for mode in mode_info.output_modes:
-            info['output_modes'].append(self._describe_mode(mode))
+            info["output_modes"].append(self._describe_mode(mode))
 
         for mode in mode_info.input_modes:
-            info['input_modes'].append(self._describe_mode(mode))
+            info["input_modes"].append(self._describe_mode(mode))
 
         log.debug("Port info for 0x%x: %s", self.port, info)
         return info
@@ -212,13 +227,29 @@ class LEDRGB(Peripheral):
     MODE_RGB = 0x01
 
     def __init__(self, parent, port):
-        super(LEDRGB, self).__init__(parent, port)
+        super().__init__(parent, port)
 
     def set_color(self, color):
+        """Set color of the RGB LED
+
+        :param color: Accept 2 types of data:
+            - RGB: tuple of 3 values,
+            - index: 1 value choosen among 12 color values:
+            `COLOR_BLACK, COLOR_PINK, COLOR_PURPLE, COLOR_BLUE, COLOR_LIGHTBLUE,
+            COLOR_CYAN, COLOR_GREEN, COLOR_YELLOW, COLOR_ORANGE, COLOR_RED,
+            COLOR_WHITE, COLOR_NONE`.
+            Note that `COLOR_BLACK` and `COLOR_NONE` turn LED off.
+        :type color: <tuple> or <int> or constant
+        """
         if isinstance(color, (list, tuple)):
             assert len(color) == 3, "RGB color has to have 3 values"
             self.set_port_mode(self.MODE_RGB)
-            payload = pack("<B", self.MODE_RGB) + pack("<B", color[0]) + pack("<B", color[1]) + pack("<B", color[2])
+            payload = (
+                pack("<B", self.MODE_RGB)
+                + pack("<B", color[0])
+                + pack("<B", color[1])
+                + pack("<B", color[2])
+            )
         else:
             if color == COLOR_NONE:
                 color = COLOR_BLACK
@@ -232,22 +263,55 @@ class LEDRGB(Peripheral):
         msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
         self._send_output(msg)
 
+    @property
+    def color(self):
+        """Get color as RGB, or index form
+
+        The type of data depends of the data set (RGB: tuple of 3 values,
+        index: tuple of 1 value); default mode is "index".
+        """
+        return self.get_sensor_data(
+            self._port_mode.mode if self._port_mode.mode else self.MODE_INDEX
+        )
+
+    @color.setter
+    def color(self, color):
+        """Set color of the RGB LED
+
+        .. seealso: `set_color`
+        """
+        self.set_color(color)
+
     def _decode_port_data(self, msg):
         if len(msg.payload) == 3:
-            return usbyte(msg.payload, 0), usbyte(msg.payload, 1), usbyte(msg.payload, 2),
+            return (
+                usbyte(msg.payload, 0),
+                usbyte(msg.payload, 1),
+                usbyte(msg.payload, 2),
+            )
         else:
-            return usbyte(msg.payload, 0),
+            return (usbyte(msg.payload, 0),)
 
 
 class LEDLight(Peripheral):
     """Support of headlight kit (LPF2-LIGHT)"""
+
     MODE_BRIGHTNESS = 0x00
 
     def __init__(self, parent, port):
-        super(LEDLight, self).__init__(parent, port)
+        super().__init__(parent, port)
 
     def set_brightness(self, brightness):
-        if not isinstance(brightness, (int, float)) or brightness > 100 or brightness < 0:
+        """Set brightness of LEDs
+
+        :param brightness: Number between 0 and 100%.
+        :type brightness: <int> or <float>
+        """
+        if (
+            not isinstance(brightness, (int, float))
+            or brightness > 100
+            or brightness < 0
+        ):
             raise ValueError("Brightness must be a number between 0 and 100")
 
         self.set_port_mode(self.MODE_BRIGHTNESS)
@@ -255,6 +319,20 @@ class LEDLight(Peripheral):
 
         msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
         self._send_output(msg)
+
+    @property
+    def brightness(self):
+        """Get current brightness value
+        :rtype: <int>
+        """
+        return self.get_sensor_data(LEDLight.MODE_BRIGHTNESS)[0]
+
+    @brightness.setter
+    def brightness(self, value):
+        """Set brightness of LEDs
+        .. seealso:: `set_brightness`
+        """
+        self.set_brightness(value)
 
     def _decode_port_data(self, msg):
         return (usbyte(msg.payload, 0),)
@@ -457,7 +535,7 @@ class EncodedMotor(Motor):
             return ()
 
     def subscribe(self, callback, mode=SENSOR_ANGLE, granularity=1):
-        super(EncodedMotor, self).subscribe(callback, mode, granularity)
+        super().subscribe(callback, mode, granularity)
 
     def preset_encoder(self, degrees=0, degrees_secondary=None, only_combined=False):
         """
@@ -515,13 +593,13 @@ class TiltSensor(Peripheral):
     }
 
     def subscribe(self, callback, mode=MODE_3AXIS_SIMPLE, granularity=1):
-        super(TiltSensor, self).subscribe(callback, mode, granularity)
+        super().subscribe(callback, mode, granularity)
 
     def _decode_port_data(self, msg):
         data = msg.payload
         if self._port_mode.mode == self.MODE_2AXIS_ANGLE:
-            roll = unpack('<b', data[0:1])[0]
-            pitch = unpack('<b', data[1:2])[0]
+            roll = unpack("<b", data[0:1])[0]
+            pitch = unpack("<b", data[1:2])[0]
             return (roll, pitch)
         elif self._port_mode.mode == self.MODE_3AXIS_SIMPLE:
             state = usbyte(data, 0)
@@ -533,9 +611,9 @@ class TiltSensor(Peripheral):
             bump_count = usint(data, 0)
             return (bump_count,)
         elif self._port_mode.mode == self.MODE_3AXIS_ACCEL:
-            roll = unpack('<b', data[0:1])[0]
-            pitch = unpack('<b', data[1:2])[0]
-            yaw = unpack('<b', data[2:3])[0]  # did I get the order right?
+            roll = unpack("<b", data[0:1])[0]
+            pitch = unpack("<b", data[1:2])[0]
+            yaw = unpack("<b", data[2:3])[0]  # did I get the order right?
             return (roll, pitch, yaw)
         elif self._port_mode.mode == self.MODE_ORIENT_CF:
             state = usbyte(data, 0)
@@ -565,13 +643,13 @@ class VisionSensor(Peripheral):
     COLOR_DISTANCE_FLOAT = 0x08
 
     DEBUG = 0x09  # first val is by fact ambient light, second is zero
-    CALIBRATE = 0x0a  # gives constant values
+    CALIBRATE = 0x0A  # gives constant values
 
     def __init__(self, parent, port):
-        super(VisionSensor, self).__init__(parent, port)
+        super().__init__(parent, port)
 
     def subscribe(self, callback, mode=COLOR_DISTANCE_FLOAT, granularity=1):
-        super(VisionSensor, self).subscribe(callback, mode, granularity)
+        super().subscribe(callback, mode, granularity)
 
     def _decode_port_data(self, msg):
         data = msg.payload
@@ -613,6 +691,11 @@ class VisionSensor(Peripheral):
             return ()
 
     def set_color(self, color):
+        """Set color of the RGB LED on the sensor
+
+        :param color:
+            Note that `COLOR_BLACK` and `COLOR_NONE` turn LED off.
+        """
         if color == COLOR_NONE:
             color = COLOR_BLACK
 
@@ -633,14 +716,64 @@ class VisionSensor(Peripheral):
         msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
         self._send_output(msg)
 
+    @property
+    def color(self):
+        """Get index of the current color
+        :return: See values of `COLORS` module variable.
+        :rtype: <int>
+        """
+        return self.get_sensor_data(self.COLOR_INDEX)[0]
+
+    @property
+    def distance(self):
+        """Get measured distance of an object to the sensor
+        :return: Value from 0 to 10
+        :rtype: <int>
+        """
+        return self.get_sensor_data(self.DISTANCE_INCHES)[0]
+
+    @property
+    def reflected_light(self):
+        """Get measured reflected light
+        :return: Value from 0 to 1.0
+        :rtype: <float>
+        """
+        return self.get_sensor_data(self.DISTANCE_REFLECTED)[0]
+
+    @property
+    def luminosity(self):
+        """Get the current luminosity in lux
+        :return: Value from 0 to 1.0
+        :rtype: <float>
+        """
+        return self.get_sensor_data(self.AMBIENT_LIGHT)[0]
+
+    @property
+    def detection_count(self):
+        """Get the number of object detections ~2 inches in front of sensor
+        :rtype: <int>
+        """
+        return self.get_sensor_data(self.COUNT_2INCH)[0]
+
+    @property
+    def rgb_color(self):
+        """Get detected RGB channels
+
+        :return: Tuple of 3 values for RGB channels
+        :rtype: <tuple <int>, <int>, <int>>
+        """
+        return self.get_sensor_data(self.COLOR_RGB)
+
 
 class Voltage(Peripheral):
+    """Retrieve voltage information from the hub"""
+
     # sensor says there are "L" and "S" values, but what are they?
     VOLTAGE_L = 0x00
     VOLTAGE_S = 0x01
 
     def __init__(self, parent, port):
-        super(Voltage, self).__init__(parent, port)
+        super().__init__(parent, port)
 
     def _decode_port_data(self, msg):
         data = msg.payload
@@ -648,18 +781,38 @@ class Voltage(Peripheral):
         volts = 9600.0 * val / 3893.0 / 1000.0
         return (volts,)
 
+    @property
+    def voltage(self):
+        """Get the measured voltage of the battery
+
+        :return: Return the value (in Volts) of the VOLTAGE_L mode by default.
+        :rtype: <float>
+        """
+        return self.get_sensor_data(self.VOLTAGE_L)[0]
+
 
 class Current(Peripheral):
+    """Retrieve current information from the hub"""
+
     CURRENT_L = 0x00
     CURRENT_S = 0x01
 
     def __init__(self, parent, port):
-        super(Current, self).__init__(parent, port)
+        super().__init__(parent, port)
 
     def _decode_port_data(self, msg):
         val = ushort(msg.payload, 0)
         milliampers = 2444 * val / 4095.0
         return (milliampers,)
+
+    @property
+    def current(self):
+        """Get the measured current of the battery
+
+        :return: Return the value (in mA) of the CURRENT_L mode by default.
+        :rtype: <float>
+        """
+        return self.get_sensor_data(self.CURRENT_L)[0]
 
 
 class Button(Peripheral):
@@ -668,7 +821,7 @@ class Button(Peripheral):
     """
 
     def __init__(self, parent):
-        super(Button, self).__init__(parent, 0)  # fake port 0
+        super().__init__(parent, 0)  # fake port 0
         self.hub.add_message_handler(MsgHubProperties, self._props_msg)
 
     def subscribe(self, callback, mode=None, granularity=1):
@@ -688,5 +841,8 @@ class Button(Peripheral):
         """
         :type msg: MsgHubProperties
         """
-        if msg.property == MsgHubProperties.BUTTON and msg.operation == MsgHubProperties.UPSTREAM_UPDATE:
+        if (
+            msg.property == MsgHubProperties.BUTTON
+            and msg.operation == MsgHubProperties.UPSTREAM_UPDATE
+        ):
             self._notify_subscribers(usbyte(msg.parameters, 0))
