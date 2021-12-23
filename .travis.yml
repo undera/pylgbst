@@ -1,4 +1,4 @@
-#dist: focal
+dist: focal
 branches:
   only:
     - master
