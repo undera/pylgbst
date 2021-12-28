@@ -8,6 +8,7 @@ Here is the list of peripheral devices that have dedicated classes in library:
 - [Tilt Sensor](TiltSensor.md)
 - [Vision Sensor](VisionSensor.md) (color and/or distance)
 - [Voltage and Current Sensors](VoltageCurrent.md)
+- [Temperature](Temperature.md)
 
 In case device you attached to Hub is of an unknown type, it will get generic `Peripheral` class, allowing direct low-level interactions.
 
