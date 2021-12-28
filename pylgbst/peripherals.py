@@ -841,3 +841,24 @@ class Button(Peripheral):
             and msg.operation == MsgHubProperties.UPSTREAM_UPDATE
         ):
             self._notify_subscribers(usbyte(msg.parameters, 0))
+
+
+class Temperature(Peripheral):
+    """Get battery temperature from the hub"""
+    MODE_TEMP = 0
+
+    def __init__(self, parent, port):
+        super().__init__(parent, port)
+
+    def _decode_port_data(self, msg):
+        # Fix temp with a small offset to get the real temperature
+        magic_offset = 2.1
+        return ((unpack("<h", msg.payload)[0] / 10) - magic_offset,)
+
+    @property
+    def temperature(self):
+        """Get the measured temperature in C°
+
+        :rtype: <float>
+        """
+        return self.get_sensor_data(self.MODE_TEMP)[0]
