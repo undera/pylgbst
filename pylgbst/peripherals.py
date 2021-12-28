@@ -263,26 +263,18 @@ class LEDRGB(Peripheral):
         msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, payload)
         self._send_output(msg)
 
-    @property
-    def color(self):
-        """Get color as RGB, or index form
-
-        The type of data depends of the data set (RGB: tuple of 3 values,
-        index: tuple of 1 value); default mode is "index".
-        """
-        return self.get_sensor_data(
-            self._port_mode.mode if self._port_mode.mode else self.MODE_INDEX
-        )
-
-    @color.setter
-    def color(self, color):
-        """Set color of the RGB LED
-
-        .. seealso: `set_color`
-        """
-        self.set_color(color)
-
     def _decode_port_data(self, msg):
+        """Decode data emitted by the hub
+
+        .. note:: Experimental function for now; Most of the time, hardware
+            shouldn't return any data. Also note that its seems not possible
+            to retrieve the current RGB color on the peripheral.
+            See issue #111.
+
+        :param msg: Message retrieved from the hub.
+        :return: Tuple of length dependent of the current mode (1 for MODE_INDEX,
+            3 for MODE_RGB)
+        """
         if len(msg.payload) == 3:
             return (
                 usbyte(msg.payload, 0),
@@ -291,6 +283,9 @@ class LEDRGB(Peripheral):
             )
         else:
             return (usbyte(msg.payload, 0),)
+
+    # Set color of the RGB LED (no getter)
+    color = property(fset=set_color)
 
 
 class LEDLight(Peripheral):
