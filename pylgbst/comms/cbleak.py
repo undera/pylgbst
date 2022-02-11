@@ -1,12 +1,13 @@
 import asyncio
 import logging
+import platform
 import queue
 import threading
 import time
 
 import bleak
 
-from pylgbst.comms import Connection, MOVE_HUB_HW_UUID_CHAR
+from pylgbst.comms import Connection, MOVE_HUB_HW_UUID_CHAR, MOVE_HUB_HW_UUID_SERV
 
 log = logging.getLogger('comms-bleak')
 
@@ -57,7 +58,11 @@ class BleakDriver:
 
     async def _bleak_thread(self):
         bleak = BleakConnection()
-        await bleak.connect(self.hub_mac, self.hub_name)
+        # For MacOS 12+ the service_uuids kwarg is required for scanning
+        kwargs = None
+        if "Darwin" == platform.system() and int(platform.mac_ver()[0].split(".")[0]) >= 12:
+            kwargs = {"service_uuids" : [MOVE_HUB_HW_UUID_SERV]}
+        await bleak.connect(self.hub_mac, self.hub_name, **kwargs)
         await bleak.set_notify_handler((self._safe_handler, self.resp_queue))
         # After connecting, need to send any data or hub will drop the connection,
         # below command is Advertising name request update
@@ -129,17 +134,20 @@ class BleakConnection(Connection):
         logging.getLogger('bleak.backends.dotnet.client').setLevel(logging.WARNING)
         logging.getLogger('bleak.backends.bluezdbus.client').setLevel(logging.WARNING)
 
-    async def connect(self, hub_mac=None, hub_name=None):
+    async def connect(self, hub_mac=None, hub_name=None, **kwargs):
         """
         Connect to device.
 
-        :param hub_mac: Optional Lego HUB MAC to connect to.
+        :param hub_mac: Optional Lego HUB MAC to connect to
+        :param hub_name: Optional Lego Hub name to connect to
+        :kwargs: Optional parameters for bleak.discover
+
         :raises ConnectionError: When cannot connect to given MAC or name matching fails.
         :return: None
         """
         log.info("Discovering devices... Press green button on Hub")
         for i in range(0, 30):
-            devices = await bleak.discover(timeout=1)
+            devices = await bleak.discover(timeout=1, **kwargs)
             log.debug("Devices: %s", devices)
             for dev in devices:
                 log.debug(dev)
@@ -156,7 +164,7 @@ class BleakConnection(Connection):
         else:
             raise ConnectionError('Device not found.')
 
-        self._client = bleak.BleakClient(self._device.address)
+        self._client = bleak.BleakClient(self._device)
         status = await self._client.connect()
         log.debug('Connection status: {status}'.format(status=status))
 
