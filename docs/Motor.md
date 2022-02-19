@@ -6,11 +6,14 @@
 
 Methods to activate motors are:
 - `start_speed(speed_primary, speed_secondary)` - enables motor with specified speed forever 
-- `timed(time, speed_primary, speed_secondary)` - enables motor with specified speed for `time` seconds, float values accepted
-- `angled(angle, speed_primary, speed_secondary)` - makes motor to rotate to specified angle, `angle` value is integer degrees, can be negative and can be more than 360 for several rounds
+- `timed(time, speed_primary, speed_secondary, wait_complete)` - enables motor with specified speed for `time` seconds, float values accepted
+- `angled(angle, speed_primary, speed_secondary, wait_complete)` - makes motor to rotate to specified angle, `angle` value is integer degrees, can be negative and can be more than 360 for several rounds
 - `stop()` - stops motor
+- `wait_complete()` - waits until the latest operation sent to the motor is complete
 
-Parameter `speed_secondary` is used when it is motor group of `motor_AB` running together. By default, `speed_secondary` equals `speed_primary`. 
+Parameter `speed_secondary` is used when it is motor group of `motor_AB` running together. By default, `speed_secondary` equals `speed_primary`.
+
+Parameter `wait_complete` controls whether a given call blocks execution until the operation has completed. By default, `wait_complete` is `True`.
 
 Speed values range is `-1.0` to `1.0`, float values. _Note: In group angled mode, total rotation angle is distributed across 2 motors according to motor speeds ratio, see official doc [here](https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#tacho-math)._
 
@@ -35,6 +38,17 @@ time.sleep(2)
 hub.motor_external.stop()
 ```
 
+Example usage of non-blocking calls to rotate 2 independent motors in parallel:
+```python
+from pylgbst.hub import MoveHub
+
+hub = MoveHub()
+
+hub.motor_A.timed(0.5, 0.8, wait_complete=False)
+hub.motor_B.angled(90, 0.8, wait_complete=False)
+hub.motor_A.wait_complete()
+hub.motor_B.wait_complete()
+```
 
 ## Motor Rotation Sensors
 

@@ -745,11 +745,12 @@ class MsgPortOutput(DownstreamMsg):
     WRITE_DIRECT = 0x50
     WRITE_DIRECT_MODE_DATA = 0x51
 
-    def __init__(self, port, subcommand, params):
+    def __init__(self, port, subcommand, params, wait_complete=True):
         super().__init__()
         self.port = port
         self.is_buffered = False
         self.do_feedback = True
+        self.wait_complete = wait_complete
         self.subcommand = subcommand
         self.params = params
 
@@ -774,7 +775,9 @@ class MsgPortOutput(DownstreamMsg):
         return (
             isinstance(msg, MsgPortOutputFeedback)
             and msg.port == self.port
-            and (msg.is_completed() or self.is_buffered)
+            and (not self.wait_complete and msg.is_in_progress() or
+                 msg.is_completed() or
+                 self.is_buffered)
         )
 
 

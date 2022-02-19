@@ -1,5 +1,6 @@
 import logging
 import math
+import time
 import traceback
 from struct import pack, unpack
 from threading import Thread
@@ -347,6 +348,10 @@ class Motor(Peripheral):
     END_STATE_HOLD = 126
     END_STATE_FLOAT = 0
 
+    def __init__(self, parent, port):
+        super().__init__(parent, port)
+        self.cmd_in_progress = False
+
     def _speed_abs(self, relative):
         if relative == Motor.END_STATE_BRAKE or relative == Motor.END_STATE_HOLD:
             # special value for BRAKE
@@ -369,11 +374,11 @@ class Motor(Peripheral):
         msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, params)
         self._send_output(msg)
 
-    def _send_cmd(self, subcmd, params):
+    def _send_cmd(self, subcmd, params, wait_complete=True):
         if self.virtual_ports:
             subcmd += 1  # de-facto rule
 
-        msg = MsgPortOutput(self.port, subcmd, params)
+        msg = MsgPortOutput(self.port, subcmd, params, wait_complete)
         self._send_output(msg)
 
     def start_power(self, power_primary=1.0, power_secondary=None):
@@ -436,7 +441,7 @@ class Motor(Peripheral):
         self._send_cmd(self.SUBCMD_START_SPEED, params)
 
     def timed(self, seconds, speed_primary=1.0, speed_secondary=None, max_power=1.0, end_state=END_STATE_BRAKE,
-              use_profile=0b11):
+              use_profile=0b11, wait_complete=True):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startspeedfortime-time-speed-maxpower-endstate-useprofile-0x09
         """
@@ -453,7 +458,11 @@ class Motor(Peripheral):
         params += pack("<B", end_state)
         params += pack("<B", use_profile)
 
-        self._send_cmd(self.SUBCMD_START_SPEED_FOR_TIME, params)
+        self._send_cmd(self.SUBCMD_START_SPEED_FOR_TIME, params, wait_complete)
+
+    def wait_complete(self):
+        while self.cmd_in_progress:
+            time.sleep(0.01)
 
 
 class EncodedMotor(Motor):
@@ -469,7 +478,7 @@ class EncodedMotor(Motor):
     SENSOR_TEST = 0x03  # exists, but neither input nor output mode
 
     def angled(self, degrees, speed_primary=1.0, speed_secondary=None, max_power=1.0, end_state=Motor.END_STATE_BRAKE,
-               use_profile=0b11):
+               use_profile=0b11, wait_complete=True):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startspeedfordegrees-degrees-speed-maxpower-endstate-useprofile-0x0b
         :type degrees: int
@@ -494,10 +503,10 @@ class EncodedMotor(Motor):
         params += pack("<B", end_state)
         params += pack("<B", use_profile)
 
-        self._send_cmd(self.SUBCMD_START_SPEED_FOR_DEGREES, params)
+        self._send_cmd(self.SUBCMD_START_SPEED_FOR_DEGREES, params, wait_complete)
 
     def goto_position(self, degrees_primary, degrees_secondary=None, speed=1.0, max_power=1.0,
-                      end_state=Motor.END_STATE_BRAKE, use_profile=0b11):
+                      end_state=Motor.END_STATE_BRAKE, use_profile=0b11, wait_complete=True):
         """
         https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-gotoabsoluteposition-abspos-speed-maxpower-endstate-useprofile-0x0d
         """
@@ -515,7 +524,7 @@ class EncodedMotor(Motor):
         params += pack("<B", end_state)
         params += pack("<B", use_profile)
 
-        self._send_cmd(self.SUBCMD_GOTO_ABSOLUTE_POSITION, params)
+        self._send_cmd(self.SUBCMD_GOTO_ABSOLUTE_POSITION, params, wait_complete)
 
     def _decode_port_data(self, msg):
         data = msg.payload

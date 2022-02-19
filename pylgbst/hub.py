@@ -62,6 +62,7 @@ class Hub:
         self._sync_lock = threading.Lock()
 
         self.add_message_handler(MsgHubAttachedIO, self._handle_device_change)
+        self.add_message_handler(MsgPortOutputFeedback, self._handle_output_feedback)
         self.add_message_handler(MsgPortValueSingle, self._handle_sensor_data)
         self.add_message_handler(MsgPortValueCombined, self._handle_sensor_data)
         self.add_message_handler(MsgGenericError, self._handle_error)
@@ -177,6 +178,20 @@ class Hub:
             del hw_revision, sw_revision
         elif msg.event == msg.EVENT_ATTACHED_VIRTUAL:
             self.peripherals[port].virtual_ports = (usbyte(msg.payload, 2), usbyte(msg.payload, 3))
+
+    def _handle_output_feedback(self, msg):
+        assert isinstance(msg, MsgPortOutputFeedback)
+        if msg.port not in self.peripherals:
+            log.warning("Notification on port with no device: %s", msg.port)
+            return
+
+        device = self.peripherals[msg.port]
+        if hasattr(device, "cmd_in_progress"):
+            device.cmd_in_progress = msg.is_in_progress()
+            if device.cmd_in_progress:
+                log.debug("Command on device %s in progress.", device)
+            else:
+                log.debug("Command on device %s completed.", device)
 
     def _handle_sensor_data(self, msg):
         assert isinstance(msg, (MsgPortValueSingle, MsgPortValueCombined))
