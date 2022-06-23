@@ -59,7 +59,7 @@ class BleakDriver:
     async def _bleak_thread(self):
         bleak = BleakConnection()
         # For MacOS 12+ the service_uuids kwarg is required for scanning
-        kwargs = None
+        kwargs = {}
         if "Darwin" == platform.system() and int(platform.mac_ver()[0].split(".")[0]) >= 12:
             kwargs = {"service_uuids" : [MOVE_HUB_HW_UUID_SERV]}
         await bleak.connect(self.hub_mac, self.hub_name, **kwargs)
