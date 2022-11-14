@@ -12,7 +12,7 @@ from pylgbst.comms import Connection, MOVE_HUB_HW_UUID_CHAR, MOVE_HUB_HW_UUID_SE
 log = logging.getLogger('comms-bleak')
 
 
-class BleakDriver:
+class BleakDriver(Connection):
     """Driver that provides interface between API and Bleak."""
 
     def __init__(self, hub_mac=None, hub_name=None):
@@ -61,7 +61,7 @@ class BleakDriver:
         # For MacOS 12+ the service_uuids kwarg is required for scanning
         kwargs = {}
         if "Darwin" == platform.system() and int(platform.mac_ver()[0].split(".")[0]) >= 12:
-            kwargs = {"service_uuids" : [MOVE_HUB_HW_UUID_SERV]}
+            kwargs = {"service_uuids": [MOVE_HUB_HW_UUID_SERV]}
         await bleak.connect(self.hub_mac, self.hub_name, **kwargs)
         await bleak.set_notify_handler((self._safe_handler, self.resp_queue))
         # After connecting, need to send any data or hub will drop the connection,

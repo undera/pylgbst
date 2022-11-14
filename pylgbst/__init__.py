@@ -1,7 +1,7 @@
 import logging
 import traceback
 
-from pylgbst.comms import DebugServer
+from pylgbst.comms import DebugServer, Connection
 
 log = logging.getLogger('pylgbst')
 
@@ -51,7 +51,7 @@ def get_connection_bleak(controller='hci0', hub_mac=None, hub_name=None):
     return BleakDriver(hub_mac, hub_name)
 
 
-def get_connection_auto(controller='hci0', hub_mac=None, hub_name=None):
+def get_connection_auto(controller='hci0', hub_mac=None, hub_name=None) -> Connection:
     fns = [
         get_connection_bleak,
         get_connection_bluepy,
