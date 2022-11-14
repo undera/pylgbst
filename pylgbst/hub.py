@@ -1,5 +1,4 @@
 import threading
-import time
 
 from pylgbst import get_connection_auto
 from pylgbst.messages import *
@@ -11,6 +10,7 @@ log = logging.getLogger("hub")
 
 PERIPHERAL_TYPES = {
     DevTypes.MOTOR: Motor,
+    DevTypes.SYSTEM_TRAIN_MOTOR: EncodedMotor,
     DevTypes.MOTOR_EXTERNAL_TACHO: EncodedMotor,
     DevTypes.MOTOR_INTERNAL_TACHO: EncodedMotor,
     DevTypes.VISION_SENSOR: VisionSensor,
@@ -169,7 +169,7 @@ class Hub:
 
             self.peripherals[port] = Peripheral(self, port)
 
-        log.info("Attached peripheral: %s", self.peripherals[msg.port])
+        log.info("Attached peripheral %s => %s", DevTypes(dev_type).name, self.peripherals[msg.port])
 
         if msg.event == msg.EVENT_ATTACHED:
             hw_revision = reversed([usbyte(msg.payload, x) for x in range(2, 6)])
@@ -299,8 +299,8 @@ class MoveHub(Hub):
         with self._comm_lock:
             super()._handle_device_change(msg)
             if (
-                isinstance(msg, MsgHubAttachedIO)
-                and msg.event != MsgHubAttachedIO.EVENT_DETACHED
+                    isinstance(msg, MsgHubAttachedIO)
+                    and msg.event != MsgHubAttachedIO.EVENT_DETACHED
             ):
                 port = msg.port
                 if port == self.PORT_A:
@@ -325,9 +325,9 @@ class MoveHub(Hub):
                 if type(self.peripherals[port]) == VisionSensor:
                     self.vision_sensor = self.peripherals[port]
                 elif type(self.peripherals[port]) == EncodedMotor and port not in (
-                    self.PORT_A,
-                    self.PORT_B,
-                    self.PORT_AB,
+                        self.PORT_A,
+                        self.PORT_B,
+                        self.PORT_AB,
                 ):
                     self.motor_external = self.peripherals[port]
 
@@ -370,6 +370,7 @@ class SmartHub(Hub):
     def _wait_for_devices(self, get_dev_set=None):
         if not get_dev_set:
             get_dev_set = lambda: (self.led, self.current, self.voltage)
+
         for num in range(0, 100):
             devices = get_dev_set()
             if all(devices):
@@ -383,8 +384,8 @@ class SmartHub(Hub):
     def _handle_device_change(self, msg):
         super()._handle_device_change(msg)
         if (
-            isinstance(msg, MsgHubAttachedIO)
-            and msg.event != MsgHubAttachedIO.EVENT_DETACHED
+                isinstance(msg, MsgHubAttachedIO)
+                and msg.event != MsgHubAttachedIO.EVENT_DETACHED
         ):
             port = msg.port
             if port == self.PORT_A:
