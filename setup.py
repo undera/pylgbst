@@ -10,7 +10,7 @@ setup(
     version=version,
 
     author="Andrey Pokhilko",
-    author_email="apc4@ya.ru",
+    author_email="andrei.pokhilko@gmail.com",
     license="MIT",
     description="Python library to interact with LEGO PoweredUp devices (Lego BOOST etc.)",
     url='https://github.com/undera/pylgbst',
