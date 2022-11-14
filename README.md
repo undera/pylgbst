@@ -37,7 +37,7 @@ _Please note that this library requires one of Bluetooth backend libraries to be
 
 Install library like this: 
 ```bash
-pip install -U pylgbst
+pip install -U pylgbst[bleak]
 ```
 
 Then instantiate MoveHub object and start invoking its methods. Following is example to just print peripherals detected on Hub:  
@@ -62,6 +62,8 @@ You have following options to install as Bluetooth backend (some of them might r
 - `pip install gatt` - [gatt](https://github.com/getsenic/gatt-python) lib, supports Linux, does not work on Windows
 - `pip install gattlib` - [gattlib](https://bitbucket.org/OscarAcena/pygattlib) - supports Linux, does not work on Windows, requires `sudo`
 - `pip install bluepy` - [bluepy](https://github.com/IanHarvey/bluepy) lib, supports Linux, including Raspbian, which allows connection to the hub from the Raspberry PI
+
+Note that `pip install -U pylgbst[bleak]` command indicates which backend to install. So you can install it backend-less, or with some backend from above.
 
 Windows users may first turn to the Bleak backend, which should support any internal or external Bluetooth adapter recognized by the OS. The Windows version of pygatt will only work with a [Bluegiga BLED112 Bluetooth Smart Dongle](https://www.silabs.com/products/wireless/bluetooth/bluetooth-low-energy-modules/bled112-bluetooth-smart-dongle).
 
