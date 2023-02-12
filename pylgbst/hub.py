@@ -10,7 +10,7 @@ log = logging.getLogger("hub")
 
 PERIPHERAL_TYPES = {
     DevTypes.MOTOR: Motor,
-    DevTypes.SYSTEM_TRAIN_MOTOR: EncodedMotor,
+    DevTypes.SYSTEM_TRAIN_MOTOR: TrainMotor,
     DevTypes.MOTOR_EXTERNAL_TACHO: EncodedMotor,
     DevTypes.MOTOR_INTERNAL_TACHO: EncodedMotor,
     DevTypes.VISION_SENSOR: VisionSensor,

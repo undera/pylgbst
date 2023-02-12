@@ -17,6 +17,8 @@ If you have Vernie assembled, you might run scripts from [`examples/vernie`](exa
 [![Color Pin Bot](http://img.youtube.com/vi/QY6nRYXQw_U/0.jpg)](https://youtu.be/QY6nRYXQw_U)
 [![BB-8 Joystick](http://img.youtube.com/vi/55kE9I4IQSU/0.jpg)](https://youtu.be/55kE9I4IQSU)
 
+[Dancing Vernie](https://youtu.be/Cp2gDleP8_M)
+
 
 ## Features
 
