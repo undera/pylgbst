@@ -152,8 +152,11 @@ class Hub:
 
     def _handle_device_change(self, msg):
         if msg.event == MsgHubAttachedIO.EVENT_DETACHED:
-            log.debug("Detaching peripheral: %s", self.peripherals[msg.port])
-            self.peripherals.pop(msg.port)
+            if msg.port not in self.peripherals:
+                log.warning("Strange: got detach command for port %s that is not attached, will ignore it", msg.port)
+            else:
+                log.info("Detaching peripheral: %s", self.peripherals[msg.port])
+                self.peripherals.pop(msg.port)
             return
 
         assert msg.event in (msg.EVENT_ATTACHED, msg.EVENT_ATTACHED_VIRTUAL)
@@ -219,8 +222,8 @@ class MoveHub(Hub):
     :type current: Current
     :type voltage: Voltage
     :type vision_sensor: pylgbst.peripherals.VisionSensor
-    :type port_C: Peripheral
-    :type port_D: Peripheral
+    :type port_C: pylgbst.peripherals.Peripheral
+    :type port_D: pylgbst.peripherals.Peripheral
     :type motor_A: EncodedMotor
     :type motor_B: EncodedMotor
     :type motor_AB: EncodedMotor
@@ -335,6 +338,7 @@ class MoveHub(Hub):
 class SmartHub(Hub):
     """
     Class implementing Lego SmartHub specifics
+    https://www.lego.com/en-pt/product/hub-88009
 
     :type led: LEDRGB
     :type current: Current
