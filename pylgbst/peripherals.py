@@ -333,23 +333,36 @@ class LEDLight(Peripheral):
         return usbyte(msg.payload, 0),
 
 
-class TrainMotor(Peripheral):
+class BaseMotor(Peripheral):
+    def _write_direct_mode(self, subcmd, params):
+        params = pack("<B", subcmd) + params
+        msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, params)
+        self._send_output(msg)
+
+
+class TrainMotor(BaseMotor):
     """
     Simple DC motor (Lego 88011).
     See https://github.com/undera/pylgbst/issues/129
     """
-    SUBCMD_0 = 0x00
+    SUBCMD_POWER = 0x00
     SUBCMD_1 = 0x01
 
-    def run(self, param=1.0, wait_complete=True):
-        params = b""
-        params += pack("<b", abs_scaled_100(param))
+    def power(self, param=1.0):
+        """
+        Power the motor, with value -1.0..1.0
+        """
+        if param != 255:  # A special value of 255 would do a hard-stop.
+            param = abs_scaled_100(param)
 
-        msg = MsgPortOutput(self.port, self.SUBCMD_0, params, wait_complete)
-        self._send_output(msg)
+        params = pack("<i", param)
+        self._write_direct_mode(self.SUBCMD_POWER, params)
+
+    def stop(self):
+        self.power(255)
 
 
-class Motor(Peripheral):
+class Motor(BaseMotor):
     SUBCMD_START_POWER = 0x01
     SUBCMD_START_POWER_GROUPED = 0x02
     SUBCMD_SET_ACC_TIME = 0x05
@@ -374,11 +387,6 @@ class Motor(Peripheral):
             return relative
 
         return abs_scaled_100(relative)
-
-    def _write_direct_mode(self, subcmd, params):
-        params = pack("<B", subcmd) + params
-        msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, params)
-        self._send_output(msg)
 
     def _send_cmd(self, subcmd, params, wait_complete=True):
         if self.virtual_ports:
