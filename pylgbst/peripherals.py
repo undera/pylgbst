@@ -346,20 +346,17 @@ class TrainMotor(BaseMotor):
     See https://github.com/undera/pylgbst/issues/129
     """
     SUBCMD_POWER = 0x00
-    SUBCMD_1 = 0x01
+    SUBCMD_1 = 0x01  # TODO: figure out what it does. We know it's not sensor mode.
 
     def power(self, param=1.0):
         """
         Power the motor, with value -1.0..1.0
         """
-        if param != 255:  # A special value of 255 would do a hard-stop.
-            param = abs_scaled_100(param)
-
-        params = pack("<i", param)
+        params = pack("<b", param)
         self._write_direct_mode(self.SUBCMD_POWER, params)
 
     def stop(self):
-        self.power(255)
+        self.power(0)
 
 
 class Motor(BaseMotor):

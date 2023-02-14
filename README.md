@@ -108,3 +108,4 @@ hub = MoveHub(conn)
 - https://github.com/nathankellenicki/node-poweredup - JavaScript version of library
 - https://github.com/spezifisch/sphero-python/blob/master/BB8joyDrive.py - example with another approach to bluetooth libs
 - https://github.com/virantha/bricknil - for the lovers of async Python, alternative implementation of library to control PoweredUp Hubs
+- https://virantha.github.io/bricknil/lego_api/lego.html - good infor about modes by BrickNil
