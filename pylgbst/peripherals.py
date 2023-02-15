@@ -1,5 +1,4 @@
 import logging
-import math
 import time
 import traceback
 from struct import pack, unpack
@@ -15,7 +14,7 @@ from pylgbst.messages import (
     MsgPortModeInfo,
     MsgPortInputFmtSingle,
 )
-from pylgbst.utilities import queue, str2hex, usbyte, ushort, usint
+from pylgbst.utilities import queue, str2hex, usbyte, ushort, usint, abs_scaled_100
 
 log = logging.getLogger("peripherals")
 
@@ -75,8 +74,8 @@ class Peripheral:
 
         self._incoming_port_data = queue.Queue(1)  # limit 1 means we drop data if we can't handle it fast enough
         thr = Thread(target=self._queue_reader)
-        thr.setDaemon(True)
-        thr.setName("Port data queue: %s" % self)
+        thr.daemon = True
+        thr.name = "Port data queue: %s" % self
         thr.start()
 
     def __repr__(self):
@@ -97,9 +96,9 @@ class Peripheral:
             log.debug("Implied update delta=%s", update_delta)
 
         if (
-            self._port_mode.mode == mode
-            and self._port_mode.upd_enabled == send_updates
-            and self._port_mode.upd_delta == update_delta
+                self._port_mode.mode == mode
+                and self._port_mode.upd_enabled == send_updates
+                and self._port_mode.upd_delta == update_delta
         ):
             log.debug("Already in target mode, no need to switch")
             return
@@ -246,10 +245,10 @@ class LEDRGB(Peripheral):
             assert len(color) == 3, "RGB color has to have 3 values"
             self.set_port_mode(self.MODE_RGB)
             payload = (
-                pack("<B", self.MODE_RGB)
-                + pack("<B", color[0])
-                + pack("<B", color[1])
-                + pack("<B", color[2])
+                    pack("<B", self.MODE_RGB)
+                    + pack("<B", color[0])
+                    + pack("<B", color[1])
+                    + pack("<B", color[2])
             )
         else:
             if color == COLOR_NONE:
@@ -283,7 +282,7 @@ class LEDRGB(Peripheral):
                 usbyte(msg.payload, 2),
             )
         else:
-            return (usbyte(msg.payload, 0),)
+            return usbyte(msg.payload, 0),
 
     # Set color of the RGB LED (no getter)
     color = property(fset=set_color)
@@ -304,9 +303,9 @@ class LEDLight(Peripheral):
         :type brightness: <int> or <float>
         """
         if (
-            not isinstance(brightness, (int, float))
-            or brightness > 100
-            or brightness < 0
+                not isinstance(brightness, (int, float))
+                or brightness > 100
+                or brightness < 0
         ):
             raise ValueError("Brightness must be a number between 0 and 100")
 
@@ -331,10 +330,36 @@ class LEDLight(Peripheral):
         self.set_brightness(value)
 
     def _decode_port_data(self, msg):
-        return (usbyte(msg.payload, 0),)
+        return usbyte(msg.payload, 0),
 
 
-class Motor(Peripheral):
+class BaseMotor(Peripheral):
+    def _write_direct_mode(self, subcmd, params):
+        params = pack("<B", subcmd) + params
+        msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, params)
+        self._send_output(msg)
+
+
+class TrainMotor(BaseMotor):
+    """
+    Simple DC motor (Lego 88011).
+    See https://github.com/undera/pylgbst/issues/129
+    """
+    SUBCMD_POWER = 0x00
+    SUBCMD_1 = 0x01  # TODO: figure out what it does. We know it's not sensor mode.
+
+    def power(self, param=1.0):
+        """
+        Power the motor, with value -1.0..1.0
+        """
+        params = pack("<b", abs_scaled_100(param))
+        self._write_direct_mode(self.SUBCMD_POWER, params)
+
+    def stop(self):
+        self.power(0)
+
+
+class Motor(BaseMotor):
     SUBCMD_START_POWER = 0x01
     SUBCMD_START_POWER_GROUPED = 0x02
     SUBCMD_SET_ACC_TIME = 0x05
@@ -352,27 +377,13 @@ class Motor(Peripheral):
         super().__init__(parent, port)
         self.cmd_in_progress = False
 
-    def _speed_abs(self, relative):
+    def _speed_abs(self, relative):  # FIXME: it's not "speed", rather it's a "power"
         if relative == Motor.END_STATE_BRAKE or relative == Motor.END_STATE_HOLD:
             # special value for BRAKE
             # https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#output-sub-command-startpower-power
             return relative
 
-        if relative < -1:
-            log.warning("Speed cannot be less than -1")
-            relative = -1
-
-        if relative > 1:
-            log.warning("Speed cannot be more than 1")
-            relative = 1
-
-        absolute = math.ceil(relative * 100)  # scale of 100 is proven by experiments
-        return int(absolute)
-
-    def _write_direct_mode(self, subcmd, params):
-        params = pack("<B", subcmd) + params
-        msg = MsgPortOutput(self.port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, params)
-        self._send_output(msg)
+        return abs_scaled_100(relative)
 
     def _send_cmd(self, subcmd, params, wait_complete=True):
         if self.virtual_ports:
@@ -530,10 +541,10 @@ class EncodedMotor(Motor):
         data = msg.payload
         if self._port_mode.mode == self.SENSOR_ANGLE:
             angle = unpack("<l", data[0:4])[0]
-            return (angle,)
+            return angle,
         elif self._port_mode.mode == self.SENSOR_SPEED:
             speed = unpack("<b", data[0:1])[0]
-            return (speed,)
+            return speed,
         else:
             log.debug("Got motor sensor data while in unexpected mode: %r", self._port_mode)
             return ()
@@ -604,29 +615,29 @@ class TiltSensor(Peripheral):
         if self._port_mode.mode == self.MODE_2AXIS_ANGLE:
             roll = unpack("<b", data[0:1])[0]
             pitch = unpack("<b", data[1:2])[0]
-            return (roll, pitch)
+            return roll, pitch
         elif self._port_mode.mode == self.MODE_3AXIS_SIMPLE:
             state = usbyte(data, 0)
-            return (state,)
+            return state,
         elif self._port_mode.mode == self.MODE_2AXIS_SIMPLE:
             state = usbyte(data, 0)
-            return (state,)
+            return state,
         elif self._port_mode.mode == self.MODE_IMPACT_COUNT:
             bump_count = usint(data, 0)
-            return (bump_count,)
+            return bump_count,
         elif self._port_mode.mode == self.MODE_3AXIS_ACCEL:
             roll = unpack("<b", data[0:1])[0]
             pitch = unpack("<b", data[1:2])[0]
             yaw = unpack("<b", data[2:3])[0]  # did I get the order right?
-            return (roll, pitch, yaw)
+            return roll, pitch, yaw
         elif self._port_mode.mode == self.MODE_ORIENT_CF:
             state = usbyte(data, 0)
-            return (state,)
+            return state,
         elif self._port_mode.mode == self.MODE_IMPACT_CF:
             state = usbyte(data, 0)
-            return (state,)
+            return state,
         elif self._port_mode.mode == self.MODE_CALIBRATION:
-            return (usbyte(data, 0), usbyte(data, 1), usbyte(data, 2))
+            return usbyte(data, 0), usbyte(data, 1), usbyte(data, 2)
         else:
             log.debug("Got tilt sensor data while in unexpected mode: %r", self._port_mode)
             return ()
@@ -659,35 +670,35 @@ class VisionSensor(Peripheral):
         data = msg.payload
         if self._port_mode.mode == self.COLOR_INDEX:
             color = usbyte(data, 0)
-            return (color,)
+            return color,
         elif self._port_mode.mode == self.COLOR_DISTANCE_FLOAT:
             color = usbyte(data, 0)
             val = usbyte(data, 1)
             partial = usbyte(data, 3)
             if partial:
                 val += 1.0 / partial
-            return (color, float(val))
+            return color, float(val)
         elif self._port_mode.mode == self.DISTANCE_INCHES:
             val = usbyte(data, 0)
-            return (val,)
+            return val,
         elif self._port_mode.mode == self.DISTANCE_REFLECTED:
             val = usbyte(data, 0) / 100.0
-            return (val,)
+            return val,
         elif self._port_mode.mode == self.AMBIENT_LIGHT:
             val = usbyte(data, 0) / 100.0
-            return (val,)
+            return val,
         elif self._port_mode.mode == self.COUNT_2INCH:
             count = usint(data, 0)
-            return (count,)
+            return count,
         elif self._port_mode.mode == self.COLOR_RGB:
             val1 = int(255 * ushort(data, 0) / 1023.0)
             val2 = int(255 * ushort(data, 2) / 1023.0)
             val3 = int(255 * ushort(data, 4) / 1023.0)
-            return (val1, val2, val3)
+            return val1, val2, val3
         elif self._port_mode.mode == self.DEBUG:
             val1 = 10 * ushort(data, 0) / 1023.0
             val2 = 10 * ushort(data, 2) / 1023.0
-            return (val1, val2)
+            return val1, val2
         elif self._port_mode.mode == self.CALIBRATE:
             return [ushort(data, x * 2) for x in range(8)]
         else:
@@ -783,7 +794,7 @@ class Voltage(Peripheral):
         data = msg.payload
         val = ushort(data, 0)
         volts = 9600.0 * val / 3893.0 / 1000.0
-        return (volts,)
+        return volts,
 
     @property
     def voltage(self):
@@ -807,7 +818,7 @@ class Current(Peripheral):
     def _decode_port_data(self, msg):
         val = ushort(msg.payload, 0)
         milliampers = 2444 * val / 4095.0
-        return (milliampers,)
+        return milliampers,
 
     @property
     def current(self):
@@ -846,8 +857,8 @@ class Button(Peripheral):
         :type msg: MsgHubProperties
         """
         if (
-            msg.property == MsgHubProperties.BUTTON
-            and msg.operation == MsgHubProperties.UPSTREAM_UPDATE
+                msg.property == MsgHubProperties.BUTTON
+                and msg.operation == MsgHubProperties.UPSTREAM_UPDATE
         ):
             self._notify_subscribers(usbyte(msg.parameters, 0))
 
@@ -862,7 +873,7 @@ class Temperature(Peripheral):
     def _decode_port_data(self, msg):
         # Fix temp with a small offset to get the real temperature
         magic_offset = 2.1
-        return ((unpack("<h", msg.payload)[0] / 10) - magic_offset,)
+        return (unpack("<h", msg.payload)[0] / 10) - magic_offset,
 
     @property
     def temperature(self):
