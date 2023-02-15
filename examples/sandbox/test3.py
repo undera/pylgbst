@@ -46,15 +46,15 @@ def demo_motor(hub):
     motor = hub.port_A
     print(motor)
 
-    motor.run()
+    motor.power()
     sleep(3)
     motor.stop()
     sleep(1)
-    motor.run(duty=0.2)
+    motor.power(param=0.2)
     sleep(3)
     motor.stop()
     sleep(1)
-    motor.run(duty=-0.2)
+    motor.power(param=-0.2)
     sleep(3)
     motor.stop()
     sleep(3)

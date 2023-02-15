@@ -356,9 +356,9 @@ class SmartHub(Hub):
     PORT_CURRENT = 0x3B
     PORT_VOLTAGE = 0x3C
 
-    def __init__(self, connection=None):
+    def __init__(self, connection=None, address=None):
         if connection is None:
-            connection = get_connection_auto(hub_name=self.DEFAULT_NAME)
+            connection = get_connection_auto(hub_mac=address, hub_name=self.DEFAULT_NAME)
 
         super().__init__(connection)
 
