@@ -863,6 +863,39 @@ class Button(Peripheral):
             self._notify_subscribers(usbyte(msg.parameters, 0))
 
 
+class RemoteButton(Peripheral):
+    """
+    It's not really a peripheral, we use MSG_DEVICE_INFO commands to interact with it
+    """
+
+    def __init__(self, parent, port):
+        super().__init__(parent, port)  # fake port 0
+        self.hub.add_message_handler(MsgHubProperties, self._props_msg)
+
+    def subscribe(self, callback, mode=None, granularity=1):
+        self.hub.send(MsgHubProperties(MsgHubProperties.BUTTON, MsgHubProperties.UPD_ENABLE))
+
+        if callback:
+            self._subscribers.add(callback)
+
+    def unsubscribe(self, callback=None):
+        if callback in self._subscribers:
+            self._subscribers.remove(callback)
+
+        if not self._subscribers:
+            self.hub.send(MsgHubProperties(MsgHubProperties.BUTTON, MsgHubProperties.UPD_DISABLE))
+
+    def _props_msg(self, msg):
+        """
+        :type msg: MsgHubProperties
+        """
+        if (
+                msg.property == MsgHubProperties.BUTTON
+                and msg.operation == MsgHubProperties.UPSTREAM_UPDATE
+        ):
+            self._notify_subscribers(usbyte(msg.parameters, 0))
+
+
 class Temperature(Peripheral):
     """Get battery temperature from the hub"""
     MODE_TEMP = 0

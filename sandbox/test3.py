@@ -74,17 +74,17 @@ DEMO_CHOICES = {
     # 'motor_sensors': demo_motor_sensors,
 }
 
-hub_1 = SmartHub(address='86996732-BF5A-433D-AACE-5611D4C6271D')   # test hub
+# hub_1 = SmartHub(address='86996732-BF5A-433D-AACE-5611D4C6271D')   # test hub
 # hub_2 = SmartHub(address='F88800F6-F39B-4FD2-AFAA-DD93DA2945A6')   # train hub
 
-# device_1 = SmartHub(address='2BC6E69B-5F56-4716-AD8C-7B4D5CBC7BF8')  # test handset
+device_1 = SmartHub(address='2BC6E69B-5F56-4716-AD8C-7B4D5CBC7BF8')  # test handset
 
 # for device in device_1.peripherals:
 #     print("device:   ", device)
 
 try:
     demo = DEMO_CHOICES['motor']
-    demo(hub_1)
+    # demo(hub_1)
     # demo(hub_2)
 
     # demo = DEMO_CHOICES['led_colors']
@@ -97,5 +97,6 @@ try:
 
 finally:
     pass
-    hub_1.disconnect()
+    # hub_1.disconnect()
     # hub_2.disconnect()
+    device_1.disconnect()

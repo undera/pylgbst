@@ -29,8 +29,8 @@ PERIPHERAL_TYPES = {
     DevTypes.TECHNIC_MEDIUM_ANGULAR_MOTOR: EncodedMotor,
     DevTypes.TECHNIC_LARGE_ANGULAR_MOTOR: EncodedMotor,
     # DevTypes.TECHNIC_MEDIUM_HUB_GEST_SENSOR: 54
-    # DevTypes.REMOTE_CONTROL_BUTTON: 55
-    # DevTypes.REMOTE_CONTROL_RSSI: 56
+    DevTypes.REMOTE_CONTROL_BUTTON: RemoteButton,
+    DevTypes.REMOTE_CONTROL_RSSI: RemoteButton,
     # DevTypes.TECHNIC_MEDIUM_HUB_ACCELEROMETER: 57
     # DevTypes.TECHNIC_MEDIUM_HUB_GYRO_SENSOR: 58
     DevTypes.TECHNIC_MEDIUM_HUB_TILT_SENSOR: TiltSensor,
@@ -151,6 +151,10 @@ class Hub:
             self.connection.disconnect()
 
     def _handle_device_change(self, msg):
+
+        print("@@@@ hub.py 155: ", msg)
+        print("@@@@ hub.py 156: ", format(msg.port, '#04x'))
+
         if msg.event == MsgHubAttachedIO.EVENT_DETACHED:
             if msg.port not in self.peripherals:
                 log.warning("Strange: got detach command for port %s that is not attached, will ignore it", msg.port)
@@ -163,6 +167,8 @@ class Hub:
         port = msg.port
         dev_type_raw = ushort(msg.payload, 0)
         dev_type = DevTypes(dev_type_raw) if DevTypes.has_value(dev_type_raw) else DevTypes.UNKNOWN
+
+        print("@@@@ hub.py 171: ", dev_type_raw, dev_type)
 
         if dev_type in PERIPHERAL_TYPES:
             self.peripherals[port] = PERIPHERAL_TYPES[dev_type](self, port)
@@ -400,5 +406,75 @@ class SmartHub(Hub):
                 self.led = self.peripherals[port]
             elif port == self.PORT_CURRENT:
                 self.current = self.peripherals[port]
+            elif port == self.PORT_VOLTAGE:
+                self.voltage = self.peripherals[port]
+
+
+class Remote(Hub):
+    """
+    Class implementing Lego SmartHub specifics
+    https://www.lego.com/en-pt/product/hub-88009
+
+    :type led: LEDRGB
+    :type current: Current
+    :type voltage: Voltage
+    :type port_A: Peripheral
+    :type port_B: Peripheral
+    """
+
+    DEFAULT_NAME = "Remote"
+
+    # PORTS
+    PORT_A = 0x00
+    PORT_B = 0x01
+    PORT_LED = 0x34
+    # PORT_CURRENT = 0x3B
+    PORT_VOLTAGE = 0x3B
+
+    def __init__(self, connection=None, address=None):
+        if connection is None:
+            connection = get_connection_auto(hub_mac=address, hub_name=self.DEFAULT_NAME)
+
+        super().__init__(connection)
+
+        self.button = Button(self)
+        self.led = None
+        self.port_A = None
+        self.port_B = None
+        # self.current = None
+        self.voltage = None
+
+        self._wait_for_devices()
+
+    def _wait_for_devices(self, get_dev_set=None):
+        if not get_dev_set:
+            # get_dev_set = lambda: (self.led, self.current, self.voltage)
+            get_dev_set = lambda: (self.led, self.voltage)
+
+        for num in range(0, 100):
+            devices = get_dev_set()
+            if all(devices):
+                log.debug("All devices are present: %s", devices)
+                return
+            log.debug("Waiting for builtin devices to appear: %s", devices)
+            time.sleep(0.1)
+        log.warning("Got only these devices: %s", get_dev_set())
+
+    # noinspection PyTypeChecker
+    def _handle_device_change(self, msg):
+        super()._handle_device_change(msg)
+        if (
+                isinstance(msg, MsgHubAttachedIO)
+                and msg.event != MsgHubAttachedIO.EVENT_DETACHED
+        ):
+            port = msg.port
+            if port == self.PORT_A:
+                self.port_A = self.peripherals[port]
+            elif port == self.PORT_B:
+                self.port_B = self.peripherals[port]
+            elif port == self.PORT_LED:
+                self.led = self.peripherals[port]
+            # elif port == self.PORT_CURRENT:
+            #     self.current = self.peripherals[port]
             elif port == self.PORT_VOLTAGE:
                 self.voltage = self.peripherals[port]
