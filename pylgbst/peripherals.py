@@ -352,7 +352,7 @@ class TrainMotor(BaseMotor):
         """
         Power the motor, with value -1.0..1.0
         """
-        params = pack("<b", param)
+        params = pack("<b", abs_scaled_100(param))
         self._write_direct_mode(self.SUBCMD_POWER, params)
 
     def stop(self):
