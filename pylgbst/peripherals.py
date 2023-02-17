@@ -196,7 +196,7 @@ class Peripheral:
             info['possible_mode_combinations'] = mode_combinations.possible_mode_combinations
 
         info["modes"] = []
-        for mode in range(256):
+        for mode in range(50):
             info["modes"].append(self._describe_mode(mode))
 
         for mode in mode_info.output_modes:
@@ -214,7 +214,7 @@ class Peripheral:
             try:
                 resp = self.hub.send(MsgPortModeInfoRequest(self.port, mode, info))
                 assert isinstance(resp, MsgPortModeInfo)
-                descr[MsgPortModeInfoRequest.INFO_TYPES[info]] = resp.value
+                descr[MsgPortModeInfoRequest.INFO_TYPES[info]] = str(resp.value)
             except RuntimeError:
                 log.debug("Got error while requesting info 0x%x: %s", info, traceback.format_exc())
                 if info == MsgPortModeInfoRequest.INFO_NAME:
@@ -836,7 +836,7 @@ class Button(Peripheral):
     """
 
     def __init__(self, parent):
-        super().__init__(parent, 0)  # fake port 0
+        super().__init__(parent, 7)  # fake port 0
         self.hub.add_message_handler(MsgHubProperties, self._props_msg)
 
     def subscribe(self, callback, mode=None, granularity=1):
@@ -864,12 +864,10 @@ class Button(Peripheral):
 
 
 class RemoteButton(Peripheral):
-    """
-    It's not really a peripheral, we use MSG_DEVICE_INFO commands to interact with it
-    """
-
     def __init__(self, parent, port):
-        super().__init__(parent, port)  # fake port 0
+        super().__init__(parent, port)
+
+        print("@@@@ peripherals.py 874:  init remotebutton on port ",port )
         self.hub.add_message_handler(MsgHubProperties, self._props_msg)
 
     def subscribe(self, callback, mode=None, granularity=1):
@@ -878,6 +876,8 @@ class RemoteButton(Peripheral):
         if callback:
             self._subscribers.add(callback)
 
+            print("@@@@ peripherals.py 883: callback subscribed, Hub is ", self.hub )
+
     def unsubscribe(self, callback=None):
         if callback in self._subscribers:
             self._subscribers.remove(callback)
@@ -885,14 +885,19 @@ class RemoteButton(Peripheral):
         if not self._subscribers:
             self.hub.send(MsgHubProperties(MsgHubProperties.BUTTON, MsgHubProperties.UPD_DISABLE))
 
+            print("@@@@ peripherals.py 892:  unsubscribed")
+
     def _props_msg(self, msg):
         """
         :type msg: MsgHubProperties
         """
+
+        print("@@@@ peripherals.py 897:  _props_msg  got call with: ", msg, )
         if (
                 msg.property == MsgHubProperties.BUTTON
                 and msg.operation == MsgHubProperties.UPSTREAM_UPDATE
         ):
+            print("@@@@ peripherals.py 900: _props_message  delivering  ",msg )
             self._notify_subscribers(usbyte(msg.parameters, 0))
 
 

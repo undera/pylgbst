@@ -30,7 +30,7 @@ PERIPHERAL_TYPES = {
     DevTypes.TECHNIC_LARGE_ANGULAR_MOTOR: EncodedMotor,
     # DevTypes.TECHNIC_MEDIUM_HUB_GEST_SENSOR: 54
     DevTypes.REMOTE_CONTROL_BUTTON: RemoteButton,
-    DevTypes.REMOTE_CONTROL_RSSI: RemoteButton,
+    DevTypes.REMOTE_CONTROL_RSSI: Peripheral,
     # DevTypes.TECHNIC_MEDIUM_HUB_ACCELEROMETER: 57
     # DevTypes.TECHNIC_MEDIUM_HUB_GYRO_SENSOR: 58
     DevTypes.TECHNIC_MEDIUM_HUB_TILT_SENSOR: TiltSensor,
@@ -129,7 +129,7 @@ class Hub:
                 msg = msg_kind.decode(data)
                 log.debug("Decoded message: %r", msg)
                 break
-        assert msg
+        # assert msg
         return msg
 
     def _handle_error(self, msg):
@@ -172,6 +172,9 @@ class Hub:
 
         if dev_type in PERIPHERAL_TYPES:
             self.peripherals[port] = PERIPHERAL_TYPES[dev_type](self, port)
+
+            print("@@@@ hub.py 176: added peripheral to port:  ", self.peripherals[port], port)
+
         else:
             log.warning("Have no dedicated class for peripheral type 0x%x (%s) on port 0x%x",
                         dev_type_raw, DevTypes(dev_type).name, port)
@@ -374,12 +377,13 @@ class SmartHub(Hub):
         self.port_B = None
         self.current = None
         self.voltage = None
+        self.port_60 = None
 
         self._wait_for_devices()
 
     def _wait_for_devices(self, get_dev_set=None):
         if not get_dev_set:
-            get_dev_set = lambda: (self.led, self.current, self.voltage)
+            get_dev_set = lambda: (self.led, self.current, self.voltage, self.port_60)
 
         for num in range(0, 100):
             devices = get_dev_set()
@@ -428,8 +432,8 @@ class Remote(Hub):
     PORT_A = 0x00
     PORT_B = 0x01
     PORT_LED = 0x34
-    # PORT_CURRENT = 0x3B
     PORT_VOLTAGE = 0x3B
+    PORT_RSSI = 0x3C
 
     def __init__(self, connection=None, address=None):
         if connection is None:
@@ -441,6 +445,7 @@ class Remote(Hub):
         self.led = None
         self.port_A = None
         self.port_B = None
+        self.port_RSSI = None
         # self.current = None
         self.voltage = None
 
@@ -462,6 +467,9 @@ class Remote(Hub):
 
     # noinspection PyTypeChecker
     def _handle_device_change(self, msg):
+
+        print("@@@@ hub.py 468: device change:  ", msg)
+
         super()._handle_device_change(msg)
         if (
                 isinstance(msg, MsgHubAttachedIO)
@@ -478,3 +486,5 @@ class Remote(Hub):
             #     self.current = self.peripherals[port]
             elif port == self.PORT_VOLTAGE:
                 self.voltage = self.peripherals[port]
+            elif port == self.PORT_RSSI:
+                self.port_RSSI = self.peripherals[port]
