@@ -414,7 +414,7 @@ class SmartHub(Hub):
                 self.voltage = self.peripherals[port]
 
 
-class Remote(Hub):
+class HandsetRemote(Hub):
     """
     Class implementing Lego SmartHub specifics
     https://www.lego.com/en-pt/product/hub-88009
@@ -441,7 +441,7 @@ class Remote(Hub):
 
         super().__init__(connection)
 
-        self.button = Button(self)
+        # self.button = Button(self)
         self.led = None
         self.port_A = None
         self.port_B = None
@@ -454,10 +454,13 @@ class Remote(Hub):
     def _wait_for_devices(self, get_dev_set=None):
         if not get_dev_set:
             # get_dev_set = lambda: (self.led, self.current, self.voltage)
-            get_dev_set = lambda: (self.led, self.voltage)
+            get_dev_set = lambda: (self.port_A, self.port_B, self.port_RSSI, self.led, self.voltage)
 
         for num in range(0, 100):
             devices = get_dev_set()
+
+            print("@@@@ hub.py 462:  devices:  ", devices)
+
             if all(devices):
                 log.debug("All devices are present: %s", devices)
                 return

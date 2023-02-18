@@ -601,11 +601,17 @@ class MsgPortModeInfo(UpstreamMsg):
     def _value(self):
         info = MsgPortModeInfoRequest
         if self.info_type == info.INFO_NAME:
-            return self.payload[:self.payload.index(b"\00")].decode('ascii')
+            try:
+                return self.payload[:self.payload.index(b"\00")].decode('ascii')
+            except:
+                return self.payload
         elif self.info_type in (info.INFO_RAW_RANGE, info.INFO_PCT_RANGE, info.INFO_SI_RANGE):
             return [self._float(), self._float()]
         elif self.info_type == info.INFO_UNITS:
-            return self.payload[:self.payload.index(b"\00")].decode('ascii')
+            try:
+                return self.payload[:self.payload.index(b"\00")].decode('ascii')
+            except:
+                return self.payload
         elif self.info_type == info.INFO_MAPPING:
             inp = self._bits_list(self._byte())
             outp = self._bits_list(self._byte())

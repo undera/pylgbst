@@ -2,7 +2,7 @@ import time
 import logging
 from time import sleep
 
-from pylgbst.hub import SmartHub
+from pylgbst.hub import SmartHub, HandsetRemote
 from pylgbst.peripherals import Peripheral, EncodedMotor, TiltSensor, Current, Voltage, COLORS, COLOR_BLACK, COLOR_GREEN
 
 logging.basicConfig(level=logging.DEBUG)
@@ -75,15 +75,16 @@ DEMO_CHOICES = {
 }
 
 # hub_1 = SmartHub(address='86996732-BF5A-433D-AACE-5611D4C6271D')   # test hub
-# hub_2 = SmartHub(address='F88800F6-F39B-4FD2-AFAA-DD93DA2945A6')   # train hub
+hub_2 = SmartHub(address='F88800F6-F39B-4FD2-AFAA-DD93DA2945A6')   # train hub
 
-device_1 = SmartHub(address='2BC6E69B-5F56-4716-AD8C-7B4D5CBC7BF8')  # test handset
+# device_1 = HandsetRemote(address='2BC6E69B-5F56-4716-AD8C-7B4D5CBC7BF8')  # test handset
+# device_1 = HandsetRemote(address='5D319849-7D59-4EBB-A561-0C37C5EF8DCD')  # train handset
 
 # for device in device_1.peripherals:
 #     print("device:   ", device)
 
 try:
-    demo = DEMO_CHOICES['motor']
+    # demo = DEMO_CHOICES['motor']
     # demo(hub_1)
     # demo(hub_2)
 
@@ -91,12 +92,12 @@ try:
     # demo(hub_1)
     # demo(hub_2)
 
-    # demo = DEMO_CHOICES['voltage']
+    demo = DEMO_CHOICES['voltage']
     # demo(hub_1)
-    # demo(hub_2)
+    demo(hub_2)
 
 finally:
     pass
     # hub_1.disconnect()
-    # hub_2.disconnect()
-    device_1.disconnect()
+    hub_2.disconnect()
+    # device_1.disconnect()
