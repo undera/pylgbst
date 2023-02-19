@@ -886,6 +886,8 @@ class RemoteButton(Peripheral):
             self.hub.send(MsgHubProperties(MsgHubProperties.BUTTON, MsgHubProperties.UPD_DISABLE))
 
             print("@@@@ peripherals.py 892:  unsubscribed")
+    def _decode_port_data(self, msg):
+        print("@@@@ peripherals.py 890: ", msg)
 
     def _props_msg(self, msg):
         """
