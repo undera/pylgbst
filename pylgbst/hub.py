@@ -129,7 +129,7 @@ class Hub:
                 msg = msg_kind.decode(data)
                 log.debug("Decoded message: %r", msg)
                 break
-        # assert msg
+        assert msg
         return msg
 
     def _handle_error(self, msg):
@@ -356,9 +356,9 @@ class SmartHub(Hub):
     PORT_CURRENT = 0x3B
     PORT_VOLTAGE = 0x3C
 
-    def __init__(self, connection=None, address=None):
+    def __init__(self, connection=None):
         if connection is None:
-            connection = get_connection_auto(hub_mac=address, hub_name=self.DEFAULT_NAME)
+            connection = get_connection_auto(hub_name=self.DEFAULT_NAME)
 
         super().__init__(connection)
 
@@ -404,7 +404,7 @@ class SmartHub(Hub):
                 self.voltage = self.peripherals[port]
 
 
-class HandsetRemote(Hub):
+class RemoteHandset(Hub):
     """
     Class implementing remote handset specifics
 

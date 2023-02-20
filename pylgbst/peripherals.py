@@ -196,7 +196,7 @@ class Peripheral:
             info['possible_mode_combinations'] = mode_combinations.possible_mode_combinations
 
         info["modes"] = []
-        for mode in range(50):
+        for mode in range(256):
             info["modes"].append(self._describe_mode(mode))
 
         for mode in mode_info.output_modes:
@@ -214,7 +214,7 @@ class Peripheral:
             try:
                 resp = self.hub.send(MsgPortModeInfoRequest(self.port, mode, info))
                 assert isinstance(resp, MsgPortModeInfo)
-                descr[MsgPortModeInfoRequest.INFO_TYPES[info]] = str(resp.value)
+                descr[MsgPortModeInfoRequest.INFO_TYPES[info]] = resp.value
             except RuntimeError:
                 log.debug("Got error while requesting info 0x%x: %s", info, traceback.format_exc())
                 if info == MsgPortModeInfoRequest.INFO_NAME:
@@ -836,7 +836,7 @@ class Button(Peripheral):
     """
 
     def __init__(self, parent):
-        super().__init__(parent, 7)  # fake port 0
+        super().__init__(parent, 0)  # fake port 0
         self.hub.add_message_handler(MsgHubProperties, self._props_msg)
 
     def subscribe(self, callback, mode=None, granularity=1):
