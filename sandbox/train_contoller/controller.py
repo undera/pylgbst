@@ -13,7 +13,7 @@ class TrainController:
     Basic train controller.
 
     For now, it accepts keyboard commands that replace the remote handset buttons functionality.
-    It also reports voltage and current.
+    It also reports voltage and current at stdout.
     '''
 
     def get_keypresses(self, callback):
@@ -49,8 +49,9 @@ t = TrainController()
 # Lego remote handset keys (until support for it is implemented in pylgbst).
 def keyboard_press_callback(key):
     # Here we will update a global variable that contains the train
-    # motor duty cycle fraction (aka "power"). Other threads in the
-    # code may want to update it too, so we need perhaps to use a
+    # motor duty cycle fraction (aka "power"). It may also update the
+    # headlight power level from port B. Other threads in the code may
+    # want to update the motor power too, so we need perhaps to use a
     # semaphore or lock mechanism.
     print('{} was pressed'.format(key))
 
