@@ -48,11 +48,11 @@ t = TrainController()
 # start listening to keyboard presses. Keyboard keys act as replacements for the
 # Lego remote handset keys (until support for it is implemented in pylgbst).
 def keyboard_press_callback(key):
-    # Here we will update a global variable that contains the train
+    # Here we will update a instance variable that contains the train
     # motor duty cycle fraction (aka "power"). It may also update the
-    # headlight power level from port B. Other threads in the code may
-    # want to update the motor power too, so we need perhaps to use a
-    # semaphore or lock mechanism.
+    # headlight power level from port B, if there is one installed.
+    # Other threads in the code may want to update the motor power too,
+    # so we need perhaps to use a semaphore or lock mechanism.
     print('{} was pressed'.format(key))
 
 t.get_keypresses(keyboard_press_callback)
