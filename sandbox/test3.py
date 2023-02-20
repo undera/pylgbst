@@ -5,7 +5,7 @@ from time import sleep
 from pylgbst.hub import SmartHub, HandsetRemote
 from pylgbst.peripherals import Peripheral, EncodedMotor, TiltSensor, Current, Voltage, COLORS, COLOR_BLACK, COLOR_GREEN
 
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 
 def demo_voltage(hub):
 
