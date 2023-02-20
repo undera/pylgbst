@@ -864,42 +864,52 @@ class Button(Peripheral):
 
 
 class RemoteButton(Peripheral):
+
+    # this only works with modes rckey (0), keyr (1), and keya (2) as in
+    # https://virantha.github.io/bricknil/lego_api/lego.html#remote-buttons
+    button_sets = {0: "LEFT",
+                   1: "RIGHT"}
+    button_events = {b'\x01': "PLUS",
+                     b'\x7f': "RED",
+                     b'\xff': "MINUS",
+                     b'\x00': "RELEASE"}
+
     def __init__(self, parent, port):
         super().__init__(parent, port)
 
-        print("@@@@ peripherals.py 874:  init remotebutton on port ",port )
         self.hub.add_message_handler(MsgHubProperties, self._props_msg)
 
-    def subscribe(self, callback, mode=None, granularity=1):
-        self.hub.send(MsgHubProperties(MsgHubProperties.BUTTON, MsgHubProperties.UPD_ENABLE))
+    def subscribe(self, callback, mode=0x00, granularity=1):
+        # override base class to prevent invalid mode
+        if mode > 2:
+            log.debug("Invalid mode: %i", mode)
+            raise ValueError("Invalid mode: ", mode)
 
-        if callback:
-            self._subscribers.add(callback)
+        super().subscribe(callback, mode)
 
-            print("@@@@ peripherals.py 883: callback subscribed, Hub is ", self.hub )
-
-    def unsubscribe(self, callback=None):
-        if callback in self._subscribers:
-            self._subscribers.remove(callback)
-
-        if not self._subscribers:
-            self.hub.send(MsgHubProperties(MsgHubProperties.BUTTON, MsgHubProperties.UPD_DISABLE))
-
-            print("@@@@ peripherals.py 892:  unsubscribed")
     def _decode_port_data(self, msg):
-        print("@@@@ peripherals.py 890: ", msg)
+        button = self.button_events[msg.payload]
+        set = self.button_sets[msg.port]
+
+        return (button, set)
+
+    def _handle_port_data(self, msg):
+        """
+        :type msg: pylgbst.messages.MsgPortValueSingle
+        """
+        decoded = self._decode_port_data(msg)
+        if decoded is not None:
+            assert isinstance(decoded, (tuple, list)), "Unexpected data type: %s" % type(decoded)
+            self._notify_subscribers(*decoded)
 
     def _props_msg(self, msg):
         """
         :type msg: MsgHubProperties
         """
-
-        print("@@@@ peripherals.py 897:  _props_msg  got call with: ", msg, )
         if (
                 msg.property == MsgHubProperties.BUTTON
                 and msg.operation == MsgHubProperties.UPSTREAM_UPDATE
         ):
-            print("@@@@ peripherals.py 900: _props_message  delivering  ",msg )
             self._notify_subscribers(usbyte(msg.parameters, 0))
 
 

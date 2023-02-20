@@ -151,10 +151,6 @@ class Hub:
             self.connection.disconnect()
 
     def _handle_device_change(self, msg):
-
-        print("@@@@ hub.py 155: ", msg)
-        print("@@@@ hub.py 156: ", format(msg.port, '#04x'))
-
         if msg.event == MsgHubAttachedIO.EVENT_DETACHED:
             if msg.port not in self.peripherals:
                 log.warning("Strange: got detach command for port %s that is not attached, will ignore it", msg.port)
@@ -168,13 +164,8 @@ class Hub:
         dev_type_raw = ushort(msg.payload, 0)
         dev_type = DevTypes(dev_type_raw) if DevTypes.has_value(dev_type_raw) else DevTypes.UNKNOWN
 
-        print("@@@@ hub.py 171: ", dev_type_raw, dev_type)
-
         if dev_type in PERIPHERAL_TYPES:
             self.peripherals[port] = PERIPHERAL_TYPES[dev_type](self, port)
-
-            print("@@@@ hub.py 176: added peripheral to port:  ", self.peripherals[port], port)
-
         else:
             log.warning("Have no dedicated class for peripheral type 0x%x (%s) on port 0x%x",
                         dev_type_raw, DevTypes(dev_type).name, port)
@@ -377,13 +368,12 @@ class SmartHub(Hub):
         self.port_B = None
         self.current = None
         self.voltage = None
-        self.port_60 = None
 
         self._wait_for_devices()
 
     def _wait_for_devices(self, get_dev_set=None):
         if not get_dev_set:
-            get_dev_set = lambda: (self.led, self.current, self.voltage, self.port_60)
+            get_dev_set = lambda: (self.led, self.current, self.voltage)
 
         for num in range(0, 100):
             devices = get_dev_set()
@@ -416,17 +406,16 @@ class SmartHub(Hub):
 
 class HandsetRemote(Hub):
     """
-    Class implementing Lego SmartHub specifics
-    https://www.lego.com/en-pt/product/hub-88009
+    Class implementing remote handset specifics
 
     :type led: LEDRGB
     :type current: Current
     :type voltage: Voltage
-    :type port_A: Peripheral
-    :type port_B: Peripheral
+    :type port_A: RemoteButton
+    :type port_B: RemoteButton
     """
 
-    DEFAULT_NAME = "Remote"
+    DEFAULT_NAME = "Remote Handset"
 
     # PORTS
     PORT_A = 0x00
@@ -441,26 +430,20 @@ class HandsetRemote(Hub):
 
         super().__init__(connection)
 
-        # self.button = Button(self)
         self.led = None
         self.port_A = None
         self.port_B = None
         self.port_RSSI = None
-        # self.current = None
         self.voltage = None
 
         self._wait_for_devices()
 
     def _wait_for_devices(self, get_dev_set=None):
         if not get_dev_set:
-            # get_dev_set = lambda: (self.led, self.current, self.voltage)
             get_dev_set = lambda: (self.port_A, self.port_B, self.port_RSSI, self.led, self.voltage)
 
         for num in range(0, 100):
             devices = get_dev_set()
-
-            print("@@@@ hub.py 462:  devices:  ", devices)
-
             if all(devices):
                 log.debug("All devices are present: %s", devices)
                 return
@@ -470,9 +453,6 @@ class HandsetRemote(Hub):
 
     # noinspection PyTypeChecker
     def _handle_device_change(self, msg):
-
-        print("@@@@ hub.py 468: device change:  ", msg)
-
         super()._handle_device_change(msg)
         if (
                 isinstance(msg, MsgHubAttachedIO)
@@ -485,8 +465,6 @@ class HandsetRemote(Hub):
                 self.port_B = self.peripherals[port]
             elif port == self.PORT_LED:
                 self.led = self.peripherals[port]
-            # elif port == self.PORT_CURRENT:
-            #     self.current = self.peripherals[port]
             elif port == self.PORT_VOLTAGE:
                 self.voltage = self.peripherals[port]
             elif port == self.PORT_RSSI:

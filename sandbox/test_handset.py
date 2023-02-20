@@ -2,12 +2,11 @@ import logging
 import time
 
 from pylgbst.hub import HandsetRemote
-from pylgbst.peripherals import Voltage, COLORS, COLOR_BLACK, COLOR_GREEN
 
 logging.basicConfig(level=logging.DEBUG)
 
-remote = HandsetRemote(address='2BC6E69B-5F56-4716-AD8C-7B4D5CBC7BF8')  # test handset
-# remote = HandsetRemote(address='5D319849-7D59-4EBB-A561-0C37C5EF8DCD')  # train handset
+# remote = HandsetRemote(address='2BC6E69B-5F56-4716-AD8C-7B4D5CBC7BF8')  # test handset
+remote = HandsetRemote(address='5D319849-7D59-4EBB-A561-0C37C5EF8DCD')  # train handset
 
 print(remote)
 
@@ -34,10 +33,11 @@ print(remote)
 # demo_led_colors(remote)
 
 
-def callback_from_button(value):
-    print("@@@@ test_handset.py 35: value from callback: ", value)
+def callback_from_button(button, button_set):
+    print("value from callback: ", button, button_set)
 
-print("@@@@ test_handset.py 37: press button", )
-remote.port_A.subscribe(callback_from_button, mode=1)
-time.sleep(20)
+remote.port_A.subscribe(callback_from_button, mode=2)
+remote.port_B.subscribe(callback_from_button)
+time.sleep(60)
+remote.port_A.unsubscribe(callback_from_button)
 remote.port_A.unsubscribe(callback_from_button)
