@@ -865,8 +865,13 @@ class Button(Peripheral):
 
 class RemoteButton(Peripheral):
 
-    # this only works with modes rckey (0), keyr (1), and keya (2) as in
+    # this only works with modes rckey (0), keya (1), and keyr (2) as in
     # https://virantha.github.io/bricknil/lego_api/lego.html#remote-buttons
+
+    RCKEY = 0x00
+    KEYR = 0x01
+    KEYD = 0x02
+
     button_sets = {0: "LEFT",
                    1: "RIGHT"}
     button_events = {b'\x01': "PLUS",
