@@ -29,8 +29,8 @@ PERIPHERAL_TYPES = {
     DevTypes.TECHNIC_MEDIUM_ANGULAR_MOTOR: EncodedMotor,
     DevTypes.TECHNIC_LARGE_ANGULAR_MOTOR: EncodedMotor,
     # DevTypes.TECHNIC_MEDIUM_HUB_GEST_SENSOR: 54
-    # DevTypes.REMOTE_CONTROL_BUTTON: 55
-    # DevTypes.REMOTE_CONTROL_RSSI: 56
+    DevTypes.REMOTE_CONTROL_BUTTON: RemoteButton,
+    DevTypes.REMOTE_CONTROL_RSSI: Peripheral,
     # DevTypes.TECHNIC_MEDIUM_HUB_ACCELEROMETER: 57
     # DevTypes.TECHNIC_MEDIUM_HUB_GYRO_SENSOR: 58
     DevTypes.TECHNIC_MEDIUM_HUB_TILT_SENSOR: TiltSensor,
@@ -402,3 +402,70 @@ class SmartHub(Hub):
                 self.current = self.peripherals[port]
             elif port == self.PORT_VOLTAGE:
                 self.voltage = self.peripherals[port]
+
+
+class RemoteHandset(Hub):
+    """
+    Class implementing remote handset specifics
+
+    :type led: LEDRGB
+    :type current: Current
+    :type voltage: Voltage
+    :type port_A: RemoteButton
+    :type port_B: RemoteButton
+    """
+
+    DEFAULT_NAME = "Remote Handset"
+
+    # PORTS
+    PORT_A = 0x00
+    PORT_B = 0x01
+    PORT_LED = 0x34
+    PORT_VOLTAGE = 0x3B
+    PORT_RSSI = 0x3C
+
+    def __init__(self, connection=None, address=None):
+        if connection is None:
+            connection = get_connection_auto(hub_mac=address, hub_name=self.DEFAULT_NAME)
+
+        super().__init__(connection)
+
+        self.led = None
+        self.port_A = None
+        self.port_B = None
+        self.port_RSSI = None
+        self.voltage = None
+
+        self._wait_for_devices()
+
+    def _wait_for_devices(self, get_dev_set=None):
+        if not get_dev_set:
+            get_dev_set = lambda: (self.port_A, self.port_B, self.port_RSSI, self.led, self.voltage)
+
+        for num in range(0, 100):
+            devices = get_dev_set()
+            if all(devices):
+                log.debug("All devices are present: %s", devices)
+                return
+            log.debug("Waiting for builtin devices to appear: %s", devices)
+            time.sleep(0.1)
+        log.warning("Got only these devices: %s", get_dev_set())
+
+    # noinspection PyTypeChecker
+    def _handle_device_change(self, msg):
+        super()._handle_device_change(msg)
+        if (
+                isinstance(msg, MsgHubAttachedIO)
+                and msg.event != MsgHubAttachedIO.EVENT_DETACHED
+        ):
+            port = msg.port
+            if port == self.PORT_A:
+                self.port_A = self.peripherals[port]
+            elif port == self.PORT_B:
+                self.port_B = self.peripherals[port]
+            elif port == self.PORT_LED:
+                self.led = self.peripherals[port]
+            elif port == self.PORT_VOLTAGE:
+                self.voltage = self.peripherals[port]
+            elif port == self.PORT_RSSI:
+                self.port_RSSI = self.peripherals[port]

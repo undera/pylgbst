@@ -863,6 +863,61 @@ class Button(Peripheral):
             self._notify_subscribers(usbyte(msg.parameters, 0))
 
 
+class RemoteButton(Peripheral):
+
+    # this only works with modes rckey (0), keya (1), and keyr (2) as in
+    # https://virantha.github.io/bricknil/lego_api/lego.html#remote-buttons
+
+    RCKEY = 0x00
+    KEYA = 0x01
+    KEYR = 0x02
+
+    button_sets = {0: "LEFT",
+                   1: "RIGHT"}
+    button_events = {b'\x01': "PLUS",
+                     b'\x7f': "RED",
+                     b'\xff': "MINUS",
+                     b'\x00': "RELEASE"}
+
+    def __init__(self, parent, port):
+        super().__init__(parent, port)
+
+        self.hub.add_message_handler(MsgHubProperties, self._props_msg)
+
+    def subscribe(self, callback, mode=0x00, granularity=1):
+        # override base class to prevent invalid mode
+        if mode not in [self.RCKEY, self.KEYR, self.KEYA]:
+            log.debug("Invalid mode: %i", mode)
+            raise ValueError("Invalid mode: ", mode)
+
+        super().subscribe(callback, mode)
+
+    def _decode_port_data(self, msg):
+        button = self.button_events[msg.payload]
+        set = self.button_sets[msg.port]
+
+        return (button, set)
+
+    def _handle_port_data(self, msg):
+        """
+        :type msg: pylgbst.messages.MsgPortValueSingle
+        """
+        decoded = self._decode_port_data(msg)
+        if decoded is not None:
+            assert isinstance(decoded, (tuple, list)), "Unexpected data type: %s" % type(decoded)
+            self._notify_subscribers(*decoded)
+
+    def _props_msg(self, msg):
+        """
+        :type msg: MsgHubProperties
+        """
+        if (
+                msg.property == MsgHubProperties.BUTTON
+                and msg.operation == MsgHubProperties.UPSTREAM_UPDATE
+        ):
+            self._notify_subscribers(usbyte(msg.parameters, 0))
+
+
 class Temperature(Peripheral):
     """Get battery temperature from the hub"""
     MODE_TEMP = 0
