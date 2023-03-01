@@ -869,8 +869,8 @@ class RemoteButton(Peripheral):
     # https://virantha.github.io/bricknil/lego_api/lego.html#remote-buttons
 
     RCKEY = 0x00
-    KEYR = 0x01
-    KEYD = 0x02
+    KEYA = 0x01
+    KEYR = 0x02
 
     button_sets = {0: "LEFT",
                    1: "RIGHT"}
@@ -886,7 +886,7 @@ class RemoteButton(Peripheral):
 
     def subscribe(self, callback, mode=0x00, granularity=1):
         # override base class to prevent invalid mode
-        if mode > 2:
+        if mode not in [self.RCKEY, self.KEYR, self.KEYA]:
             log.debug("Invalid mode: %i", mode)
             raise ValueError("Invalid mode: ", mode)
 
