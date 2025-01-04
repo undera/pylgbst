@@ -121,7 +121,6 @@ class BleakDriver(Connection):
         else:
             return False
 
-
 class BleakConnection(Connection):
     """Bleak driver for communicating with BLE device."""
 
@@ -133,6 +132,28 @@ class BleakConnection(Connection):
         self._client = None
         logging.getLogger('bleak.backends.dotnet.client').setLevel(logging.WARNING)
         logging.getLogger('bleak.backends.bluezdbus.client').setLevel(logging.WARNING)
+
+    async def find_device(self, hub_mac=None, hub_name=None):
+        found_event = asyncio.Event()
+        found_device = None
+
+        async def _detect(device: bleak.BLEDevice, advertisement_data: bleak.AdvertisementData):
+            nonlocal found_device
+            nonlocal found_event
+            address = device.address
+            name = device.name
+            if self._is_device_matched(address, name, hub_mac, hub_name):
+                log.info('Device matched: %r', device)
+                found_device = device
+                found_event.set()
+        
+        scanner = bleak.BleakScanner(
+            detection_callback=_detect
+        )
+        await scanner.start()
+        await found_event.wait()
+        await scanner.stop()
+        return found_device
 
     async def connect(self, hub_mac=None, hub_name=None, **kwargs):
         """
@@ -146,23 +167,8 @@ class BleakConnection(Connection):
         :return: None
         """
         log.info("Discovering devices... Press green button on Hub")
-        for i in range(0, 30):
-            devices = await bleak.discover(timeout=1, **kwargs)
-            log.debug("Devices: %s", devices)
-            for dev in devices:
-                log.debug(dev)
-                address = dev.address
-                name = dev.name
-                if self._is_device_matched(address, name, hub_mac, hub_name):
-                    log.info('Device matched: %r', dev)
-                    self._device = dev
-                    break
-            else:
-                continue
 
-            break
-        else:
-            raise ConnectionError('Device not found.')
+        self._device = await self.find_device(hub_mac, hub_name, **kwargs)
 
         self._client = bleak.BleakClient(self._device)
         status = await self._client.connect()
