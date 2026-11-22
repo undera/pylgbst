@@ -133,7 +133,7 @@ class BleakConnection(Connection):
         logging.getLogger('bleak.backends.dotnet.client').setLevel(logging.WARNING)
         logging.getLogger('bleak.backends.bluezdbus.client').setLevel(logging.WARNING)
 
-    async def find_device(self, hub_mac=None, hub_name=None):
+    async def find_device(self, hub_mac=None, hub_name=None, **kwargs):
         found_event = asyncio.Event()
         found_device = None
 
@@ -148,7 +148,7 @@ class BleakConnection(Connection):
                 found_event.set()
         
         scanner = bleak.BleakScanner(
-            detection_callback=_detect
+            detection_callback=_detect, **kwargs
         )
         await scanner.start()
         await found_event.wait()
@@ -161,7 +161,7 @@ class BleakConnection(Connection):
 
         :param hub_mac: Optional Lego HUB MAC to connect to
         :param hub_name: Optional Lego Hub name to connect to
-        :kwargs: Optional parameters for bleak.discover
+        :kwargs: Optional parameters for bleak.BleakScanner (e.g. service_uuids)
 
         :raises ConnectionError: When cannot connect to given MAC or name matching fails.
         :return: None
