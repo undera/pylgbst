@@ -7,6 +7,7 @@ from threading import Thread
 from pylgbst.messages import (
     MsgHubProperties,
     MsgPortOutput,
+    MsgPortOutputFeedback,
     MsgPortInputFmtSetupSingle,
     MsgPortInfoRequest,
     MsgPortModeInfoRequest,
@@ -111,7 +112,9 @@ class Peripheral:
     def _send_output(self, msg):
         assert isinstance(msg, MsgPortOutput)
         msg.is_buffered = self.is_buffered  # TODO: support buffering
-        self.hub.send(msg)
+        resp = self.hub.send(msg)
+        if isinstance(resp, MsgPortOutputFeedback) and resp.is_rejected():
+            raise RuntimeError("Port %s discarded the command: %r" % (self.port, msg))
 
     def get_sensor_data(self, mode):
         self.set_port_mode(mode)
@@ -390,6 +393,7 @@ class Motor(BaseMotor):
             subcmd += 1  # de-facto rule
 
         msg = MsgPortOutput(self.port, subcmd, params, wait_complete)
+        msg.interrupts_running = self.cmd_in_progress
         self._send_output(msg)
 
     def start_power(self, power_primary=1.0, power_secondary=None):

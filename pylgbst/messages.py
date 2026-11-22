@@ -753,6 +753,7 @@ class MsgPortOutput(DownstreamMsg):
         self.is_buffered = False
         self.do_feedback = True
         self.wait_complete = wait_complete
+        self.interrupts_running = False  # a bare discard then belongs to the interrupted command
         self.subcommand = subcommand
         self.params = params
 
@@ -779,6 +780,7 @@ class MsgPortOutput(DownstreamMsg):
             and msg.port == self.port
             and (not self.wait_complete and msg.is_in_progress() or
                  msg.is_completed() or
+                 msg.is_rejected() and not self.interrupts_running or
                  self.is_buffered)
         )
 
@@ -811,6 +813,10 @@ class MsgPortOutputFeedback(UpstreamMsg):
 
     def is_idle(self):
         return self.status & 0b1000
+
+    def is_rejected(self):
+        """Command was discarded and no other command took over; no completion will follow"""
+        return self.is_discarded() and not (self.is_in_progress() or self.is_completed())
 
 
 UPSTREAM_MSGS = (

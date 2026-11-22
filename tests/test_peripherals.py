@@ -195,6 +195,31 @@ class PeripheralsTest(unittest.TestCase):
 
         hub.connection.wait_notifications_handled()
 
+    def test_motor_discarded(self):
+        hub = HubMock()
+        motor = EncodedMotor(hub, MoveHub.PORT_D)
+        hub.peripherals[MoveHub.PORT_D] = motor
+
+        # discarded with nothing taking over: raise instead of waiting forever
+        hub.connection.notification_delayed('0500820301', 0.1)
+        hub.connection.notification_delayed('050082030c', 0.2)
+        self.assertRaises(RuntimeError, motor.angled, 180)
+
+        # discarded previous command while this one runs: keep waiting for completion
+        hub.connection.notification_delayed('0500820305', 0.1)
+        hub.connection.notification_delayed('050082030a', 0.2)
+        motor.angled(180)
+
+        # bare discard of an interrupted non-blocking command must not fail the interrupting one
+        hub.connection.notification_delayed('0500820301', 0.1)
+        motor.timed(1.0, wait_complete=False)
+        self.assertTrue(motor.cmd_in_progress)
+        hub.connection.notification_delayed('0500820304', 0.1)
+        hub.connection.notification_delayed('050082030a', 0.2)
+        motor.stop()
+
+        hub.connection.wait_notifications_handled()
+
     def test_motor_sensor(self):
         hub = HubMock()
         motor = EncodedMotor(hub, MoveHub.PORT_C)
