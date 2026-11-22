@@ -841,10 +841,12 @@ class Button(Peripheral):
 
     def __init__(self, parent):
         super().__init__(parent, 0)  # fake port 0
+        self._subscribe_reply = None
         self.hub.add_message_handler(MsgHubProperties, self._props_msg)
 
     def subscribe(self, callback, mode=None, granularity=1):
-        self.hub.send(MsgHubProperties(MsgHubProperties.BUTTON, MsgHubProperties.UPD_ENABLE))
+        # the reply carries the current state, not a press; it is queued like presses, so mark it to skip
+        self._subscribe_reply = self.hub.send(MsgHubProperties(MsgHubProperties.BUTTON, MsgHubProperties.UPD_ENABLE))
 
         if callback:
             self._subscribers.add(callback)
@@ -864,7 +866,15 @@ class Button(Peripheral):
                 msg.property == MsgHubProperties.BUTTON
                 and msg.operation == MsgHubProperties.UPSTREAM_UPDATE
         ):
-            self._notify_subscribers(usbyte(msg.parameters, 0))
+            # off the notification thread, so callbacks may send commands to the hub
+            self.queue_port_data(msg)
+
+    def _handle_port_data(self, msg):
+        if msg is not self._subscribe_reply:
+            super()._handle_port_data(msg)
+
+    def _decode_port_data(self, msg):
+        return (usbyte(msg.parameters, 0),)
 
 
 class RemoteButton(Peripheral):
@@ -897,6 +907,9 @@ class RemoteButton(Peripheral):
         super().subscribe(callback, mode, granularity)
 
     def _decode_port_data(self, msg):
+        if isinstance(msg, MsgHubProperties):  # green button, queued by _props_msg
+            return (usbyte(msg.parameters, 0),)
+
         button = self.button_events[msg.payload]
         set = self.button_sets[msg.port]
 
@@ -919,7 +932,7 @@ class RemoteButton(Peripheral):
                 msg.property == MsgHubProperties.BUTTON
                 and msg.operation == MsgHubProperties.UPSTREAM_UPDATE
         ):
-            self._notify_subscribers(usbyte(msg.parameters, 0))
+            self.queue_port_data(msg)
 
 
 class Temperature(Peripheral):

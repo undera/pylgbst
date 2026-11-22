@@ -1,4 +1,5 @@
 import logging
+import threading
 import time
 import unittest
 
@@ -37,6 +38,27 @@ class PeripheralsTest(unittest.TestCase):
         self.assertEqual([0, 1, 0], vals)
         self.assertEqual(b"0500010202", hub.writes[1][1])
         self.assertEqual(b"0500010203", hub.writes[2][1])
+
+    def test_button_callback_sends_command(self):
+        hub = HubMock()
+        button = Button(hub)
+        hub.peripherals[0x00] = button
+        motor = EncodedMotor(hub, MoveHub.PORT_D)
+        hub.peripherals[MoveHub.PORT_D] = motor
+        done = threading.Event()
+
+        def callback(pressed):
+            if pressed:
+                motor.start_power(1.0)  # sync command from inside a callback
+                done.set()
+
+        hub.connection.notification_delayed("060001020600", 0.0)
+        button.subscribe(callback)
+
+        hub.connection.notification_delayed("060001020601", 0.1)
+        hub.connection.notification_delayed("050082030a", 0.3)
+        self.assertTrue(done.wait(2), "command sent from button callback never completed")
+        hub.connection.wait_notifications_handled()
 
     def test_led(self):
         hub = HubMock()
