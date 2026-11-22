@@ -1,6 +1,9 @@
+import asyncio
 import sys
 import time
 import unittest
+from types import SimpleNamespace
+from unittest import mock
 
 import bleak
 from packaging import version
@@ -50,6 +53,32 @@ class BleakDriverTest(unittest.TestCase):
         driver.disconnect()
         time.sleep(0.5)  # processing time
         self.assertFalse(driver.is_alive())
+
+    @unittest.skipIf(lt37, "Python version is too low")
+    def test_find_device_passes_scanner_kwargs(self):
+        # macOS 12+: BleakDriver passes service_uuids through connect() to find_device()
+        seen = {}
+
+        class FakeScanner:
+            def __init__(self, detection_callback, **kwargs):
+                seen.update(kwargs)
+                self.detection_callback = detection_callback
+
+            async def start(self):
+                device = SimpleNamespace(address="00:16:53:AB:CD:EF", name="LEGO Move Hub")
+                await self.detection_callback(device, None)
+
+            async def stop(self):
+                pass
+
+        with mock.patch.object(cbleak.bleak, "BleakScanner", FakeScanner):
+            connection = cbleak.BleakConnection()
+            found = asyncio.run(
+                connection.find_device("00:16:53:AB:CD:EF", None, service_uuids=["some-uuid"])
+            )
+
+        self.assertEqual("00:16:53:AB:CD:EF", found.address)
+        self.assertEqual({"service_uuids": ["some-uuid"]}, seen)
 
     @staticmethod
     def validation_handler(handle, data):
