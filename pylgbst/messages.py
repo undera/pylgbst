@@ -180,12 +180,14 @@ class MsgHubAction(DownstreamMsg, UpstreamMsg):
 
     def is_reply(self, msg):
         if not isinstance(msg, MsgHubAction):
-            raise TypeError("Unexpected message type: %s" % (msg.__class__,))
+            return False
         if self.action == self.DISCONNECT and msg.action == self.UPSTREAM_DISCONNECT:
             return True
 
         if self.action == self.SWITCH_OFF and msg.action == self.UPSTREAM_SHUTDOWN:
             return True
+
+        return False
 
     @classmethod
     def decode(cls, data):

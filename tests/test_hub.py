@@ -1,5 +1,6 @@
 import time
 import unittest
+from binascii import unhexlify
 
 from pylgbst.hub import Hub, MoveHub
 from pylgbst.messages import MsgHubAction, MsgHubAlert, MsgHubProperties
@@ -58,6 +59,21 @@ class HubTest(unittest.TestCase):
         hub.send(MsgHubAction(MsgHubAction.UPSTREAM_BOOT_MODE))
         time.sleep(0.1)
         conn.wait_notifications_handled()
+
+    def test_hub_action_reply_ignores_other_messages(self):
+        conn = ConnectionMock().connect()
+        hub = Hub(conn)
+        request = MsgHubAction(MsgHubAction.DISCONNECT)
+        self.assertFalse(request.is_reply(MsgHubProperties(MsgHubProperties.VOLTAGE_PERC, MsgHubProperties.UPD_REQUEST)))
+        self.assertFalse(request.is_reply(MsgHubAction(MsgHubAction.UPSTREAM_BOOT_MODE)))
+
+        # a sensor/property value arriving while disconnect() waits must not break the reply
+        hub._sync_request = request
+        hub._notify(hub.HUB_HARDWARE_HANDLE, unhexlify('060001060600'))
+        hub._notify(hub.HUB_HARDWARE_HANDLE, unhexlify('04000231'))
+        reply = hub._sync_replies.get(timeout=1)
+        self.assertIsInstance(reply, MsgHubAction)
+        self.assertEqual(MsgHubAction.UPSTREAM_DISCONNECT, reply.action)
 
     def test_hub_alerts(self):
         conn = ConnectionMock().connect()
