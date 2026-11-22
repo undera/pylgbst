@@ -15,4 +15,4 @@ print("Press buttons on the remote handset.")
 time.sleep(30)
 
 remote.port_A.unsubscribe(callback_from_button)
-remote.port_A.unsubscribe(callback_from_button)
+remote.port_B.unsubscribe(callback_from_button)

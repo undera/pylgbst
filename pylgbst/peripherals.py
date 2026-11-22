@@ -894,7 +894,7 @@ class RemoteButton(Peripheral):
             log.debug("Invalid mode: %i", mode)
             raise ValueError("Invalid mode: ", mode)
 
-        super().subscribe(callback, mode)
+        super().subscribe(callback, mode, granularity)
 
     def _decode_port_data(self, msg):
         button = self.button_events[msg.payload]
