@@ -106,6 +106,12 @@ class HubTest(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(CommandDiscarded):
             await task
 
+    async def test_stalled_output(self):
+        task = await self._started(self.hub.output(timed(PORT_A)))
+        self.conn.hub_says('0500820001', '050082000c')  # in progress, then discarded with nothing taking over
+        with self.assertRaisesRegex(CommandDiscarded, 'gave up'):
+            await task
+
     async def test_completes_without_progress_report(self):
         task = await self._started(self.hub.output(timed(PORT_A)))
         self.conn.hub_says('050082000a')  # seen for an unknown subcommand

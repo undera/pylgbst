@@ -125,8 +125,12 @@ class Requests:
 
         running = queue[0] if queue[0].running else None
         if msg.is_discarded():
-            if running:  # another command took over the port
-                self._end(queue, running, CommandDiscarded("Interrupted on port 0x%x" % msg.port))
+            if running:
+                if len(queue) > 1:  # another command took over the port
+                    reason = "Interrupted on port 0x%x" % msg.port
+                else:  # nothing took over: the port gave up, as a motor does when it stalls
+                    reason = "Port 0x%x gave up on %r (stalled?)" % (msg.port, running.msg)
+                self._end(queue, running, CommandDiscarded(reason))
                 running = None
             elif not (msg.is_in_progress() or msg.is_completed()):  # nothing took over: the new one was rejected
                 rejected = queue[0]
