@@ -12,8 +12,8 @@ jobs:
       matrix:
         python: ["3.10", "3.14"]  # oldest the latest bleak supports, newest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
       - run: pip install . pytest
