@@ -136,6 +136,20 @@ class PeripheralsTest(HubTestCase):
         self.assertEqual(b"0a00413c000100000001", hub.writes[1][1])
         self.assertEqual(b"0a00413c000100000000", hub.writes[2][1])
 
+    def test_tilt_sensor_presets(self):
+        hub = self.closing(hub_with(ATTACH_TILT))
+        sensor = hub.peripherals[MoveHub.PORT_TILT_SENSOR]
+        sent = len(hub.writes)
+        for call, frame in (
+                (lambda: sensor.set_impact_count(1000), b"0b00813a115103e8030000"),
+                (lambda: sensor.set_orientation(TiltSensor.ORIENT_TOP), b"0800813a11510505"),
+                (lambda: sensor.set_impact_config(10, 5), b"0900813a1151060a05"),
+        ):
+            hub.connection.notification_delayed("0500823a0a", 0.1)
+            call()
+            self.assertEqual(frame, hub.writes[sent][1])  # no port mode change before the write
+            sent += 1
+
     def test_tilt_sensor(self):
         hub = self.closing(hub_with(ATTACH_TILT))
         sensor = hub.peripherals[MoveHub.PORT_TILT_SENSOR]
@@ -167,7 +181,7 @@ class PeripheralsTest(HubTestCase):
 
         hub.connection.notification_delayed('0a00473a060100000000', 0.05)
         hub.connection.notification_delayed('0600453a7f14', 0.1)
-        self.assertEqual((127,), sensor.get_sensor_data(TiltSensor.MODE_IMPACT_CF))
+        self.assertEqual((127, 20), sensor.get_sensor_data(TiltSensor.MODE_IMPACT_CF))
 
         hub.connection.notification_delayed('0a00473a070100000000', 0.05)
         hub.connection.notification_delayed('0700453a00feff', 0.1)

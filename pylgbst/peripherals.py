@@ -135,7 +135,9 @@ class EncodedMotor(EncodedMotorConstants, Motor):
 
 
 class TiltSensor(TiltSensorConstants, Peripheral):
-    pass
+    set_impact_count = _blocking(aio.TiltSensor.set_impact_count)
+    set_orientation = _blocking(aio.TiltSensor.set_orientation)
+    set_impact_config = _blocking(aio.TiltSensor.set_impact_config)
 
 
 class VisionSensor(VisionSensorConstants, Peripheral):

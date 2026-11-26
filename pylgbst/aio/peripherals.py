@@ -543,6 +543,13 @@ class TiltSensorConstants:
     TRI_RIGHT = 0x04
     TRI_FRONT = 0x05
 
+    ORIENT_BOTTOM = 0x00
+    ORIENT_FRONT = 0x01
+    ORIENT_BACK = 0x02
+    ORIENT_LEFT = 0x03
+    ORIENT_RIGHT = 0x04
+    ORIENT_TOP = 0x05
+
     DUO_HORIZ = 0x00
     DUO_DOWN = 0x03
     DUO_LEFT = 0x05
@@ -573,8 +580,10 @@ class TiltSensor(TiltSensorConstants, Peripheral):
     def decode_mode_data(self, mode, data):
         if mode == self.MODE_2AXIS_ANGLE:
             return unpack("<b", data[0:1])[0], unpack("<b", data[1:2])[0]
-        if mode in (self.MODE_3AXIS_SIMPLE, self.MODE_2AXIS_SIMPLE, self.MODE_ORIENT_CF, self.MODE_IMPACT_CF):
+        if mode in (self.MODE_3AXIS_SIMPLE, self.MODE_2AXIS_SIMPLE, self.MODE_ORIENT_CF):
             return usbyte(data, 0),
+        if mode == self.MODE_IMPACT_CF:
+            return unpack("<bb", data[0:2])  # threshold, holdoff
         if mode == self.MODE_IMPACT_COUNT:
             return usint(data, 0),
         if mode == self.MODE_3AXIS_ACCEL:
@@ -583,6 +592,20 @@ class TiltSensor(TiltSensorConstants, Peripheral):
             return usbyte(data, 0), usbyte(data, 1), usbyte(data, 2)
         log.debug("Got tilt sensor data in unexpected mode %s", mode)
         return ()
+
+    # The hub applies these presets whatever mode the port is in, so subscriptions keep running
+
+    async def set_impact_count(self, count: int) -> None:
+        """Set the impact counter (MODE_IMPACT_COUNT) to start from `count`"""
+        await self._write_direct_mode(self.MODE_IMPACT_COUNT, pack("<i", count))
+
+    async def set_orientation(self, orientation: int) -> None:
+        """Which side of the hub counts as its bottom: one of ORIENT_*; tilt angles become relative to it"""
+        await self._write_direct_mode(self.MODE_ORIENT_CF, pack("<B", orientation))
+
+    async def set_impact_config(self, threshold: int, holdoff: int) -> None:
+        """How hard a bump must be to count as an impact, and how long to wait before counting the next one"""
+        await self._write_direct_mode(self.MODE_IMPACT_CF, pack("<bb", threshold, holdoff))
 
 
 class VisionSensorConstants:
