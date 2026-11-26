@@ -1,0 +1,23 @@
+name: Publish
+
+# Publishing a GitHub release whose tag equals the version in setup.py uploads that version to PyPI.
+# PyPI trusts this workflow through Trusted Publishing: no token is stored here.
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Check the tag matches the version
+        run: test "$(python setup.py --version)" = "${{ github.event.release.tag_name }}"
+      - run: pip install build && python -m build
+      - uses: pypa/gh-action-pypi-publish@release/v1

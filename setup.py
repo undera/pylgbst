@@ -1,9 +1,6 @@
 from setuptools import setup
-import os
 
 version = "2.0.0"
-tag = os.getenv("TRAVIS_TAG")
-assert not tag or tag == version, "Travis tag has to match version: %r!=%r" % (tag, version)
 
 setup(
     name="pylgbst",
@@ -13,6 +10,8 @@ setup(
     author_email="andrei.pokhilko@gmail.com",
     license="MIT",
     description="Python library to interact with LEGO PoweredUp devices (Lego BOOST etc.)",
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
     url='https://github.com/undera/pylgbst',
     keywords=['LEGO', 'ROBOTICS', 'BLUETOOTH'],
 
