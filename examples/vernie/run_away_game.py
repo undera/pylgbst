@@ -1,5 +1,5 @@
 from pylgbst.peripherals import COLOR_GREEN, COLOR_NONE
-from vernie import *
+from . import *
 
 robot = Vernie()
 running = True

@@ -65,9 +65,7 @@ try:
             try:
                 data = udp_sock.recv(8192)
                 message = data
-            except KeyboardInterrupt:
-                raise
-            except BaseException:
+            except BlockingIOError:  # nothing more to read
                 break
 
         if not message:

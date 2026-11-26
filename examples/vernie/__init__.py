@@ -1,12 +1,15 @@
 # coding=utf-8
 import hashlib
+import logging
 import os
 import re
 import subprocess
 import time
 
-from pylgbst import *
+from pylgbst.exceptions import CommandDiscarded
 from pylgbst.hub import MoveHub
+
+log = logging.getLogger('vernie')
 
 try:
     import gtts
@@ -14,8 +17,6 @@ try:
 
     def say(text):
         print("%s" % text)
-        if isinstance(text, str):
-            text = text.decode("utf-8")
         md5 = hashlib.md5(text.encode('utf-8')).hexdigest()
         fname = "/tmp/%s.mp3" % md5
         if not os.path.exists(fname):
@@ -99,7 +100,10 @@ class Vernie(MoveHub):
             angle = -self._head_position
             direction = 1
 
-        self.motor_external.angled(direction * angle, speed)
+        try:
+            self.motor_external.angled(direction * angle, speed)
+        except CommandDiscarded as exc:  # the head hit its stop
+            log.warning("Head move cut short: %s", exc)
 
     def turn(self, direction, degrees=90, speed=0.3):
         self.head(STRAIGHT, speed=0.5)
@@ -134,7 +138,7 @@ class Vernie(MoveHub):
                 return
             say(' '.join(cmd[1:]))
         elif cmd[0] in ("fire", "shot", "огонь", "выстрел"):
-            say("fire")
+            self.say("fire")
             self.shot()
         elif cmd[0] in ("end", "finish", "конец", "стоп"):
             self.say("finished")
@@ -142,14 +146,14 @@ class Vernie(MoveHub):
         elif cmd[0] in ("forward", "вперёд", "вперед"):
             try:
                 dist = int(cmd[-1])
-            except BaseException:
+            except ValueError:
                 dist = 1
             confirm(cmd)
             self.move(FORWARD, distance=dist)
         elif cmd[0] in ("backward", "назад"):
             try:
                 dist = int(cmd[-1])
-            except BaseException:
+            except ValueError:
                 dist = 1
             confirm(cmd)
             self.move(BACKWARD, distance=dist)

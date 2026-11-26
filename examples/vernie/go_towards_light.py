@@ -1,6 +1,6 @@
 import logging
 
-from examples.vernie import Vernie
+from examples.vernie import FORWARD, LEFT, RIGHT, VERNIE_TO_MOTOR_DEGREES, Vernie
 from pylgbst.peripherals import VisionSensor
 
 logging.basicConfig(level=logging.INFO)
