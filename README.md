@@ -31,6 +31,7 @@ If you have Vernie assembled, you might run scripts from [`examples/vernie`](exa
 - [Headlight](docs/Headlight.md) brightness change
 - [push button](docs/MoveHub.md#push-button) status subscription
 - [battery voltage and current](docs/VoltageCurrent.md) subscription available
+- [relay](#keeping-the-hub-connected-between-runs) that holds the hub connection between script runs
 
 
 ## Usage
@@ -94,6 +95,18 @@ from pylgbst import get_connection_gatt
 conn = get_connection_gatt(hub_mac='AA:BB:CC:DD:EE:FF')
 hub = MoveHub(conn)
 ```
+
+## Keeping the Hub Connected Between Runs
+
+When you run many short experiments, powering the hub up and waiting for it to connect each time gets tedious. Start a relay once; it connects to the hub over Bluetooth (via `bleak`) and holds the connection while your scripts come and go:
+
+```bash
+python3 -m pylgbst.aio.relay --name "LEGO Move Hub"   # or --mac AA:BB:CC:DD:EE:FF, or nothing for any LEGO hub
+```
+
+Scripts need no changes: `get_connection_auto()`, and thus `MoveHub()` with no arguments, use the relay at `127.0.0.1:9090` when one is running, and fall back to Bluetooth otherwise. To skip the relay, pass an explicit connection, e.g. `MoveHub(get_connection_bleak(hub_name=...))`.
+
+The relay serves one script at a time; starting another one disconnects the previous. It replays the hub's peripheral announcements to every new script, and when a script exits, it stops the motors and switches off the sensor and button subscriptions that script left on. If the hub disconnects, the relay rescans for it.
 
 ## Roadmap & TODO
 
