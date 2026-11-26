@@ -795,7 +795,8 @@ class MsgVirtualPortSetup(DownstreamMsg):
             return False
         if self.cmd == self.CMD_DISCONNECT:
             return msg.event == MsgHubAttachedIO.EVENT_DETACHED and msg.port == self.port
-        return msg.event == MsgHubAttachedIO.EVENT_ATTACHED_VIRTUAL and tuple(msg.payload[2:4]) == tuple(self.port)
+        # the spec does not say in which order the hub lists the members
+        return msg.event == MsgHubAttachedIO.EVENT_ATTACHED_VIRTUAL and set(msg.payload[2:4]) == set(self.port)
 
 
 class MsgPortOutput(DownstreamMsg):

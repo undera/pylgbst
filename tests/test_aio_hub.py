@@ -180,6 +180,11 @@ class HubTest(unittest.IsolatedAsyncioTestCase):
         await task
         self.assertNotIn(0x10, self.hub.peripherals)
 
+    async def test_virtual_port_members_in_any_order(self):
+        task = await self._started(self.hub.connect_ports(PORT_B, PORT_A))
+        self.conn.hub_says('090004100226000001')
+        self.assertEqual((PORT_A, PORT_B), (await task).virtual_ports)
+
     async def test_virtual_port_unsupported(self):
         task = await self._started(self.hub.connect_ports(PORT_A, PORT_B))
         self.conn.hub_says('0500056105')  # what the Move Hub answers
