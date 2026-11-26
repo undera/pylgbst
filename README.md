@@ -40,7 +40,7 @@ _Please note that this library requires one of Bluetooth backend libraries to be
 
 Install library like this: 
 ```bash
-pip install -U pylgbst[bleak]
+pip install -U pylgbst
 ```
 
 Then instantiate MoveHub object and start invoking its methods. Following is example to just print peripherals detected on Hub:  
@@ -58,41 +58,23 @@ Each peripheral kind has own methods to do actions and/or get sensor data. See [
 
 ## Bluetooth Backend Prerequisites
 
-You have following options to install as Bluetooth backend (some of them might require `sudo` on Linux):
-
-- `pip install bleak` - [bleak](https://github.com/hbldh/bleak) lib, supports Linux/Windows/MacOS (__recommended__)
-- `pip install pygatt` - [pygatt](https://github.com/peplin/pygatt) lib, works on both Windows and Linux  
-- `pip install gatt` - [gatt](https://github.com/getsenic/gatt-python) lib, supports Linux, does not work on Windows
-- `pip install gattlib` - [gattlib](https://bitbucket.org/OscarAcena/pygattlib) - supports Linux, does not work on Windows, requires `sudo`
-- `pip install bluepy` - [bluepy](https://github.com/IanHarvey/bluepy) lib, supports Linux, including Raspbian, which allows connection to the hub from the Raspberry PI
-
-Note that `pip install -U pylgbst[bleak]` command indicates which backend to install. So you can install it backend-less, or with some backend from above.
-
-Windows users may first turn to the Bleak backend, which should support any internal or external Bluetooth adapter recognized by the OS. The Windows version of `pygatt` backend will only work with a [Bluegiga BLED112 Bluetooth Smart Dongle](https://www.silabs.com/products/wireless/bluetooth/bluetooth-low-energy-modules/bled112-bluetooth-smart-dongle).
+The library talks Bluetooth through [bleak](https://github.com/hbldh/bleak), which supports Linux, Windows and macOS, and gets installed along with `pip install -U pylgbst`. Other backends (`gatt`, `gattlib`, `pygatt`/BlueGiga, `bluepy`) were removed, since Bleak covers their platforms.
 
 _Please let author know if you have discovered any compatibility/preprequisite details, so we will update this section to help future users_
-
-Depending on backend type, you might need Linux `sudo` to be used when running Python.
 
 ### Bluetooth Connection Options
 There is an optional parameter for `MoveHub` class constructor, accepting instance of `Connection` object. By default, it will try to use whatever `get_connection_auto()` returns. You have several options to manually control that:
 
-- use `get_connection_auto()` to attempt backend auto-detection 
-- use `get_connection_bluegiga()` - if you use BlueGiga Adapter (`pygatt` library prerequisite)
-- use `get_connection_gatt()` - if you use Gatt Backend on Linux (`gatt` library prerequisite)
-- use `get_connection_gattool()` - if you use GattTool Backend on Linux (`pygatt` library prerequisite)
-- use `get_connection_gattlib()` - if you use GattLib Backend on Linux (`gattlib` library prerequisite)
-- use `get_connection_bluepy()` - if you use Bluepy backend on Linux/Raspbian (`bluepy` library prerequisite)
-- use `get_connection_bleak()` - if you use Bleak backend (`bleak` library prerequisite)
+- use `get_connection_auto()` - use the [relay](#keeping-the-hub-connected-between-runs) if it is running, Bleak otherwise
+- use `get_connection_bleak()` - connect over Bluetooth with Bleak
+- use `get_connection_relay()` - connect through a running relay
 
-All the functions above have optional arguments to specify adapter name and Hub name (or mac address). Please take a look at functions source code for details.
-
-If you want to specify name for Bluetooth interface to use on local computer, you can pass that to class or function of getting a connection. Then pass connection object to `MoveHub` constructor. Like this:
+All the functions above have optional arguments to specify Hub name or mac address. Please take a look at functions source code for details. Pass the connection object to `MoveHub` constructor, like this:
 ```python
 from pylgbst.hub import MoveHub
-from pylgbst import get_connection_gatt
+from pylgbst import get_connection_bleak
 
-conn = get_connection_gatt(hub_mac='AA:BB:CC:DD:EE:FF')
+conn = get_connection_bleak(hub_mac='AA:BB:CC:DD:EE:FF')
 hub = MoveHub(conn)
 ```
 

@@ -7,37 +7,6 @@ from pylgbst.comms.crelay import RelayConnection
 log = logging.getLogger('pylgbst')
 
 
-def get_connection_bluegiga(controller=None, hub_mac=None, hub_name=None):
-    del controller  # to prevent code analysis warning
-    from pylgbst.comms.cpygatt import BlueGigaConnection
-
-    return BlueGigaConnection().connect(hub_mac, hub_name)
-
-
-def get_connection_gattool(controller='hci0', hub_mac=None, hub_name=None):
-    from pylgbst.comms.cpygatt import GattoolConnection
-
-    return GattoolConnection(controller).connect(hub_mac, hub_name)
-
-
-def get_connection_gatt(controller='hci0', hub_mac=None, hub_name=None):
-    from pylgbst.comms.cgatt import GattConnection
-
-    return GattConnection(controller).connect(hub_mac, hub_name)
-
-
-def get_connection_gattlib(controller='hci0', hub_mac=None, hub_name=None):
-    from pylgbst.comms.cgattlib import GattLibConnection
-
-    return GattLibConnection(controller).connect(hub_mac, hub_name)
-
-
-def get_connection_bluepy(controller='hci0', hub_mac=None, hub_name=None):
-    from pylgbst.comms.cbluepy import BluepyConnection
-
-    return BluepyConnection(controller).connect(hub_mac, hub_name)
-
-
 def get_connection_bleak(controller='hci0', hub_mac=None, hub_name=None):
     """
     Return connection based with Bleak API as an endpoint.
@@ -65,11 +34,6 @@ def get_connection_auto(controller='hci0', hub_mac=None, hub_name=None) -> Conne
     fns = [
         get_connection_relay,
         get_connection_bleak,
-        get_connection_bluepy,
-        get_connection_bluegiga,
-        get_connection_gatt,
-        get_connection_gattool,
-        get_connection_gattlib,
     ]
 
     for fn in fns:

@@ -17,13 +17,8 @@ setup(
     keywords=['LEGO', 'ROBOTICS', 'BLUETOOTH'],
 
     packages=["pylgbst", "pylgbst.comms", "pylgbst.aio"],
-    requires=[],
+    install_requires=["bleak"],
     extras_require={
-        # Note that dbus and gi are normally system packages
-        "gatt": ["gatt", "dbus", "gi"],
-        "gattlib": ["gattlib"],
-        "pygatt": ["pygatt", "pexpect"],
-        "bluepy": ["bluepy"],
-        "bleak": ["bleak"],
+        "bleak": [],  # kept for `pip install pylgbst[bleak]` written before bleak became the only backend
     },
 )
