@@ -9,6 +9,7 @@ from pylgbst.messages import frame_length, length_size, payload_offset
 
 ATTACH_A = bytes.fromhex('0f0004000127000000001000000010')
 ATTACH_AB = bytes.fromhex('090004100227000001')
+ATTACH_LED = bytes.fromhex('0f0004320117000000000106000020')
 DETACH_A = bytes.fromhex('0500040000')
 FEEDBACK_A = bytes.fromhex('0500820001')
 
@@ -16,6 +17,10 @@ SUBSCRIBE_A = bytes.fromhex('0a004100020100000001')  # port A, mode 2, delta 1, 
 TIMED_A = bytes.fromhex('0c0081001109900114647f03')
 TIMED_AB = bytes.fromhex('0d008110110af401ecec647f03')
 LED_COLOR = bytes.fromhex('0800813211510003')
+LED_SERVING = LED_COLOR  # blue
+LED_IDLE = bytes.fromhex('0800813211510009')  # red
+LED_FEEDBACK = bytes.fromhex('050082320a')
+COMBINED_ON = bytes.fromhex('0500420003')  # unlock port A with multi-update
 BUTTON_ON = bytes.fromhex('0500010202')
 
 HUB_PROPERTY_REPLIES = {  # recorded on a Move Hub
@@ -41,6 +46,8 @@ class FakeHub(Connection):
         reply = HUB_PROPERTY_REPLIES.get(frame)
         if reply:
             self.on_frame(reply)
+        if frame in (LED_SERVING, LED_IDLE):
+            asyncio.get_running_loop().call_soon(self.on_frame, LED_FEEDBACK)
 
     async def disconnect(self):
         self.disconnected.set()
@@ -50,6 +57,7 @@ class RelayTest(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.hubs = []
         self.failing_connects = 0
+        self.announce = [ATTACH_A, ATTACH_AB]
         self.relay = Relay(self._connect_hub)
         self.server = await asyncio.start_server(self.relay._serve_client, '127.0.0.1', 0)
         self.port = self.server.sockets[0].getsockname()[1]
@@ -64,7 +72,7 @@ class RelayTest(unittest.IsolatedAsyncioTestCase):
         if self.failing_connects:
             self.failing_connects -= 1
             raise ConnectionError("br-connection-canceled")
-        hub = FakeHub([ATTACH_A, ATTACH_AB])
+        hub = FakeHub(self.announce)
         self.hubs.append(hub)
         return hub
 
@@ -119,6 +127,27 @@ class RelayTest(unittest.IsolatedAsyncioTestCase):
             bytes.fromhex('0800811011020000'),  # AB: grouped power 0
             bytes.fromhex('0500010203'),  # button updates off
         }, set(self.hubs[0].written[5:]))
+
+    async def test_resets_combined_mode_on_exit(self):
+        conn, _ = await self._client()
+        await conn.write(COMBINED_ON)
+        await self._until(lambda: self.hubs[0].written)
+        await conn.disconnect()
+        await self._until(lambda: len(self.hubs[0].written) == 2)
+        self.assertEqual(bytes.fromhex('0500420006'), self.hubs[0].written[1])
+
+    async def test_led_shows_whether_a_client_is_served(self):
+        self.holder.cancel()
+        self.announce = [ATTACH_A, ATTACH_AB, ATTACH_LED]
+        self.holder = asyncio.create_task(self.relay.hold_hub())
+        conn, received = await self._client()
+        await self._until(lambda: len(received) == 3)
+        self.assertEqual([LED_SERVING], self.hubs[-1].written)
+        await conn.disconnect()
+        await self._until(lambda: len(self.hubs[-1].written) == 2)
+        self.assertEqual(LED_IDLE, self.hubs[-1].written[1])
+        await asyncio.sleep(0.02)
+        self.assertNotIn(LED_FEEDBACK, received)  # the relay's own feedback
 
     async def test_new_client_takes_over(self):
         first, _ = await self._client()

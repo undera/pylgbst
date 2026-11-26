@@ -8,24 +8,31 @@ One script is served at a time; a new one takes over from the previous. For each
 - replays the attached-IO announcements the hub sent once, at connection time;
 - answers its request to disconnect the hub itself, keeping the hub connected;
 - on its exit, stops the motors it drove and switches off the value updates it enabled.
+The hub's LED shows it: blue while a script is served, red once it is gone.
 """
 import argparse
 import asyncio
 import logging
+import signal
 from struct import pack
 from typing import Awaitable, Callable, Dict, Optional, Set
 
 from pylgbst.messages import (
-    MsgHubAction, MsgHubAttachedIO, MsgHubProperties, MsgPortInputFmtSetupSingle, MsgPortOutput, payload_offset,
+    DevTypes, MsgHubAction, MsgHubAttachedIO, MsgHubProperties, MsgPortInputFmtSetupCombined,
+    MsgPortInputFmtSetupSingle, MsgPortOutput, MsgPortOutputFeedback, decode_upstream, payload_offset,
 )
+from pylgbst.utilities import ushort
 
 from .ble import BleakConnection
 from .connection import Connection, RELAY_HOST, RELAY_PORT, read_frame
-from .peripherals import MotorConstants
+from .peripherals import COLOR_BLUE, COLOR_RED, LEDRGBConstants, MotorConstants
 
 log = logging.getLogger(__name__)
 
 RECONNECT_PAUSE = 1.0
+LED_FEEDBACK_TIMEOUT = 1.0
+LED_SERVING = pack('<BB', LEDRGBConstants.MODE_INDEX, COLOR_BLUE)  # the color of a hub with a connection
+LED_IDLE = pack('<BB', LEDRGBConstants.MODE_INDEX, COLOR_RED)  # same mode as LED_SERVING: no mode switch
 _DISCONNECT_REPLY = MsgHubAction(MsgHubAction.UPSTREAM_DISCONNECT).bytes()  # what the hub would answer
 
 
@@ -38,6 +45,7 @@ class ClientState:
 
     def __init__(self):
         self.updating_ports: Dict[int, int] = {}  # port -> mode with value updates enabled
+        self.combined_ports: Set[int] = set()
         self.driven_ports: Set[int] = set()
         self.button_updates = False
 
@@ -50,6 +58,12 @@ class ClientState:
                 self.updating_ports[port] = mode
             else:
                 self.updating_ports.pop(port, None)
+        elif msg_type == MsgPortInputFmtSetupCombined.TYPE:  # payload: port, subcommand, ...
+            port, subcommand = payload[0], payload[1]
+            if subcommand == MsgPortInputFmtSetupCombined.SUB_UNLOCK_MULTI_UPDATE:
+                self.combined_ports.add(port)
+            elif subcommand == MsgPortInputFmtSetupCombined.SUB_RESET:
+                self.combined_ports.discard(port)
         elif msg_type == MsgPortOutput.TYPE:  # payload: port, startup/completion flags, subcommand, params
             port, subcommand = payload[0], payload[2]
             if subcommand not in (MsgPortOutput.WRITE_DIRECT, MsgPortOutput.WRITE_DIRECT_MODE_DATA):  # LEDs, encoders
@@ -63,6 +77,8 @@ class ClientState:
                     self.button_updates = False
 
     def undo_frames(self, virtual_ports: Set[int]):
+        for port in self.combined_ports:
+            yield MsgPortInputFmtSetupCombined(port, MsgPortInputFmtSetupCombined.SUB_RESET).bytes()
         for port, mode in self.updating_ports.items():
             yield MsgPortInputFmtSetupSingle(port, mode, delta=1, update_enable=0).bytes()
         for port in self.driven_ports:
@@ -81,21 +97,30 @@ class Relay:
         self._hub_ready = asyncio.Event()
         self._attached: Dict[int, MsgHubAttachedIO] = {}
         self._announcements: Dict[int, bytes] = {}  # port -> attach frame as the hub sent it, for replay
+        self._led_port: Optional[int] = None
+        self._led_done: Optional[asyncio.Event] = None  # the hub's feedback on the relay's LED command
         self._client: Optional[asyncio.StreamWriter] = None
         self._client_gone: Optional[asyncio.Event] = None
         self._admission = asyncio.Lock()
 
     async def serve(self, host: str = RELAY_HOST, port: int = RELAY_PORT) -> None:
+        asyncio.get_running_loop().add_signal_handler(signal.SIGTERM, asyncio.current_task().cancel)  # as Ctrl+C
         server = await asyncio.start_server(self._serve_client, host, port)
         log.info("Relay listening on %s:%s", host, port)
         async with server:
-            await self.hold_hub()
+            try:
+                await self.hold_hub()
+            finally:  # an abandoned link keeps the hub from advertising until BlueZ times it out
+                if self._hub:
+                    log.info("Disconnecting the hub")
+                    await self._hub.disconnect()
 
     async def hold_hub(self) -> None:
         """Keep a hub connected, reconnecting whenever it drops"""
         while True:
             self._attached.clear()
             self._announcements.clear()
+            self._led_port = None
             try:
                 hub = await self._connect_hub()
                 await hub.start(self._from_hub)
@@ -116,16 +141,38 @@ class Relay:
         return {port for port, msg in self._attached.items() if msg.event == MsgHubAttachedIO.EVENT_ATTACHED_VIRTUAL}
 
     def _from_hub(self, frame: bytes) -> None:
-        if frame[payload_offset(frame) - 1] == MsgHubAttachedIO.TYPE:
+        msg_type = frame[payload_offset(frame) - 1]
+        if msg_type == MsgHubAttachedIO.TYPE:
             msg = MsgHubAttachedIO.decode(frame)
             if msg.event == MsgHubAttachedIO.EVENT_DETACHED:
                 self._attached.pop(msg.port, None)
                 self._announcements.pop(msg.port, None)
+                if msg.port == self._led_port:
+                    self._led_port = None
             else:
                 self._attached[msg.port] = msg
                 self._announcements[msg.port] = frame
+                if ushort(msg.payload, 0) == DevTypes.RGB_LIGHT.value:
+                    self._led_port = msg.port
+        elif msg_type == MsgPortOutputFeedback.TYPE and self._led_done and not self._led_done.is_set():
+            if [msg.port for msg in decode_upstream(frame)] == [self._led_port]:  # the relay's own, not a client's
+                self._led_done.set()
+                return
         if self._client:
             self._client.write(frame)
+
+    async def _show(self, led_data: bytes) -> None:
+        """Set the hub's LED, waiting for the hub's feedback so that no client gets it"""
+        if self._led_port is None:
+            return
+        self._led_done = asyncio.Event()
+        try:
+            await self._hub.write(MsgPortOutput(self._led_port, MsgPortOutput.WRITE_DIRECT_MODE_DATA, led_data).bytes())
+            await asyncio.wait_for(self._led_done.wait(), LED_FEEDBACK_TIMEOUT)
+        except (OSError, asyncio.TimeoutError) as exc:
+            log.warning("Failed to set the LED: %r", exc)
+        finally:
+            self._led_done = None
 
     async def _serve_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         peer = writer.get_extra_info('peername')
@@ -139,6 +186,7 @@ class Relay:
                 log.info("Client %s waits for the hub", peer)
                 await self._hub_ready.wait()
 
+            await self._show(LED_SERVING)
             log.info("Client %s connected, replaying %s attach announcements", peer, len(self._announcements))
             for frame in self._announcements.values():  # synchronously with registering: no frame is missed or doubled
                 writer.write(frame)
@@ -163,6 +211,8 @@ class Relay:
         finally:
             self._client = None
             await self._undo(state)
+            if self._hub_ready.is_set():
+                await self._show(LED_IDLE)
             writer.close()
             self._client_gone.set()
 

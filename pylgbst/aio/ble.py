@@ -1,6 +1,7 @@
 """
 BLE transport via bleak
 """
+import asyncio
 import logging
 import platform
 import time
@@ -20,6 +21,8 @@ LEGO_HUB_CHARACTERISTIC = '00001624-1212-efde-1623-785feabcd123'
 # the hub drops a fresh connection unless it receives something: request the advertising name
 _HELLO = MsgHubProperties(MsgHubProperties.ADVERTISE_NAME, MsgHubProperties.UPD_REQUEST).bytes()
 _SCAN_SLICE = 10.0
+# a connect takes ~1.5s; a hung one must fail early: the hub advertises for only ~10s
+_CONNECT_TIMEOUT = 3.0
 
 
 class BleakConnection(Connection):
@@ -50,23 +53,39 @@ class BleakConnection(Connection):
 
         log.info("Scanning for hub (mac=%s, name=%s)... turn it on now", hub_mac, hub_name)
         deadline = None if timeout is None else time.monotonic() + timeout
-        device = None
-        while device is None:
+        while True:
             scan_for = _SCAN_SLICE if deadline is None else min(_SCAN_SLICE, deadline - time.monotonic())
             if scan_for <= 0:
                 raise TimeoutError("No hub found (mac=%s, name=%s) within %ss" % (hub_mac, hub_name, timeout))
             device = await bleak.BleakScanner.find_device_by_filter(matches, timeout=scan_for, **scanner_kwargs)
+            if device is None:
+                continue
+            log.info("Found %s, connecting", device)
+            try:
+                return await cls._connect_device(device)
+            except TimeoutError as exc:
+                log.warning("Connecting %s failed: %r, scanning again", device, exc)
 
-        log.info("Found %s, connecting", device)
+    @classmethod
+    async def _connect_device(cls, device: bleak.BLEDevice) -> 'BleakConnection':
         conn = None
+        connecting = None
 
         def on_disconnect(_client):
             log.warning("Hub %s disconnected", device.address)
             if conn is not None:
                 conn.disconnected.set()
+            else:  # BlueZ keeps waiting after the link fails to establish (HCI reason 0x3e)
+                connecting.cancel()
 
-        client = bleak.BleakClient(device, disconnected_callback=on_disconnect)
-        await client.connect()
+        client = bleak.BleakClient(device, disconnected_callback=on_disconnect, timeout=_CONNECT_TIMEOUT)
+        connecting = asyncio.create_task(client.connect())
+        try:
+            await connecting
+        except asyncio.CancelledError:
+            if asyncio.current_task().cancelling():  # our caller is cancelled, not just the connect
+                raise
+            raise TimeoutError("Link to %s failed to establish" % device.address) from None
         conn = cls(client)
         log.info("Connected to %s", device)
         return conn
