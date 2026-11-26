@@ -206,8 +206,7 @@ def get_options():
     arg_parser.add_argument(
         '-c', '--connection',
         default='auto://',
-        help='''Specify connection URL to use, `protocol://mac?param=X` with protocol in:
-    "gatt","pygatt","gattlib","gattool", "bluepy","bluegiga"'''
+        help='''Specify connection URL to use, `protocol://mac?param=X` with protocol in: "bleak", "relay"'''
     )
     arg_parser.add_argument(
         '-d', '--demo',
@@ -222,16 +221,13 @@ def connection_from_url(url):
     import pylgbst
     if url == 'auto://':
         return None
-    try:
-        from urllib.parse import urlparse, parse_qs
-    except ImportError:
-        from urlparse import urlparse, parse_qs
+    from urllib.parse import urlparse, parse_qs
     parsed = urlparse(url)
     name = 'get_connection_%s' % parsed.scheme
     factory = getattr(pylgbst, name, None)
     if not factory:
         msg = "Unrecognised URL scheme/protocol, expect a get_connection_<protocol> in pylgbst: %s"
-        raise ValueError(msg % parsed.protocol)
+        raise ValueError(msg % parsed.scheme)
     params = {}
     if parsed.netloc.strip():
         params['hub_mac'] = parsed.netloc
