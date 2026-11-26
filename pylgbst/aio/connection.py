@@ -4,9 +4,10 @@ Transport abstraction for raw LWP3 frames, and the relay client. No BLE dependen
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
-from pylgbst.messages import frame_length, length_size
+from pylgbst.exceptions import HubError
+from pylgbst.messages import MsgHubProperties, decode_upstream, frame_length, length_size
 
 log = logging.getLogger(__name__)
 
@@ -63,14 +64,58 @@ class RelayConnection(Connection):
         self._reader = reader
         self._writer = writer
         self._reading: Optional[asyncio.Task] = None
+        self._early: List[bytes] = []  # read before start(), delivered by it
 
     @classmethod
-    async def connect(cls, host: str = RELAY_HOST, port: int = RELAY_PORT) -> 'RelayConnection':
+    async def connect(cls, host: str = RELAY_HOST, port: int = RELAY_PORT, hub_mac: Optional[str] = None,
+                      hub_name: Optional[str] = None) -> 'RelayConnection':
+        """
+        :param hub_mac: fail unless the relay holds the hub with this address; takes precedence over `hub_name`
+        :param hub_name: fail unless the relay holds a hub advertising this name
+        :raises HubError: the relay holds another hub
+        """
         reader, writer = await asyncio.open_connection(host, port)
         log.info("Connected to relay at %s:%s", host, port)
-        return cls(reader, writer)
+        conn = cls(reader, writer)
+        try:
+            await conn._check_hub(hub_mac, hub_name)
+        except BaseException:
+            await conn.disconnect()
+            raise
+        return conn
+
+    async def _check_hub(self, hub_mac: Optional[str], hub_name: Optional[str]) -> None:
+        if hub_mac:
+            held = (await self._hub_property(MsgHubProperties.PRIMARY_MAC)).hex(':')
+            if held.lower() != hub_mac.lower():
+                raise HubError("Relay holds hub %s, not the requested %s" % (held, hub_mac))
+        elif hub_name:
+            held = (await self._hub_property(MsgHubProperties.ADVERTISE_NAME)).decode()
+            if held != hub_name:
+                raise HubError("Relay holds hub %r, not the requested %r" % (held, hub_name))
+
+    async def _hub_property(self, prop: int) -> bytes:
+        request = MsgHubProperties(prop, MsgHubProperties.UPD_REQUEST)
+        await self.write(request.bytes())
+        while True:
+            try:
+                frame = await read_frame(self._reader)
+            except asyncio.IncompleteReadError as exc:
+                raise ConnectionError("Relay closed the connection") from exc
+            self._early.append(frame)
+            try:
+                msgs = decode_upstream(frame)
+            except Exception:  # the hub will get the frame on start(); here it only is not the reply
+                log.exception("Undecodable frame while waiting for hub property: %s", frame.hex())
+                continue
+            for msg in msgs:
+                if request.is_reply(msg):
+                    return msg.parameters
 
     async def start(self, on_frame: FrameHandler) -> None:
+        for frame in self._early:
+            on_frame(frame)
+        self._early.clear()
         self._reading = asyncio.create_task(self._read(on_frame), name='relay reader')
 
     async def _read(self, on_frame: FrameHandler) -> None:

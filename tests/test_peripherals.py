@@ -1,21 +1,34 @@
 import logging
 import threading
 import time
-import unittest
 
+from pylgbst.aio import peripherals as aio_peripherals
 from pylgbst.hub import MoveHub
 from pylgbst.peripherals import LEDRGB, TiltSensor, COLOR_RED, Button, Current, Voltage, VisionSensor, \
     EncodedMotor
-from tests import HubMock
+from tests import ATTACH_CURRENT, ATTACH_LED, ATTACH_MOTOR_C, ATTACH_MOTOR_D, ATTACH_TILT, ATTACH_VISION_C, \
+    ATTACH_VOLTAGE, HubMock, HubTestCase, hub_with
 
 
-class PeripheralsTest(unittest.TestCase):
+def button_of(test, hub):
+    """The green button, which only hubs that have one create and close"""
+
+    async def create():
+        return aio_peripherals.Button(hub.aio)
+
+    async def close():
+        button.close_subscriptions()
+
+    button = hub.loop_thread.run(create())
+    test.addCleanup(lambda: hub.loop_thread.run(close()))
+    return Button(hub, button)
+
+
+class PeripheralsTest(HubTestCase):
 
     def test_button(self):
-        hub = HubMock()
-        time.sleep(0.1)
-        button = Button(hub)
-        hub.peripherals[0x00] = button
+        hub = self.closing(HubMock())
+        button = button_of(self, hub)
 
         vals = []
 
@@ -40,11 +53,9 @@ class PeripheralsTest(unittest.TestCase):
         self.assertEqual(b"0500010203", hub.writes[2][1])
 
     def test_button_callback_sends_command(self):
-        hub = HubMock()
-        button = Button(hub)
-        hub.peripherals[0x00] = button
-        motor = EncodedMotor(hub, MoveHub.PORT_D)
-        hub.peripherals[MoveHub.PORT_D] = motor
+        hub = self.closing(hub_with(ATTACH_MOTOR_D))
+        button = button_of(self, hub)
+        motor = hub.peripherals[MoveHub.PORT_D]
         done = threading.Event()
 
         def callback(pressed):
@@ -61,9 +72,9 @@ class PeripheralsTest(unittest.TestCase):
         hub.connection.wait_notifications_handled()
 
     def test_led(self):
-        hub = HubMock()
-        hub.led = LEDRGB(hub, MoveHub.PORT_LED)
-        hub.peripherals[MoveHub.PORT_LED] = hub.led
+        hub = self.closing(hub_with(ATTACH_LED))
+        hub.led = hub.peripherals[MoveHub.PORT_LED]
+        self.assertIsInstance(hub.led, LEDRGB)
 
         hub.connection.notification_delayed("0a004732000100000000", 0.1)
         hub.connection.notification_delayed("050082320a", 0.2)
@@ -78,10 +89,9 @@ class PeripheralsTest(unittest.TestCase):
         self.assertEqual(b"0a008132115101204060", hub.writes.pop(1)[1])
 
     def test_current(self):
-        hub = HubMock()
-        time.sleep(0.1)
-        current = Current(hub, MoveHub.PORT_CURRENT)
-        hub.peripherals[MoveHub.PORT_CURRENT] = current
+        hub = self.closing(hub_with(ATTACH_CURRENT))
+        current = hub.peripherals[MoveHub.PORT_CURRENT]
+        self.assertIsInstance(current, Current)
 
         vals = []
 
@@ -103,10 +113,9 @@ class PeripheralsTest(unittest.TestCase):
         self.assertEqual(b"0a00413b000100000000", hub.writes[2][1])
 
     def test_voltage(self):
-        hub = HubMock()
-        time.sleep(0.1)
-        voltage = Voltage(hub, MoveHub.PORT_VOLTAGE)
-        hub.peripherals[MoveHub.PORT_VOLTAGE] = voltage
+        hub = self.closing(hub_with(ATTACH_VOLTAGE))
+        voltage = hub.peripherals[MoveHub.PORT_VOLTAGE]
+        self.assertIsInstance(voltage, Voltage)
 
         vals = []
 
@@ -128,9 +137,9 @@ class PeripheralsTest(unittest.TestCase):
         self.assertEqual(b"0a00413c000100000000", hub.writes[2][1])
 
     def test_tilt_sensor(self):
-        hub = HubMock()
-        sensor = TiltSensor(hub, MoveHub.PORT_TILT_SENSOR)
-        hub.peripherals[MoveHub.PORT_TILT_SENSOR] = sensor
+        hub = self.closing(hub_with(ATTACH_TILT))
+        sensor = hub.peripherals[MoveHub.PORT_TILT_SENSOR]
+        self.assertIsInstance(sensor, TiltSensor)
 
         hub.connection.notification_delayed('0a00473a000100000000', 0.05)
         hub.connection.notification_delayed('0600453a0201', 0.1)
@@ -167,9 +176,9 @@ class PeripheralsTest(unittest.TestCase):
         hub.connection.wait_notifications_handled()
 
     def test_motor(self):
-        hub = HubMock()
-        motor = EncodedMotor(hub, MoveHub.PORT_D)
-        hub.peripherals[MoveHub.PORT_D] = motor
+        hub = self.closing(hub_with(ATTACH_MOTOR_D))
+        motor = hub.peripherals[MoveHub.PORT_D]
+        self.assertIsInstance(motor, EncodedMotor)
 
         hub.connection.notification_delayed('050082030a', 0.1)
         motor.start_power(1.0)
@@ -218,9 +227,9 @@ class PeripheralsTest(unittest.TestCase):
         hub.connection.wait_notifications_handled()
 
     def test_motor_discarded(self):
-        hub = HubMock()
-        motor = EncodedMotor(hub, MoveHub.PORT_D)
-        hub.peripherals[MoveHub.PORT_D] = motor
+        hub = self.closing(hub_with(ATTACH_MOTOR_D))
+        motor = hub.peripherals[MoveHub.PORT_D]
+        self.assertIsInstance(motor, EncodedMotor)
 
         # discarded with nothing taking over: raise instead of waiting forever
         hub.connection.notification_delayed('0500820301', 0.1)
@@ -243,9 +252,8 @@ class PeripheralsTest(unittest.TestCase):
         hub.connection.wait_notifications_handled()
 
     def test_motor_sensor(self):
-        hub = HubMock()
-        motor = EncodedMotor(hub, MoveHub.PORT_C)
-        hub.peripherals[MoveHub.PORT_C] = motor
+        hub = self.closing(hub_with(ATTACH_MOTOR_C))
+        motor = hub.peripherals[MoveHub.PORT_C]
 
         vals = []
 
@@ -267,9 +275,9 @@ class PeripheralsTest(unittest.TestCase):
         self.assertEqual([(0,), (-1,), (-2,)], vals)
 
     def test_color_sensor(self):
-        hub = HubMock()
-        cds = VisionSensor(hub, MoveHub.PORT_C)
-        hub.peripherals[MoveHub.PORT_C] = cds
+        hub = self.closing(hub_with(ATTACH_VISION_C))
+        cds = hub.peripherals[MoveHub.PORT_C]
+        self.assertIsInstance(cds, VisionSensor)
 
         vals = []
 

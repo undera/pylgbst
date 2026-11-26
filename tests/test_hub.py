@@ -1,19 +1,19 @@
 import time
-import unittest
 from binascii import unhexlify
 
+from pylgbst.exceptions import HubDisconnected
 from pylgbst.hub import Hub, MoveHub
 from pylgbst.messages import MsgHubAction, MsgHubAlert, MsgHubProperties, MsgPortOutputFeedback, decode_upstream, \
     encode_length, frame_length, length_size
 from pylgbst.peripherals import VisionSensor
 from pylgbst.utilities import usbyte
-from tests import ConnectionMock
+from tests import HubTestCase, ConnectionMock
 
 
-class HubTest(unittest.TestCase):
+class HubTest(HubTestCase):
     def test_hub_properties(self):
         conn = ConnectionMock().connect()
-        hub = Hub(conn)
+        hub = self.closing(Hub(conn))
 
         conn.notification_delayed('060001060600', 0.1)
         msg = MsgHubProperties(MsgHubProperties.VOLTAGE_PERC, MsgHubProperties.UPD_REQUEST)
@@ -32,7 +32,7 @@ class HubTest(unittest.TestCase):
 
     def test_device_attached(self):
         conn = ConnectionMock().connect()
-        hub = Hub(conn)
+        hub = self.closing(Hub(conn))
 
         # regular startup attaches
         conn.notifications.append('0f0004010126000000001000000010')
@@ -67,47 +67,47 @@ class HubTest(unittest.TestCase):
 
     def test_multi_port_feedback_reaches_each_motor(self):
         conn = ConnectionMock().connect()
-        hub = Hub(conn)
         conn.notifications.append('0f0004000127000000001000000010')  # motor on A
+        conn.notifications.append('0f0004010127000000001000000010')  # motor on B
         conn.notifications.append('090004100227000001')  # virtual AB
-        conn.notifications.append('0500821001')  # AB in progress
-        conn.notifications.append('070082100c0001')
-        conn.wait_notifications_handled()
+        hub = self.closing(Hub(conn))
+        while 0x10 not in hub.peripherals:
+            time.sleep(0.01)
+        conn.notification_delayed('0500821001', 0.1)  # AB in progress
+        hub.peripherals[0x10].timed(1.0, wait_complete=False)
+        conn.notification_delayed('070082100c0001', 0.1)  # AB discarded, A in progress
+        hub.peripherals[0x00].timed(1.0, wait_complete=False)
         self.assertFalse(hub.peripherals[0x10].cmd_in_progress)
         self.assertTrue(hub.peripherals[0x00].cmd_in_progress)
-
-    def test_hub_actions(self):
-        conn = ConnectionMock().connect()
-        hub = Hub(conn)
-        conn.notification_delayed('04000230', 0.1)
-        hub.send(MsgHubAction(MsgHubAction.UPSTREAM_SHUTDOWN))
-
-        conn.notification_delayed('04000231', 0.1)
-        hub.send(MsgHubAction(MsgHubAction.UPSTREAM_DISCONNECT))
-
-        conn.notification_delayed('04000232', 0.1)
-        hub.send(MsgHubAction(MsgHubAction.UPSTREAM_BOOT_MODE))
-        time.sleep(0.1)
         conn.wait_notifications_handled()
 
+    def test_hub_ending_connection_closes_it(self):
+        for action in ('04000230', '04000231'):  # switches off, disconnects
+            conn = ConnectionMock().connect()
+            hub = self.closing(Hub(conn))
+            conn.notifications.append(action)
+            time.sleep(0.1)
+            with self.assertRaises(HubDisconnected):
+                hub.send(MsgHubProperties(MsgHubProperties.VOLTAGE_PERC, MsgHubProperties.UPD_REQUEST))
+            conn.wait_notifications_handled()
+
     def test_hub_action_reply_ignores_other_messages(self):
-        conn = ConnectionMock().connect()
-        hub = Hub(conn)
         request = MsgHubAction(MsgHubAction.DISCONNECT)
-        self.assertFalse(request.is_reply(MsgHubProperties(MsgHubProperties.VOLTAGE_PERC, MsgHubProperties.UPD_REQUEST)))
+        voltage = MsgHubProperties(MsgHubProperties.VOLTAGE_PERC, MsgHubProperties.UPD_REQUEST)
+        self.assertFalse(request.is_reply(voltage))
         self.assertFalse(request.is_reply(MsgHubAction(MsgHubAction.UPSTREAM_BOOT_MODE)))
 
-        # a sensor/property value arriving while disconnect() waits must not break the reply
-        hub._sync_request = request
-        hub._notify(hub.HUB_HARDWARE_HANDLE, unhexlify('060001060600'))
-        hub._notify(hub.HUB_HARDWARE_HANDLE, unhexlify('04000231'))
-        reply = hub._sync_replies.get(timeout=1)
-        self.assertIsInstance(reply, MsgHubAction)
-        self.assertEqual(MsgHubAction.UPSTREAM_DISCONNECT, reply.action)
+        # a property value arriving while disconnect() waits must not break the reply
+        conn = ConnectionMock().connect()
+        hub = self.closing(Hub(conn))
+        conn.notification_delayed('060001060600', 0.1)
+        conn.notification_delayed('04000231', 0.2)
+        hub.disconnect()
+        conn.wait_notifications_handled()
 
     def test_hub_alerts(self):
         conn = ConnectionMock().connect()
-        hub = Hub(conn)
+        hub = self.closing(Hub(conn))
         conn.notification_delayed('0600 03 0104ff', 0.1)
         hub.send(MsgHubAlert(MsgHubAlert.LOW_VOLTAGE, MsgHubAlert.UPD_REQUEST))
         conn.notification_delayed('0600 03 030400', 0.1)
@@ -116,20 +116,20 @@ class HubTest(unittest.TestCase):
 
     def test_error(self):
         conn = ConnectionMock().connect()
-        hub = Hub(conn)
+        self.closing(Hub(conn))
         conn.notification_delayed("0500056105", 0.1)
         time.sleep(0.2)
         conn.wait_notifications_handled()
 
     def test_disconnect_off(self):
         conn = ConnectionMock().connect()
-        hub = Hub(conn)
+        hub = self.closing(Hub(conn))
         conn.notification_delayed("04000231", 0.1)
         hub.disconnect()
         self.assertEqual(b"04000202", conn.writes[1][1])
 
         conn = ConnectionMock().connect()
-        hub = Hub(conn)
+        hub = self.closing(Hub(conn))
         conn.notification_delayed("04000230", 0.1)
         hub.switch_off()
         self.assertEqual(b"04000201", conn.writes[1][1])
@@ -137,7 +137,7 @@ class HubTest(unittest.TestCase):
     def test_sensor(self):
         conn = ConnectionMock().connect()
         conn.notifications.append("0f0004020125000000001000000010")  # add dev
-        hub = Hub(conn)
+        hub = self.closing(Hub(conn))
         time.sleep(0.1)
         dev = hub.peripherals[0x02]
         assert isinstance(dev, VisionSensor)
@@ -165,7 +165,7 @@ class HubTest(unittest.TestCase):
         self.assertEqual([(255, 10.0)], vals)
 
 
-class MoveHubTest(unittest.TestCase):
+class MoveHubTest(HubTestCase):
     def test_capabilities(self):
         conn = ConnectionMock()
         conn.notifications.append('0f00 04 02 0125000000001000000010')
@@ -182,7 +182,7 @@ class MoveHubTest(unittest.TestCase):
         conn.notification_delayed('0b00010d06001653a0d1d4', 1.3)
         conn.notification_delayed('060001060600', 1.5)
         conn.notification_delayed('0600030104ff', 1.7)
-        MoveHub(conn.connect())
+        self.closing(MoveHub(conn.connect()))
         time.sleep(1)
         conn.wait_notifications_handled()
         self.assertEqual(b"0500010105", conn.writes[1][1])

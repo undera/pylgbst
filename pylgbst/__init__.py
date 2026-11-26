@@ -1,51 +1,37 @@
-import logging
-import traceback
-
-from pylgbst.comms import Connection
-from pylgbst.comms.crelay import RelayConnection
-
-log = logging.getLogger('pylgbst')
+from pylgbst.aio.ble import BleakConnection, connect
+from pylgbst.aio.connection import RelayConnection
+from pylgbst.aio.loop_thread import shared_loop_thread
+from pylgbst.comms import AsyncBackedConnection
 
 
-def get_connection_bleak(controller='hci0', hub_mac=None, hub_name=None):
+def _held(connecting) -> AsyncBackedConnection:
+    loop_thread = shared_loop_thread()
+    return AsyncBackedConnection(loop_thread, loop_thread.run(connecting))
+
+
+def get_connection_bleak(controller=None, hub_mac=None, hub_name=None) -> AsyncBackedConnection:
     """
-    Return connection based with Bleak API as an endpoint.
+    Scan for the hub and connect over Bluetooth.
 
-    :param controller: Not used, kept for compatibility with others.
-    :param hub_mac: Optional Lego HUB MAC to connect to.
-    :return: Driver object.
+    :param controller: not used, kept for compatibility
+    :param hub_mac: match by address; takes precedence over `hub_name`
+    :param hub_name: match by advertised name; with neither given, any LEGO hub matches
     """
-    del controller  # to prevent code analysis warning
-    from pylgbst.comms.cbleak import BleakDriver
-
-    return BleakDriver(hub_mac, hub_name)
+    del controller
+    return _held(BleakConnection.connect(hub_mac, hub_name))
 
 
-def get_connection_relay(controller=None, hub_mac=None, hub_name=None):
+def get_connection_relay(controller=None, hub_mac=None, hub_name=None) -> AsyncBackedConnection:
     """
     Connect through a running `python3 -m pylgbst.aio.relay`, which holds the hub between script runs.
-    The relay serves the single hub it holds, so the arguments are ignored.
+
+    :raises HubError: the relay holds a hub other than the one `hub_mac`/`hub_name` asks for
     """
-    del controller, hub_mac, hub_name
-    return RelayConnection()
+    del controller
+    return _held(RelayConnection.connect(hub_mac=hub_mac, hub_name=hub_name))
 
 
-def get_connection_auto(controller='hci0', hub_mac=None, hub_name=None) -> Connection:
-    fns = [
-        get_connection_relay,
-        get_connection_bleak,
-    ]
-
-    for fn in fns:
-        try:
-            log.info("Trying %s", fn.__name__)
-            conn = fn(controller, hub_mac, hub_name)
-        except KeyboardInterrupt:
-            raise
-        except BaseException:
-            log.debug("Failed: %s", traceback.format_exc())
-        else:
-            log.info("Succeeded with %s", conn.__class__.__name__)
-            return conn
-
-    raise Exception("Failed to autodetect connection, make sure you have installed prerequisites")
+def get_connection_auto(controller=None, hub_mac=None, hub_name=None) -> AsyncBackedConnection:
+    """Connect through the relay if it runs, otherwise over Bluetooth"""
+    del controller
+    return _held(connect(hub_mac, hub_name))

@@ -6,6 +6,7 @@ Holds the BLE connection to a hub between script runs, so experiments need no po
 Scripts reach it with `pylgbst.aio.ble.connect()` or the sync `get_connection_auto()`, both prefer a running relay.
 One script is served at a time; a new one takes over from the previous. For each script the relay:
 - replays the attached-IO announcements the hub sent once, at connection time;
+- answers its request to disconnect the hub itself, keeping the hub connected;
 - on its exit, stops the motors it drove and switches off the value updates it enabled.
 """
 import argparse
@@ -15,14 +16,22 @@ from struct import pack
 from typing import Awaitable, Callable, Dict, Optional, Set
 
 from pylgbst.messages import (
-    MsgHubAttachedIO, MsgHubProperties, MsgPortInputFmtSetupSingle, MsgPortOutput, payload_offset,
+    MsgHubAction, MsgHubAttachedIO, MsgHubProperties, MsgPortInputFmtSetupSingle, MsgPortOutput, payload_offset,
 )
-from pylgbst.peripherals import Motor
 
 from .ble import BleakConnection
 from .connection import Connection, RELAY_HOST, RELAY_PORT, read_frame
+from .peripherals import MotorConstants
 
 log = logging.getLogger(__name__)
+
+RECONNECT_PAUSE = 1.0
+_DISCONNECT_REPLY = MsgHubAction(MsgHubAction.UPSTREAM_DISCONNECT).bytes()  # what the hub would answer
+
+
+def _is_disconnect_request(frame: bytes) -> bool:
+    offset = payload_offset(frame)
+    return frame[offset - 1] == MsgHubAction.TYPE and frame[offset] == MsgHubAction.DISCONNECT
 
 class ClientState:
     """What a script switched on at the hub, so that it can be switched off after the script is gone"""
@@ -58,9 +67,9 @@ class ClientState:
             yield MsgPortInputFmtSetupSingle(port, mode, delta=1, update_enable=0).bytes()
         for port in self.driven_ports:
             if port in virtual_ports:
-                yield MsgPortOutput(port, Motor.SUBCMD_START_POWER_GROUPED, pack('<bb', 0, 0)).bytes()
+                yield MsgPortOutput(port, MotorConstants.SUBCMD_START_POWER_GROUPED, pack('<bb', 0, 0)).bytes()
             else:
-                yield MsgPortOutput(port, Motor.SUBCMD_START_POWER, pack('<b', 0)).bytes()
+                yield MsgPortOutput(port, MotorConstants.SUBCMD_START_POWER, pack('<b', 0)).bytes()
         if self.button_updates:
             yield MsgHubProperties(MsgHubProperties.BUTTON, MsgHubProperties.UPD_DISABLE).bytes()
 
@@ -87,8 +96,13 @@ class Relay:
         while True:
             self._attached.clear()
             self._announcements.clear()
-            hub = await self._connect_hub()
-            await hub.start(self._from_hub)
+            try:
+                hub = await self._connect_hub()
+                await hub.start(self._from_hub)
+            except Exception:  # BlueZ fails connects now and then; keep trying, as a hub holder must
+                log.exception("Failed to connect the hub, retrying")
+                await asyncio.sleep(RECONNECT_PAUSE)
+                continue
             self._hub = hub
             self._hub_ready.set()
             await hub.disconnected.wait()
@@ -136,6 +150,10 @@ class Relay:
         try:
             while True:
                 frame = await read_frame(reader)
+                if _is_disconnect_request(frame):
+                    log.info("Client %s asked to disconnect the hub: answering for it, the hub stays", peer)
+                    writer.write(_DISCONNECT_REPLY)
+                    continue
                 state.track(frame)
                 await hub.write(frame)
         except asyncio.IncompleteReadError:

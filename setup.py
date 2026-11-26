@@ -1,7 +1,7 @@
 from setuptools import setup
 import os
 
-version = "1.3.0"
+version = "2.0.0"
 tag = os.getenv("TRAVIS_TAG")
 assert not tag or tag == version, "Travis tag has to match version: %r!=%r" % (tag, version)
 
