@@ -78,11 +78,15 @@ class Peripheral:
         return self.aio.virtual_ports
 
     set_port_mode = _blocking(aio.Peripheral.set_port_mode)
+    get_mode_combinations = _blocking(aio.Peripheral.get_mode_combinations)
     get_sensor_data = _blocking(aio.Peripheral.get_sensor_data)
     describe_possible_modes = _blocking(aio.Peripheral.describe_possible_modes)
 
-    def subscribe(self, callback: Optional[Callable], mode: Optional[int] = None, granularity: int = 1) -> None:
-        """Call `callback(*values)` on each value update, on a worker thread. One mode per port."""
+    def subscribe(self, callback: Optional[Callable], mode: aio.Modes = None, granularity: int = 1) -> None:
+        """
+        Call `callback(*values)` on each value update, on a worker thread. One mode per port,
+        or a tuple of modes to get their values at once, see `pylgbst.aio.peripherals.Peripheral.subscribe`.
+        """
         self.hub.loop_thread.run(self.aio.subscribe(self._callbacks.add(callback), mode, granularity))
 
     def unsubscribe(self, callback: Optional[Callable] = None) -> None:

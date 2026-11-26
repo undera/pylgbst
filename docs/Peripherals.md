@@ -19,6 +19,14 @@ There is optional `granularity` parameter for each subscription call, by default
 
 It is possible to subscribe with multiple times for the same sensor. Only one, very last subscribe mode is in effect, with many subscriber callbacks allowed to receive notifications. 
 
+A tuple of modes subscribes to several modes of one sensor at once (the hub's "combined mode"): each notification carries the latest values of all of them, in the given order. The hub allows only some combinations, any subset of one of the lists `get_mode_combinations()` returns; an unsupported tuple raises `ValueError` listing them. A Move Hub reports these:
+
+| Device | Modes that combine |
+|---|---|
+| Motors | `SENSOR_SPEED`, `SENSOR_ANGLE` |
+| Tilt sensor | `MODE_2AXIS_ANGLE`, `MODE_2AXIS_SIMPLE`, `MODE_3AXIS_SIMPLE`, `MODE_IMPACT_COUNT`, `MODE_3AXIS_ACCEL` |
+| Vision sensor | `COLOR_INDEX`, `DISTANCE_INCHES`, `COUNT_2INCH`, `DISTANCE_REFLECTED`, `COLOR_RGB` (TODO: distance, reflected light and RGB values differ from single mode, not decoded right yet) |
+
 Callbacks run on worker threads, so a callback may call other methods of the hub, e.g. start a motor when the button is pressed.
 
 Good practice for any program is to unsubscribe from all sensor subscriptions before exiting.

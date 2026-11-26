@@ -1,9 +1,11 @@
 """Frames below were recorded on a Move Hub (see probe logs in the async rework)"""
 import asyncio
 import unittest
+from contextlib import aclosing
 
 from pylgbst.aio.connection import Connection
-from pylgbst.aio.hub import Hub
+from pylgbst.aio.hub import Hub, MoveHub
+from pylgbst.aio.peripherals import EncodedMotor, TiltSensor
 from pylgbst.exceptions import CommandDiscarded, CommandFailed, HubDisconnected, ReplyTimeout
 from pylgbst.messages import MsgHubProperties, MsgPortInfoRequest, MsgPortOutput, MsgPortInfo
 
@@ -289,3 +291,92 @@ class MoveHubTest(unittest.IsolatedAsyncioTestCase):
             for _ in range(5):
                 await asyncio.sleep(0)
             self.assertEqual([1, 0], presses)
+
+
+def combined_mode_connection():
+    """Move Hub motor A, answering combined mode setup with frames captured from the hub"""
+    conn = move_hub_connection()
+    conn.replies.update({
+        '0500210002': ['07004300020600'],  # possible combinations: modes 1 and 2
+        '060022000180': ['0a004400018001000400'],  # mode 1 value format: one 8 bit dataset
+        '060022000280': ['0a004400028001020400'],  # mode 2 value format: one 32 bit dataset
+        '0500420002': ['0a004700000100000000'],  # lock
+        '0a004100010100000001': ['0a004700010100000001'],
+        '0a004100020100000001': ['0a004700020100000001'],
+        '0500420003': ['07004800800300'],  # unlock: both entries set; the hub may send no first values
+        '0500210000': ['0b004600000300eda10000'],  # port value request: all values
+        '0500420006': ['0a004700000100000000'],  # reset
+    })
+    return conn
+
+
+class CombinedModeTest(unittest.IsolatedAsyncioTestCase):
+    async def test_values_of_two_modes(self):
+        conn = combined_mode_connection()
+        async with MoveHub(conn, request_timeout=0.2) as hub:
+            got = []
+            async with aclosing(hub.motor_A.values((EncodedMotor.SENSOR_ANGLE, EncodedMotor.SENSOR_SPEED))) as values:
+                async for angle, speed in values:
+                    got.append((angle, speed))
+                    if len(got) == 1:
+                        conn.hub_says('0b0046000003066aa00000')  # both values
+                    elif len(got) == 2:
+                        conn.hub_says('0a004600000266a00000')  # angle only: speed stays
+                    else:
+                        break
+            self.assertEqual([(0xa1ed, 0), (0xa06a, 6), (0xa066, 6)], got)
+            self.assertIn(bytes.fromhex('0800420001001020'), conn.written)  # modes in combination order
+            self.assertEqual(bytes.fromhex('0500420006'), conn.written[-1])  # reset once unsubscribed
+            self.assertIsNone(hub.motor_A.combined_mode)
+
+    async def test_mode_with_several_datasets(self):
+        from_tilt = {
+            '0500213a02': ['0700433a021f00'],  # possible combinations: modes 0-4
+            '0600223a0380': ['0a00443a038001020400'],  # impact count: one 32 bit dataset
+            '0600223a0480': ['0a00443a048003000300'],  # 3-axis acceleration: three 8 bit datasets
+            '0500423a02': ['0a00473a000100000000'],
+            '0a00413a030100000001': ['0a00473a030100000001'],
+            '0a00413a040100000001': ['0a00473a040100000001'],
+            '0500423a03': ['0700483a800f00'],  # all four entries set
+            '0500213a00': ['0d00463a000f0500000003c1f7'],  # count 5, then x, y, z
+            '0500423a06': ['0a00473a000100000000'],
+        }
+        conn = move_hub_connection()
+        conn.replies.update(from_tilt)
+        async with MoveHub(conn, request_timeout=0.2) as hub:
+            got = []
+            modes = (TiltSensor.MODE_3AXIS_ACCEL, TiltSensor.MODE_IMPACT_COUNT)
+            async with aclosing(hub.tilt_sensor.values(modes)) as values:
+                async for x, y, z, count in values:
+                    got.append((x, y, z, count))
+                    if len(got) == 1:
+                        conn.hub_says('0900463a000e03c1f6')  # acceleration only, as entries 1-3
+                    else:
+                        break
+            self.assertEqual([(3, -63, -9, 5), (3, -63, -10, 5)], got)
+            self.assertIn(bytes.fromhex('0a00423a010030404142'), conn.written)  # one entry per dataset
+
+    async def test_stray_values_after_reset(self):
+        conn = combined_mode_connection()
+        async with MoveHub(conn, request_timeout=0.2) as hub:
+            got = []
+            await hub.motor_A.subscribe(got.append, (EncodedMotor.SENSOR_SPEED, EncodedMotor.SENSOR_ANGLE))
+            await hub.motor_A.unsubscribe(got.append)
+            conn.hub_says('0a004600000266a00000')  # sent before the hub got the reset
+            await asyncio.sleep(0)
+            self.assertIsNone(hub.motor_A.combined_mode)
+
+    async def test_unsupported_combination(self):
+        async with MoveHub(combined_mode_connection(), request_timeout=0.2) as hub:
+            self.assertEqual([[1, 2]], await hub.motor_A.get_mode_combinations())
+            with self.assertRaisesRegex(ValueError, "can't combine"):
+                await hub.motor_A.subscribe(print, (EncodedMotor.SENSOR_POWER, EncodedMotor.SENSOR_ANGLE))
+
+    async def test_partly_accepted_setup_resets(self):
+        conn = combined_mode_connection()
+        conn.replies['0500420003'] = ['07004800800100']  # only the first entry set
+        async with MoveHub(conn, request_timeout=0.2) as hub:
+            with self.assertRaises(CommandFailed):
+                await hub.motor_A.subscribe(print, (EncodedMotor.SENSOR_SPEED, EncodedMotor.SENSOR_ANGLE))
+            self.assertEqual(bytes.fromhex('0500420006'), conn.written[-1])
+            self.assertIsNone(hub.motor_A.combined_mode)

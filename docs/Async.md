@@ -25,7 +25,7 @@ asyncio.run(main())
 
 - `connect()` uses the [relay](../README.md#keeping-the-hub-connected-between-runs) if it runs, Bluetooth otherwise.
 - Starting the hub waits for its built-in devices, and raises `HubError` if they do not show up.
-- Values arrive through `values()` iterators or through `subscribe(callback)`. Callbacks may be plain functions or coroutine functions; each subscriber gets its own task, so a slow one delays nobody else. Sensor subscribers that fall behind get the latest value only; button presses are all kept.
+- Values arrive through `values()` iterators or through `subscribe(callback)`. Callbacks may be plain functions or coroutine functions; each subscriber gets its own task, so a slow one delays nobody else. Sensor subscribers that fall behind get the latest value only; button presses are all kept. A tuple of modes gets the values of several modes at once, e.g. `motor.values((motor.SENSOR_SPEED, motor.SENSOR_ANGLE))` yields `(speed, angle)`; see [combined modes](Peripherals.md#subscribing-to-sensors).
 - A command waits `request_timeout` seconds (5 by default) for the hub to respond. Motor commands, once started, run as long as they take.
 - Message handlers added with `add_message_handler()` run on the event loop, and must not block.
 

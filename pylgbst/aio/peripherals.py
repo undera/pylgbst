@@ -3,12 +3,13 @@ Async peripherals: devices attached to hub ports, plus the hub's own button
 """
 import logging
 from struct import pack, unpack
-from typing import TYPE_CHECKING, AsyncIterator, Callable, Dict, Hashable, Optional, Tuple
+from typing import TYPE_CHECKING, AsyncIterator, Callable, Dict, Hashable, List, Optional, Tuple, Union
 
 from pylgbst.exceptions import CommandFailed
 from pylgbst.messages import (
-    MsgHubProperties, MsgPortInfo, MsgPortInfoRequest, MsgPortInputFmtSetupSingle, MsgPortInputFmtSingle,
-    MsgPortModeInfo, MsgPortModeInfoRequest, MsgPortOutput, UpstreamMsg,
+    MsgHubProperties, MsgPortInfo, MsgPortInfoRequest, MsgPortInputFmtCombined, MsgPortInputFmtSetupCombined,
+    MsgPortInputFmtSetupSingle, MsgPortInputFmtSingle, MsgPortModeInfo, MsgPortModeInfoRequest, MsgPortOutput,
+    MsgPortValueCombined, UpstreamMsg,
 )
 from pylgbst.utilities import abs_scaled_100, str2hex, usbyte, usint, ushort
 
@@ -76,6 +77,41 @@ class Subscribable:
         self._subscriptions.clear()
 
 
+Modes = Union[None, int, Tuple[int, ...]]  # a tuple of modes subscribes to them all at once, see `CombinedMode`
+
+_DATASET_SIZES = {"8 bit": 1, "16 bit": 2, "32 bit": 4, "FLOAT": 4}
+
+
+class CombinedMode:
+    """
+    Several modes of one port reporting together. Each mode dataset is an entry; the hub reports
+    only the entries that changed, so the latest raw value of each entry is kept here.
+
+    :param modes: in the order their values are delivered
+    :param entries: (mode, dataset) pairs, in the order the hub was set up with
+    :param sizes: value size in bytes of each entry
+    """
+
+    def __init__(self, modes: Tuple[int, ...], entries: List[Tuple[int, int]], sizes: List[int]):
+        self.modes = modes
+        self.entries = entries
+        self.sizes = sizes
+        self._raw: List[Optional[bytes]] = [None] * len(entries)
+
+    def update(self, msg: MsgPortValueCombined) -> None:
+        data = msg.payload
+        for index, size in enumerate(self.sizes):
+            if msg.pointer & (1 << index):
+                self._raw[index], data = data[:size], data[size:]
+
+    def is_complete(self) -> bool:
+        """Every entry has a value"""
+        return None not in self._raw
+
+    def mode_data(self, mode: int) -> bytes:
+        return b"".join(raw for (entry_mode, _), raw in zip(self.entries, self._raw) if entry_mode == mode)
+
+
 class Peripheral(Subscribable):
     """
     :param hub: the hub this peripheral is attached to
@@ -90,6 +126,13 @@ class Peripheral(Subscribable):
         self.port = port
         self.virtual_ports: Tuple[int, ...] = ()
         self.port_mode = MsgPortInputFmtSingle(port, None, False, 1)
+        self.combined_mode: Optional[CombinedMode] = None  # when set, it rules the port instead of `port_mode`
+
+    def _add_subscription(self, key: Hashable) -> Subscription:
+        subscription = super()._add_subscription(key)
+        if self.combined_mode and self.combined_mode.is_complete():  # the hub repeats values only once they change
+            subscription.push(self._combined_values())
+        return subscription
 
     def __repr__(self):
         msg = "%s on port 0x%x" % (self.__class__.__name__, self.port)
@@ -100,6 +143,8 @@ class Peripheral(Subscribable):
     async def set_port_mode(self, mode: int, send_updates: Optional[bool] = None,
                             update_delta: Optional[int] = None) -> None:
         assert not self.virtual_ports, "TODO: support combined mode for sensors"
+        if self.combined_mode:
+            await self._reset_combined_mode()
         if send_updates is None:
             send_updates = self.port_mode.upd_enabled
         if update_delta is None:
@@ -118,10 +163,13 @@ class Peripheral(Subscribable):
         resp = await self.hub.request(MsgPortInfoRequest(self.port, MsgPortInfoRequest.INFO_PORT_VALUE))
         return self.decode_port_data(resp)
 
-    async def subscribe(self, callback: Optional[Callable], mode: Optional[int] = None, granularity: int = 1) -> None:
+    async def subscribe(self, callback: Optional[Callable], mode: Modes = None, granularity: int = 1) -> None:
         """
         Call `callback(*values)` on each value update, in a task of its own, so it may await hub commands.
         One mode per port: subscribers in another mode have to unsubscribe first.
+
+        :param mode: a tuple of modes gets the values of them all at once, in the given order;
+            the hub accepts only some combinations, see `describe_possible_modes()`
         """
         await self._enable_updates(mode, granularity)
         if callback and callback not in self._subscriptions:
@@ -131,7 +179,7 @@ class Peripheral(Subscribable):
         self._remove_subscription(callback)
         await self._disable_updates_if_unused()
 
-    async def values(self, mode: Optional[int] = None, granularity: int = 1) -> AsyncIterator[Tuple]:
+    async def values(self, mode: Modes = None, granularity: int = 1) -> AsyncIterator[Tuple]:
         """Iterate value updates; updates are switched off when the iteration ends"""
         key = object()
         await self._enable_updates(mode, granularity)
@@ -143,24 +191,102 @@ class Peripheral(Subscribable):
             self._remove_subscription(key)
             await self._disable_updates_if_unused()
 
-    async def _enable_updates(self, mode: Optional[int], granularity: int) -> None:
+    async def _enable_updates(self, mode: Modes, granularity: int) -> None:
         mode = self.DEFAULT_MODE if mode is None else mode
-        if self._subscriptions and self.port_mode.mode != mode:
-            raise ValueError("Port is in active mode %r, unsubscribe all subscribers first" % self.port_mode)
-        await self.set_port_mode(mode, True, granularity)
+        active = self.combined_mode.modes if self.combined_mode else self.port_mode.mode
+        if self._subscriptions and active != mode:
+            raise ValueError("Port is in active mode %r, unsubscribe all subscribers first" % (active,))
+        if isinstance(mode, tuple):
+            if active != mode:
+                await self._set_combined_mode(mode, granularity)
+        else:
+            await self.set_port_mode(mode, True, granularity)
 
     async def _disable_updates_if_unused(self) -> None:
-        if not self.port_mode.upd_enabled:
+        if self._subscriptions:
+            return
+        if self.combined_mode:
+            await self._reset_combined_mode()
+        elif not self.port_mode.upd_enabled:
             log.warning("Attempt to unsubscribe while port value updates are off: %s", self)
-        elif not self._subscriptions:
+        else:
             await self.set_port_mode(self.port_mode.mode, False)
 
+    async def _set_combined_mode(self, modes: Tuple[int, ...], granularity: int) -> None:
+        """Lock the port, set up each mode, choose their datasets, unlock: the spec's sequence"""
+        assert not self.virtual_ports, "Virtual ports have no combined mode"
+        if self.combined_mode:
+            await self._reset_combined_mode()
+        hub_order = sorted(set(modes))  # the hub rejects modes out of their combination's order
+        combination = await self._combination_index(hub_order)
+        entries, sizes = [], []
+        for mode in hub_order:
+            fmt = await self.hub.request(
+                MsgPortModeInfoRequest(self.port, mode, MsgPortModeInfoRequest.INFO_VALUE_FORMAT))
+            assert isinstance(fmt, MsgPortModeInfo)
+            entries += [(mode, dataset) for dataset in range(fmt.value["datasets"])]
+            sizes += [_DATASET_SIZES[fmt.value["type"]]] * fmt.value["datasets"]
+        if len(entries) > 16:
+            raise ValueError("Modes %r have %d datasets, combined mode takes up to 16" % (modes, len(entries)))
+
+        setup = MsgPortInputFmtSetupCombined
+        self.port_mode = await self.hub.request(setup(self.port, setup.SUB_LOCK))
+        self.combined_mode = CombinedMode(modes, entries, sizes)
+        try:
+            for mode in hub_order:
+                await self.hub.request(MsgPortInputFmtSetupSingle(self.port, mode, granularity, True))
+            await self.hub.send(setup(self.port, setup.SUB_SET_MODES, combination, entries))
+            resp = await self.hub.request(setup(self.port, setup.SUB_UNLOCK_MULTI_UPDATE))
+            assert isinstance(resp, MsgPortInputFmtCombined)
+            if resp.pointer != (1 << len(entries)) - 1:
+                raise CommandFailed("Port 0x%x accepted entries 0b%s of %r"
+                                    % (self.port, bin(resp.pointer)[2:], entries))
+            # the hub may not send the first values on its own, and later sends only the changed ones
+            await self.hub.request(MsgPortInfoRequest(self.port, MsgPortInfoRequest.INFO_PORT_VALUE))
+        except Exception:
+            await self._reset_combined_mode()  # unlocks the port
+            raise
+
+    async def get_mode_combinations(self) -> List[List[int]]:
+        """Modes the device reports at once, see `subscribe()`: any subset of one of these lists"""
+        info = await self.hub.request(MsgPortInfoRequest(self.port, MsgPortInfoRequest.INFO_MODE_COMBINATIONS))
+        assert isinstance(info, MsgPortInfo)
+        return [combination for combination in info.possible_mode_combinations if combination]
+
+    async def _combination_index(self, modes: List[int]) -> int:
+        combinations = await self.get_mode_combinations()
+        for index, combination in enumerate(combinations):
+            if set(modes) <= set(combination):
+                return index
+        raise ValueError("Port 0x%x can't combine modes %r, its combinations are %r" % (self.port, modes, combinations))
+
+    async def _reset_combined_mode(self) -> None:
+        """Back to single mode 0 without updates"""
+        self.combined_mode = None
+        self.port_mode = await self.hub.request(
+            MsgPortInputFmtSetupCombined(self.port, MsgPortInputFmtSetupCombined.SUB_RESET))
+
     def on_port_value(self, msg: UpstreamMsg) -> None:
-        self._publish(self.decode_port_data(msg))
+        if not isinstance(msg, MsgPortValueCombined):
+            self._publish(self.decode_port_data(msg))
+        elif not self.combined_mode:  # sent before the hub got the reset
+            log.debug("Combined value on port 0x%x, which is not in combined mode: %r", self.port, msg)
+        else:
+            self.combined_mode.update(msg)
+            if self.combined_mode.is_complete():
+                self._publish(self._combined_values())
+
+    def _combined_values(self) -> Tuple:
+        return sum((self.decode_mode_data(mode, self.combined_mode.mode_data(mode))
+                    for mode in self.combined_mode.modes), ())
 
     def decode_port_data(self, msg: UpstreamMsg) -> Tuple:
         """Sensor value according to the current port mode"""
-        log.warning("Unhandled port data: %r", msg)
+        return self.decode_mode_data(self.port_mode.mode, msg.payload)
+
+    def decode_mode_data(self, mode: int, data: bytes) -> Tuple:
+        """Sensor value of `mode` in `data`"""
+        log.warning("Unhandled data in mode %s on port 0x%x: %s", mode, self.port, str2hex(data))
         return ()
 
     async def _write_direct_mode(self, mode: int, params: bytes) -> None:
@@ -228,10 +354,10 @@ class LEDRGB(LEDRGBConstants, Peripheral):
             await self.set_port_mode(self.MODE_INDEX)
             await self._write_direct_mode(self.MODE_INDEX, pack("<B", color))
 
-    def decode_port_data(self, msg):
-        if len(msg.payload) == 3:
-            return usbyte(msg.payload, 0), usbyte(msg.payload, 1), usbyte(msg.payload, 2)
-        return usbyte(msg.payload, 0),
+    def decode_mode_data(self, mode, data):
+        if len(data) == 3:
+            return usbyte(data, 0), usbyte(data, 1), usbyte(data, 2)
+        return usbyte(data, 0),
 
 
 class LEDLightConstants:
@@ -251,8 +377,8 @@ class LEDLight(LEDLightConstants, Peripheral):
     async def get_brightness(self) -> int:
         return (await self.get_sensor_data(self.MODE_BRIGHTNESS))[0]
 
-    def decode_port_data(self, msg):
-        return usbyte(msg.payload, 0),
+    def decode_mode_data(self, mode, data):
+        return usbyte(data, 0),
 
 
 class BaseMotor(Peripheral):
@@ -391,13 +517,12 @@ class EncodedMotor(EncodedMotorConstants, Motor):
         else:
             await self._write_direct_mode(self.SENSOR_ANGLE, pack("<i", degrees))
 
-    def decode_port_data(self, msg):
-        data = msg.payload
-        if self.port_mode.mode == self.SENSOR_ANGLE:
+    def decode_mode_data(self, mode, data):
+        if mode == self.SENSOR_ANGLE:
             return unpack("<l", data[0:4])[0],
-        if self.port_mode.mode == self.SENSOR_SPEED:
+        if mode == self.SENSOR_SPEED:
             return unpack("<b", data[0:1])[0],
-        log.debug("Got motor sensor data while in unexpected mode: %r", self.port_mode)
+        log.debug("Got motor sensor data in unexpected mode %s", mode)
         return ()
 
 
@@ -445,9 +570,7 @@ class TiltSensorConstants:
 
 
 class TiltSensor(TiltSensorConstants, Peripheral):
-    def decode_port_data(self, msg):
-        data = msg.payload
-        mode = self.port_mode.mode
+    def decode_mode_data(self, mode, data):
         if mode == self.MODE_2AXIS_ANGLE:
             return unpack("<b", data[0:1])[0], unpack("<b", data[1:2])[0]
         if mode in (self.MODE_3AXIS_SIMPLE, self.MODE_2AXIS_SIMPLE, self.MODE_ORIENT_CF, self.MODE_IMPACT_CF):
@@ -458,7 +581,7 @@ class TiltSensor(TiltSensorConstants, Peripheral):
             return unpack("<b", data[0:1])[0], unpack("<b", data[1:2])[0], unpack("<b", data[2:3])[0]
         if mode == self.MODE_CALIBRATION:
             return usbyte(data, 0), usbyte(data, 1), usbyte(data, 2)
-        log.debug("Got tilt sensor data while in unexpected mode: %r", self.port_mode)
+        log.debug("Got tilt sensor data in unexpected mode %s", mode)
         return ()
 
 
@@ -479,9 +602,12 @@ class VisionSensorConstants:
 
 
 class VisionSensor(VisionSensorConstants, Peripheral):
-    def decode_port_data(self, msg):
-        data = msg.payload
-        mode = self.port_mode.mode
+    """
+    TODO: in combined mode, distance, reflected light and RGB values differ from the same modes subscribed
+     one at a time (e.g. distance 192 vs 10 with nothing in front), so the decoding here may not fit them
+    """
+
+    def decode_mode_data(self, mode, data):
         if mode == self.COLOR_INDEX:
             return usbyte(data, 0),
         if mode == self.COLOR_DISTANCE_FLOAT:
@@ -549,8 +675,8 @@ class VoltageConstants:
 
 
 class Voltage(VoltageConstants, Peripheral):
-    def decode_port_data(self, msg):
-        return 9600.0 * ushort(msg.payload, 0) / 3893.0 / 1000.0,
+    def decode_mode_data(self, mode, data):
+        return 9600.0 * ushort(data, 0) / 3893.0 / 1000.0,
 
     async def get_voltage(self) -> float:
         """Battery voltage in volts"""
@@ -563,8 +689,8 @@ class CurrentConstants:
 
 
 class Current(CurrentConstants, Peripheral):
-    def decode_port_data(self, msg):
-        return 2444 * ushort(msg.payload, 0) / 4095.0,
+    def decode_mode_data(self, mode, data):
+        return 2444 * ushort(data, 0) / 4095.0,
 
     async def get_current(self) -> float:
         """Battery current in mA"""
@@ -576,9 +702,9 @@ class TemperatureConstants:
 
 
 class Temperature(TemperatureConstants, Peripheral):
-    def decode_port_data(self, msg):
+    def decode_mode_data(self, mode, data):
         magic_offset = 2.1  # brings the reading to the real temperature
-        return (unpack("<h", msg.payload)[0] / 10) - magic_offset,
+        return (unpack("<h", data)[0] / 10) - magic_offset,
 
     async def get_temperature(self) -> float:
         """Degrees Celsius"""
@@ -671,5 +797,5 @@ class RemoteButton(RemoteButtonConstants, Peripheral):
             raise ValueError("Invalid mode: %s" % mode)
         await super()._enable_updates(mode, granularity)
 
-    def decode_port_data(self, msg):
-        return self.button_events[msg.payload], self.button_sets[msg.port]
+    def decode_mode_data(self, mode, data):
+        return self.button_events[data], self.button_sets[self.port]

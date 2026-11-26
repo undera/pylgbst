@@ -67,3 +67,10 @@ hub.motor_A.subscribe(callback, mode=EncodedMotor.SENSOR_ANGLE)
 time.sleep(60) # rotate motor A
 hub.motor_A.unsubscribe(callback)
 ```
+
+Both at once, see [combined modes](Peripherals.md#subscribing-to-sensors):
+
+```python
+hub.motor_A.subscribe(lambda speed, angle: print(speed, angle),
+                      mode=(EncodedMotor.SENSOR_SPEED, EncodedMotor.SENSOR_ANGLE))
+```

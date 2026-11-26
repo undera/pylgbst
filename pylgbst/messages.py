@@ -517,15 +517,30 @@ class MsgPortInputFmtSetupCombined(DownstreamMsg):
     """
     TYPE = 0x42
 
-    def __init__(self, port, mode, delta=1, update_enable=0):
+    SUB_SET_MODES = 0x01
+    SUB_LOCK = 0x02
+    SUB_UNLOCK_MULTI_UPDATE = 0x03
+    SUB_UNLOCK = 0x04
+    SUB_RESET = 0x06
+
+    def __init__(self, port, subcommand, combination=0, entries=()):
+        """
+        :param combination: index in the port's possible mode combinations, for `SUB_SET_MODES`
+        :param entries: (mode, dataset) pairs for `SUB_SET_MODES`, in the combination's mode order;
+            entry N is bit N of the combined value pointer
+        """
         super().__init__()
         self.port = port
-        self.payload = pack("<B", port) + pack("<B", mode) + pack("<I", delta) + pack("<B", update_enable)
-        self.needs_reply = True
+        self.subcommand = subcommand
+        self.payload = pack("<BB", port, subcommand)
+        if subcommand == self.SUB_SET_MODES:
+            self.payload += pack("<B", combination) + bytes(mode << 4 | dataset for mode, dataset in entries)
+        self.needs_reply = subcommand != self.SUB_SET_MODES  # the unlock reply acknowledges the set modes
 
     def is_reply(self, msg):
-        if isinstance(msg, MsgPortInputFmtCombined) and msg.port == self.port:
-            return True
+        if self.subcommand in (self.SUB_UNLOCK_MULTI_UPDATE, self.SUB_UNLOCK):
+            return isinstance(msg, MsgPortInputFmtCombined) and msg.port == self.port
+        return isinstance(msg, MsgPortInputFmtSingle) and msg.port == self.port  # lock and reset get these
 
 
 class MsgPortInfo(UpstreamMsg):
@@ -686,12 +701,16 @@ class MsgPortValueCombined(UpstreamMsg):
     def __init__(self):
         super().__init__()
         self.port = None
+        self.pointer = None
 
     @classmethod
     def decode(cls, data):
+        """`payload` keeps the values of the entries set in `pointer`, lowest bit first"""
         msg = super().decode(data)
         assert isinstance(msg, MsgPortValueCombined)
         msg.port = msg._byte()
+        msg.pointer = unpack(">H", msg.payload[:2])[0]  # big-endian, unlike the one in MsgPortInputFmtCombined
+        msg.payload = msg.payload[2:]
         return msg
 
 
@@ -722,7 +741,7 @@ class MsgPortInputFmtSingle(UpstreamMsg):
         return msg
 
 
-class MsgPortInputFmtCombined(UpstreamMsg):  # TODO
+class MsgPortInputFmtCombined(UpstreamMsg):
     """
     https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#port-input-format-combinedmode
     """
@@ -732,13 +751,19 @@ class MsgPortInputFmtCombined(UpstreamMsg):  # TODO
     def __init__(self):
         super().__init__()
         self.port = None
-        self.combined_control = None
+        self.combination = None
+        self.multi_update = None
+        self.pointer = None
 
     @classmethod
     def decode(cls, data):
         msg = super().decode(data)
-        assert isinstance(msg, MsgPortInputFmtSingle)
+        assert isinstance(msg, MsgPortInputFmtCombined)
         msg.port = msg._byte()
+        control = msg._byte()
+        msg.combination = control & 0x0F
+        msg.multi_update = bool(control & 0x80)
+        msg.pointer = msg._short()  # bit N set: entry N of the setup is active
         return msg
 
 
