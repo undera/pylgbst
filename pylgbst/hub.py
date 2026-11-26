@@ -1,9 +1,9 @@
+import queue
 import threading
 
 from pylgbst import get_connection_auto
 from pylgbst.messages import *
 from pylgbst.peripherals import *
-from pylgbst.utilities import queue
 from pylgbst.utilities import str2hex, usbyte, ushort
 
 log = logging.getLogger("hub")

@@ -11,7 +11,7 @@ class Automata(object):
     BASE_SPEED = 1.0
 
     def __init__(self):
-        super(Automata, self).__init__()
+        super().__init__()
         self.__hub = MoveHub()
         self.__hub.vision_sensor.subscribe(self.__on_sensor)
         self._sensor = []

@@ -18,7 +18,7 @@ class HubMock(Hub):
 
     # noinspection PyUnresolvedReferences
     def __init__(self, conn=None):
-        super(HubMock, self).__init__(conn if conn else ConnectionMock())
+        super().__init__(conn if conn else ConnectionMock())
         self.connection = self.connection
         self.notify_mock = self.connection.notifications
         self.writes = self.connection.writes
@@ -30,7 +30,7 @@ class ConnectionMock(Connection):
     """
 
     def __init__(self):
-        super(ConnectionMock, self).__init__()
+        super().__init__()
         self.writes = []
         self.notifications = []
         self.notification_handler = None
@@ -38,7 +38,7 @@ class ConnectionMock(Connection):
         self.finished = False
 
         self.thr = Thread(target=self.notifier)
-        self.thr.setDaemon(True)
+        self.thr.daemon = True
 
     def set_notify_handler(self, handler):
         self.notification_handler = handler
@@ -63,7 +63,7 @@ class ConnectionMock(Connection):
         """
         :rtype: ConnectionMock
         """
-        super(ConnectionMock, self).connect(hub_mac)
+        super().connect(hub_mac)
         log.debug("Mock connected")
         return self
 
