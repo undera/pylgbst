@@ -9,7 +9,7 @@ from typing import Callable, Dict, List, Optional, Tuple, Type
 from pylgbst.exceptions import HubDisconnected, HubError, ReplyTimeout
 from pylgbst.messages import (
     DevTypes, DownstreamMsg, MsgHubAction, MsgHubAlert, MsgHubAttachedIO, MsgHubProperties, MsgPortOutput,
-    MsgPortValueCombined, MsgPortValueSingle, UpstreamMsg, decode_upstream,
+    MsgPortValueCombined, MsgPortValueSingle, MsgVirtualPortSetup, UpstreamMsg, decode_upstream,
 )
 from pylgbst.utilities import str2hex, usbyte, ushort
 
@@ -152,6 +152,18 @@ class Hub:
         if wait_complete:
             await item.done
         return item.done
+
+    async def connect_ports(self, port_a: int, port_b: int) -> Peripheral:
+        """
+        Pair two motors into a virtual port that drives them in sync.
+        Hubs without virtual port setup, like the Move Hub, raise `CommandFailed`.
+        """
+        reply = await self.request(MsgVirtualPortSetup(MsgVirtualPortSetup.CMD_CONNECT, (port_a, port_b)))
+        return self.peripherals[reply.port]
+
+    async def disconnect_ports(self, pair: Peripheral) -> None:
+        """Split a virtual port back into its motors"""
+        await self.request(MsgVirtualPortSetup(MsgVirtualPortSetup.CMD_DISCONNECT, pair.port))
 
     async def disconnect(self) -> None:
         await self.request(MsgHubAction(MsgHubAction.DISCONNECT))

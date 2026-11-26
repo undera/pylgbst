@@ -164,6 +164,28 @@ class HubTest(unittest.IsolatedAsyncioTestCase):
         self.conn.hub_says('0500820001')
         await task
 
+    async def test_virtual_port_connect_and_disconnect(self):
+        self.conn.hub_says('0f0004000126000000001000000010', '0f0004010126000000001000000010')
+        task = await self._started(self.hub.connect_ports(PORT_A, PORT_B))
+        self.assertEqual(bytes.fromhex('060061010001'), self.conn.written[-1])
+        self.conn.hub_says('090004100226000001')
+        pair = await task
+        self.assertIsInstance(pair, EncodedMotor)
+        self.assertEqual((PORT_A, PORT_B), pair.virtual_ports)
+        self.assertIs(pair, self.hub.peripherals[0x10])
+
+        task = await self._started(self.hub.disconnect_ports(pair))
+        self.assertEqual(bytes.fromhex('0500610010'), self.conn.written[-1])
+        self.conn.hub_says('0500041000')
+        await task
+        self.assertNotIn(0x10, self.hub.peripherals)
+
+    async def test_virtual_port_unsupported(self):
+        task = await self._started(self.hub.connect_ports(PORT_A, PORT_B))
+        self.conn.hub_says('0500056105')  # what the Move Hub answers
+        with self.assertRaises(CommandFailed):
+            await task
+
 
 MOVE_HUB_ATTACH = [
     '0f0004000127000000001000000010', '0f0004010127000000001000000010', '0f0004020125000000001000000010',

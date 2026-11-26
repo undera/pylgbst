@@ -38,6 +38,18 @@ time.sleep(2)
 hub.motor_external.stop()
 ```
 
+### Pairing motors
+
+The Move Hub comes with A and B already paired as `motor_AB`. On hubs that support virtual port setup, any two motors can be paired the same way:
+
+```python
+pair = hub.connect_ports(hub.PORT_A, hub.PORT_B)
+pair.timed(1.5, 0.8, -0.8)
+hub.disconnect_ports(pair)
+```
+
+The Move Hub doesn't support virtual port setup: these calls raise `CommandFailed` there.
+
 Example usage of non-blocking calls to rotate 2 independent motors in parallel:
 ```python
 from pylgbst.hub import MoveHub

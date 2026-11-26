@@ -779,6 +779,9 @@ class MsgVirtualPortSetup(DownstreamMsg):
 
     def __init__(self, cmd, port):
         super().__init__()
+        self.cmd = cmd
+        self.port = port
+        self.needs_reply = True  # the hub answers with an attach or detach of the virtual port
         self.payload = pack("<B", cmd)
         if cmd == self.CMD_DISCONNECT:
             assert isinstance(port, int)
@@ -786,6 +789,13 @@ class MsgVirtualPortSetup(DownstreamMsg):
         else:
             assert isinstance(port, (list, tuple))
             self.payload += pack("<B", port[0]) + pack("<B", port[1])
+
+    def is_reply(self, msg):
+        if not isinstance(msg, MsgHubAttachedIO):
+            return False
+        if self.cmd == self.CMD_DISCONNECT:
+            return msg.event == MsgHubAttachedIO.EVENT_DETACHED and msg.port == self.port
+        return msg.event == MsgHubAttachedIO.EVENT_ATTACHED_VIRTUAL and tuple(msg.payload[2:4]) == tuple(self.port)
 
 
 class MsgPortOutput(DownstreamMsg):

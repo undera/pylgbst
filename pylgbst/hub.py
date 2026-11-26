@@ -75,6 +75,15 @@ class Hub:
         self.loop_thread.run(self.aio.send(msg))
         return None
 
+    def connect_ports(self, port_a: int, port_b: int) -> Peripheral:
+        """Pair two motors into a virtual port that drives them in sync"""
+        pair = self.loop_thread.run(self.aio.connect_ports(port_a, port_b))
+        return self.peripherals[pair.port]
+
+    def disconnect_ports(self, pair: Peripheral) -> None:
+        """Split a virtual port back into its motors"""
+        self.loop_thread.run(self.aio.disconnect_ports(pair.aio))
+
     def disconnect(self) -> None:
         self.loop_thread.run(self.aio.disconnect())
 
