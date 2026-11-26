@@ -13,7 +13,7 @@ Methods to activate motors are:
 
 Parameter `speed_secondary` is used when it is motor group of `motor_AB` running together. By default, `speed_secondary` equals `speed_primary`.
 
-Parameter `wait_complete` controls whether a given call blocks execution until the operation has completed. By default, `wait_complete` is `True`.
+Parameter `wait_complete` controls whether a given call blocks execution until the operation has completed. By default, `wait_complete` is `True`. A new command interrupts the one running on the motor: if some thread is waiting for the interrupted one to complete, its call raises `CommandDiscarded`.
 
 Speed values range is `-1.0` to `1.0`, float values. _Note: In group angled mode, total rotation angle is distributed across 2 motors according to motor speeds ratio, see official doc [here](https://lego.github.io/lego-ble-wireless-protocol-docs/index.html#tacho-math)._
 

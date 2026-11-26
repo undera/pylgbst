@@ -92,11 +92,12 @@ async def connect(hub_mac: Optional[str] = None, hub_name: Optional[str] = None,
                   timeout: Optional[float] = None, **scanner_kwargs) -> Connection:
     """
     Connect through a running relay if there is one, otherwise directly over BLE.
-    A relay serves the single hub it holds, so `hub_mac`/`hub_name` apply to BLE only.
+
+    :raises HubError: the relay holds a hub other than the one `hub_mac`/`hub_name` asks for
     """
     if use_relay:
         try:
-            return await RelayConnection.connect()
+            return await RelayConnection.connect(hub_mac=hub_mac, hub_name=hub_name)
         except OSError as exc:
             log.info("No relay at %s:%s (%s), connecting over BLE", RELAY_HOST, RELAY_PORT, exc)
     return await BleakConnection.connect(hub_mac, hub_name, timeout, **scanner_kwargs)

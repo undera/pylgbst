@@ -1,462 +1,210 @@
-import queue
-import threading
+"""
+Blocking hubs: each wraps its `pylgbst.aio.hub` counterpart, running it on a shared event loop thread
+"""
+import logging
+from typing import Callable, Dict, Optional, Type
 
 from pylgbst import get_connection_auto
-from pylgbst.messages import *
-from pylgbst.peripherals import *
-from pylgbst.utilities import str2hex, usbyte, ushort
+from pylgbst.aio import hub as aio
+from pylgbst.aio.hub import MoveHubConstants, RemoteHandsetConstants, SmartHubConstants
+from pylgbst.aio.loop_thread import shared_loop_thread
+from pylgbst.comms import Connection, MOVE_HUB_HARDWARE_HANDLE, to_async
+from pylgbst.messages import DownstreamMsg, MsgHubAttachedIO, MsgPortOutput, UpstreamMsg
+from pylgbst.peripherals import (
+    Button, Current, EncodedMotor, LEDRGB, Peripheral, RemoteButton, TiltSensor, VisionSensor, Voltage, wrap,
+)
 
 log = logging.getLogger("hub")
-
-PERIPHERAL_TYPES = {
-    DevTypes.MOTOR: Motor,
-    DevTypes.SYSTEM_TRAIN_MOTOR: TrainMotor,
-    DevTypes.MOTOR_EXTERNAL_TACHO: EncodedMotor,
-    DevTypes.MOTOR_INTERNAL_TACHO: EncodedMotor,
-    DevTypes.VISION_SENSOR: VisionSensor,
-    DevTypes.RGB_LIGHT: LEDRGB,
-    DevTypes.LED_LIGHT: LEDLight,
-    DevTypes.TILT_EXTERNAL: TiltSensor,
-    DevTypes.TILT_INTERNAL: TiltSensor,
-    DevTypes.CURRENT: Current,
-    DevTypes.VOLTAGE: Voltage,
-    DevTypes.DUPLO_TRAIN_BASE_MOTOR.value: Motor,
-    # DUPLO_TRAIN_BASE_SPEAKER = 42
-    DevTypes.DUPLO_TRAIN_BASE_COLOR_SENSOR: VisionSensor,
-    # DUPLO_TRAIN_BASE_SPEEDOMETER = 44
-    DevTypes.TECHNIC_LARGE_LINEAR_MOTOR: EncodedMotor,
-    DevTypes.TECHNIC_XLARGE_LINEAR_MOTOR: EncodedMotor,
-    DevTypes.TECHNIC_MEDIUM_ANGULAR_MOTOR: EncodedMotor,
-    DevTypes.TECHNIC_LARGE_ANGULAR_MOTOR: EncodedMotor,
-    # DevTypes.TECHNIC_MEDIUM_HUB_GEST_SENSOR: 54
-    DevTypes.REMOTE_CONTROL_BUTTON: RemoteButton,
-    DevTypes.REMOTE_CONTROL_RSSI: Peripheral,
-    # DevTypes.TECHNIC_MEDIUM_HUB_ACCELEROMETER: 57
-    # DevTypes.TECHNIC_MEDIUM_HUB_GYRO_SENSOR: 58
-    DevTypes.TECHNIC_MEDIUM_HUB_TILT_SENSOR: TiltSensor,
-    DevTypes.TECHNIC_MEDIUM_HUB_TEMPERATURE_SENSOR: Temperature,
-    DevTypes.TECHNIC_COLOR_SENSOR: VisionSensor,
-    DevTypes.TECHNIC_DISTANCE_SENSOR: VisionSensor,
-    # DevTypes.TECHNIC_FORCE_SENSOR: 63  # Spike Prime
-    # DevTypes.MARIO_ACCELEROMETER: 71
-    # DevTypes.MARIO_BARCODE_SENSOR: 73
-    # DevTypes.MARIO_PANTS_SENSOR: 74
-    DevTypes.TECHNIC_MEDIUM_ANGULAR_MOTOR_GREY: EncodedMotor,
-    DevTypes.TECHNIC_LARGE_ANGULAR_MOTOR_GREY: EncodedMotor,
-}
 
 
 class Hub:
     """
-    :type connection: pylgbst.comms.Connection
-    :type peripherals: dict[int,Peripheral]
+    Connects and waits for the hub's built-in devices on creation.
+
+    :param connection: what `get_connection_*()` return, or a custom blocking `Connection`;
+        by default, `get_connection_auto()`
+    :raises HubError: built-in devices did not show up
     """
 
-    HUB_HARDWARE_HANDLE = 0x0E
+    HUB_HARDWARE_HANDLE = MOVE_HUB_HARDWARE_HANDLE
+    AIO_CLASS: Type[aio.Hub] = aio.Hub
 
-    def __init__(self, connection=None):
-        self._msg_handlers = []
-        self.peripherals = {}
-        self._sync_request = None
-        self._sync_replies = queue.Queue(1)
-        self._sync_lock = threading.Lock()
-
-        self.add_message_handler(MsgHubAttachedIO, self._handle_device_change)
-        self.add_message_handler(MsgPortOutputFeedback, self._handle_output_feedback)
-        self.add_message_handler(MsgPortValueSingle, self._handle_sensor_data)
-        self.add_message_handler(MsgPortValueCombined, self._handle_sensor_data)
-        self.add_message_handler(MsgGenericError, self._handle_error)
-        self.add_message_handler(MsgHubAction, self._handle_action)
-
-        if not connection:
-            connection = get_connection_auto()  # TODO: how to identify the hub?
+    def __init__(self, connection: Optional[Connection] = None):
+        self.loop_thread = shared_loop_thread()
+        if connection is None:
+            connection = self._default_connection()
         self.connection = connection
-        self.connection.set_notify_handler(self._notify)
-        self.connection.enable_notifications()
+        self.peripherals: Dict[int, Peripheral] = {}
+        self.aio: aio.Hub = self.loop_thread.run(self._create_aio(connection))
+        try:
+            self.loop_thread.run(self.aio.start())
+        except BaseException:
+            self.loop_thread.run(self.aio.close())
+            raise
 
-    def __del__(self):
-        if self.connection and self.connection.is_alive():
-            self.connection.disconnect()
+    def _default_connection(self) -> Connection:
+        return get_connection_auto()
 
-    def add_message_handler(self, classname, callback):
-        self._msg_handlers.append((classname, callback))
+    async def _create_aio(self, connection: Connection) -> aio.Hub:
+        """On the loop: async objects belong to the loop they are created on"""
+        hub = self.AIO_CLASS(to_async(connection))
+        hub.add_message_handler(MsgHubAttachedIO, self._on_attached_io)  # after the async hub's own handler
+        return hub
 
-    def send(self, msg):
-        """
-        :type msg: pylgbst.messages.DownstreamMsg
-        :rtype: pylgbst.messages.UpstreamMsg
-        """
-        log.debug("Send message: %r", msg)
-        msgbytes = msg.bytes()
-        if msg.needs_reply:
-            with self._sync_lock:
-                assert not self._sync_request, "Pending request %r while trying to put %r" % (self._sync_request, msg)
-                self._sync_request = msg
-                log.debug("Waiting for sync reply to %r...", msg)
-
-            self.connection.write(self.HUB_HARDWARE_HANDLE, msgbytes)
-            resp = self._sync_replies.get()
-            log.debug("Fetched sync reply: %r", resp)
-            if isinstance(resp, MsgGenericError):
-                raise RuntimeError(resp.message())
-            return resp
-        else:
-            self.connection.write(self.HUB_HARDWARE_HANDLE, msgbytes)
-            return None
-
-    def _notify(self, handle, data):
-        log.debug("Notification on %s: %s", handle, str2hex(data))
-        for msg in decode_upstream(data):
-            log.debug("Decoded message: %r", msg)
-            self._dispatch(msg)
-
-    def _dispatch(self, msg):
-        with self._sync_lock:
-            if self._sync_request:
-                if self._sync_request.is_reply(msg):
-                    log.debug("Found matching upstream msg: %r", msg)
-                    self._sync_replies.put(msg)
-                    self._sync_request = None
-
-        for msg_class, handler in self._msg_handlers:
-            if isinstance(msg, msg_class):
-                log.debug("Handling msg with %s: %r", handler, msg)
-                handler(msg)
-
-    def _handle_error(self, msg):
-        log.warning("Command error: %s", msg.message())
-        with self._sync_lock:
-            if self._sync_request:
-                self._sync_request = None
-                self._sync_replies.put(msg)
-
-    def _handle_action(self, msg):
-        """
-        :type msg: MsgHubAction
-        """
-        if msg.action == MsgHubAction.UPSTREAM_DISCONNECT:
-            log.warning("Hub disconnects")
-            self.connection.disconnect()
-        elif msg.action == MsgHubAction.UPSTREAM_SHUTDOWN:
-            log.warning("Hub switches off")
-            self.connection.disconnect()
-
-    def _handle_device_change(self, msg):
+    def _on_attached_io(self, msg: MsgHubAttachedIO) -> None:
         if msg.event == MsgHubAttachedIO.EVENT_DETACHED:
-            if msg.port not in self.peripherals:
-                log.warning("Strange: got detach command for port %s that is not attached, will ignore it", msg.port)
-            else:
-                log.info("Detaching peripheral: %s", self.peripherals[msg.port])
-                self.peripherals.pop(msg.port)
-            return
-
-        assert msg.event in (msg.EVENT_ATTACHED, msg.EVENT_ATTACHED_VIRTUAL)
-        port = msg.port
-        dev_type_raw = ushort(msg.payload, 0)
-        dev_type = DevTypes(dev_type_raw) if DevTypes.has_value(dev_type_raw) else DevTypes.UNKNOWN
-
-        if dev_type in PERIPHERAL_TYPES:
-            self.peripherals[port] = PERIPHERAL_TYPES[dev_type](self, port)
+            self.peripherals.pop(msg.port, None)
         else:
-            log.warning("Have no dedicated class for peripheral type 0x%x (%s) on port 0x%x",
-                        dev_type_raw, DevTypes(dev_type).name, port)
+            self.peripherals[msg.port] = wrap(self, self.aio.peripherals[msg.port])
 
-            self.peripherals[port] = Peripheral(self, port)
+    def add_message_handler(self, classname: Type[UpstreamMsg], callback: Callable[[UpstreamMsg], None]) -> None:
+        """`callback` runs on the event loop thread: it must neither block nor call blocking hub methods"""
+        self.aio.add_message_handler(classname, callback)
 
-        log.info("Attached peripheral %s => %s", DevTypes(dev_type).name, self.peripherals[msg.port])
+    def send(self, msg: DownstreamMsg) -> Optional[UpstreamMsg]:
+        """
+        Send a message; return the hub's reply if the message gets one.
+        Port output commands return once the port completes them, or with `wait_complete=False`, starts them.
+        """
+        if isinstance(msg, MsgPortOutput):
+            self.loop_thread.run(self.aio.output(msg, msg.wait_complete))
+            return None
+        msg.bytes()  # some messages decide on `needs_reply` while encoding
+        if msg.needs_reply:
+            return self.loop_thread.run(self.aio.request(msg))
+        self.loop_thread.run(self.aio.send(msg))
+        return None
 
-        if msg.event == msg.EVENT_ATTACHED:
-            hw_revision = reversed([usbyte(msg.payload, x) for x in range(2, 6)])
-            sw_revision = reversed([usbyte(msg.payload, x) for x in range(6, 10)])
-            # what to do with this info? it's useless, I guess
-            del hw_revision, sw_revision
-        elif msg.event == msg.EVENT_ATTACHED_VIRTUAL:
-            self.peripherals[port].virtual_ports = (usbyte(msg.payload, 2), usbyte(msg.payload, 3))
+    def disconnect(self) -> None:
+        self.loop_thread.run(self.aio.disconnect())
 
-    def _handle_output_feedback(self, msg):
-        assert isinstance(msg, MsgPortOutputFeedback)
-        if msg.port not in self.peripherals:
-            log.warning("Notification on port with no device: %s", msg.port)
-            return
+    def switch_off(self) -> None:
+        self.loop_thread.run(self.aio.switch_off())
 
-        device = self.peripherals[msg.port]
-        if hasattr(device, "cmd_in_progress"):
-            device.cmd_in_progress = msg.is_in_progress()
-            if device.cmd_in_progress:
-                log.debug("Command on device %s in progress.", device)
-            else:
-                log.debug("Command on device %s completed.", device)
-
-    def _handle_sensor_data(self, msg):
-        assert isinstance(msg, (MsgPortValueSingle, MsgPortValueCombined))
-        if msg.port not in self.peripherals:
-            log.warning("Notification on port with no device: %s", msg.port)
-            return
-
-        device = self.peripherals[msg.port]
-        device.queue_port_data(msg)
-
-    def disconnect(self):
-        self.send(MsgHubAction(MsgHubAction.DISCONNECT))
-
-    def switch_off(self):
-        self.send(MsgHubAction(MsgHubAction.SWITCH_OFF))
+    def _peripheral(self, port: Optional[int]) -> Optional[Peripheral]:
+        return None if port is None else self.peripherals.get(port)
 
 
-class MoveHub(Hub):
-    """
-    Class implementing Lego Boost's MoveHub specifics
+class MoveHub(MoveHubConstants, Hub):
+    """LEGO Boost Move Hub"""
 
-    :type led: LEDRGB
-    :type tilt_sensor: TiltSensor
-    :type button: Button
-    :type current: Current
-    :type voltage: Voltage
-    :type vision_sensor: pylgbst.peripherals.VisionSensor
-    :type port_C: pylgbst.peripherals.Peripheral
-    :type port_D: pylgbst.peripherals.Peripheral
-    :type motor_A: EncodedMotor
-    :type motor_B: EncodedMotor
-    :type motor_AB: EncodedMotor
-    :type motor_external: EncodedMotor
-    """
+    AIO_CLASS = aio.MoveHub
 
-    DEFAULT_NAME = "LEGO Move Hub"
-
-    # PORTS
-    PORT_A = 0x00
-    PORT_B = 0x01
-    PORT_C = 0x02
-    PORT_D = 0x03
-    PORT_AB = 0x10
-    PORT_LED = 0x32
-    PORT_TILT_SENSOR = 0x3A
-    PORT_CURRENT = 0x3B
-    PORT_VOLTAGE = 0x3C
-
-    # noinspection PyTypeChecker
-    def __init__(self, connection=None):
-        self._comm_lock = threading.RLock()
-        if connection is None:
-            connection = get_connection_auto(hub_name=self.DEFAULT_NAME)
-
+    def __init__(self, connection: Optional[Connection] = None):
         super().__init__(connection)
-        self.info = {}
+        self.button = Button(self, self.aio.button)
 
-        # shorthand fields
-        self.button = Button(self)
-        self.led = None
-        self.current = None
-        self.voltage = None
-        self.motor_A = None
-        self.motor_B = None
-        self.motor_AB = None
-        self.vision_sensor = None
-        self.tilt_sensor = None
-        self.motor_external = None
-        self.port_C = None
-        self.port_D = None
+    def _default_connection(self) -> Connection:
+        return get_connection_auto(hub_name=self.DEFAULT_NAME)
 
-        self._wait_for_devices()
-        self._report_status()
+    @property
+    def motor_A(self) -> EncodedMotor:
+        return self.peripherals.get(self.PORT_A)
 
-    def _wait_for_devices(self, get_dev_set=None):
-        if not get_dev_set:
-            get_dev_set = lambda: (self.motor_A, self.motor_B, self.motor_AB, self.led, self.tilt_sensor,
-                                   self.current, self.voltage)
-        for num in range(0, 100):
-            devices = get_dev_set()
-            if all(devices):
-                log.debug("All devices are present: %s", devices)
-                return
-            log.debug("Waiting for builtin devices to appear: %s", devices)
-            time.sleep(0.1)
-        log.warning("Got only these devices: %s", get_dev_set())
+    @property
+    def motor_B(self) -> EncodedMotor:
+        return self.peripherals.get(self.PORT_B)
 
-    def _report_status(self):
-        # maybe add firmware version
-        name = self.send(MsgHubProperties(MsgHubProperties.ADVERTISE_NAME, MsgHubProperties.UPD_REQUEST))
-        mac = self.send(MsgHubProperties(MsgHubProperties.PRIMARY_MAC, MsgHubProperties.UPD_REQUEST))
-        log.info("%s on %s", name.payload, str2hex(mac.payload))
+    @property
+    def motor_AB(self) -> EncodedMotor:
+        return self.peripherals.get(self.PORT_AB)
 
-        voltage = self.send(MsgHubProperties(MsgHubProperties.VOLTAGE_PERC, MsgHubProperties.UPD_REQUEST))
-        assert isinstance(voltage, MsgHubProperties)
-        log.info("Voltage: %s%%", usbyte(voltage.parameters, 0))
+    @property
+    def led(self) -> LEDRGB:
+        return self.peripherals.get(self.PORT_LED)
 
-        voltage = self.send(MsgHubAlert(MsgHubAlert.LOW_VOLTAGE, MsgHubAlert.UPD_REQUEST))
-        assert isinstance(voltage, MsgHubAlert)
-        if not voltage.is_ok():
-            log.warning("Low voltage, check power source (maybe replace battery)")
+    @property
+    def tilt_sensor(self) -> TiltSensor:
+        return self.peripherals.get(self.PORT_TILT_SENSOR)
 
-    # noinspection PyTypeChecker
-    def _handle_device_change(self, msg):
-        with self._comm_lock:
-            super()._handle_device_change(msg)
-            if (
-                    isinstance(msg, MsgHubAttachedIO)
-                    and msg.event != MsgHubAttachedIO.EVENT_DETACHED
-            ):
-                port = msg.port
-                if port == self.PORT_A:
-                    self.motor_A = self.peripherals[port]
-                elif port == self.PORT_B:
-                    self.motor_B = self.peripherals[port]
-                elif port == self.PORT_AB:
-                    self.motor_AB = self.peripherals[port]
-                elif port == self.PORT_C:
-                    self.port_C = self.peripherals[port]
-                elif port == self.PORT_D:
-                    self.port_D = self.peripherals[port]
-                elif port == self.PORT_LED:
-                    self.led = self.peripherals[port]
-                elif port == self.PORT_TILT_SENSOR:
-                    self.tilt_sensor = self.peripherals[port]
-                elif port == self.PORT_CURRENT:
-                    self.current = self.peripherals[port]
-                elif port == self.PORT_VOLTAGE:
-                    self.voltage = self.peripherals[port]
+    @property
+    def current(self) -> Current:
+        return self.peripherals.get(self.PORT_CURRENT)
 
-                if type(self.peripherals[port]) == VisionSensor:
-                    self.vision_sensor = self.peripherals[port]
-                elif type(self.peripherals[port]) == EncodedMotor and port not in (
-                        self.PORT_A,
-                        self.PORT_B,
-                        self.PORT_AB,
-                ):
-                    self.motor_external = self.peripherals[port]
+    @property
+    def voltage(self) -> Voltage:
+        return self.peripherals.get(self.PORT_VOLTAGE)
+
+    @property
+    def port_C(self) -> Optional[Peripheral]:
+        return self.peripherals.get(self.PORT_C)
+
+    @property
+    def port_D(self) -> Optional[Peripheral]:
+        return self.peripherals.get(self.PORT_D)
+
+    @property
+    def vision_sensor(self) -> Optional[VisionSensor]:
+        sensor = self.aio.vision_sensor
+        return self._peripheral(sensor.port if sensor else None)
+
+    @property
+    def motor_external(self) -> Optional[EncodedMotor]:
+        motor = self.aio.motor_external
+        return self._peripheral(motor.port if motor else None)
 
 
-class SmartHub(Hub):
-    """
-    Class implementing Lego SmartHub specifics
-    https://www.lego.com/en-pt/product/hub-88009
+class SmartHub(SmartHubConstants, Hub):
+    """LEGO Powered Up Smart Hub, https://www.lego.com/en-pt/product/hub-88009"""
 
-    :type led: LEDRGB
-    :type current: Current
-    :type voltage: Voltage
-    :type port_A: Peripheral
-    :type port_B: Peripheral
-    """
+    AIO_CLASS = aio.SmartHub
 
-    DEFAULT_NAME = "Smart Hub"
+    def __init__(self, connection: Optional[Connection] = None):
+        super().__init__(connection)
+        self.button = Button(self, self.aio.button)
 
-    # PORTS
-    PORT_A = 0x00
-    PORT_B = 0x01
-    PORT_LED = 0x32
-    PORT_CURRENT = 0x3B
-    PORT_VOLTAGE = 0x3C
+    def _default_connection(self) -> Connection:
+        return get_connection_auto(hub_name=self.DEFAULT_NAME)
 
-    def __init__(self, connection=None):
-        if connection is None:
-            connection = get_connection_auto(hub_name=self.DEFAULT_NAME)
+    @property
+    def led(self) -> LEDRGB:
+        return self.peripherals.get(self.PORT_LED)
 
+    @property
+    def current(self) -> Current:
+        return self.peripherals.get(self.PORT_CURRENT)
+
+    @property
+    def voltage(self) -> Voltage:
+        return self.peripherals.get(self.PORT_VOLTAGE)
+
+    @property
+    def port_A(self) -> Optional[Peripheral]:
+        return self.peripherals.get(self.PORT_A)
+
+    @property
+    def port_B(self) -> Optional[Peripheral]:
+        return self.peripherals.get(self.PORT_B)
+
+
+class RemoteHandset(RemoteHandsetConstants, Hub):
+    """LEGO Powered Up remote handset"""
+
+    AIO_CLASS = aio.RemoteHandset
+
+    def __init__(self, connection: Optional[Connection] = None, address: Optional[str] = None):
+        self._address = address
         super().__init__(connection)
 
-        self.button = Button(self)
-        self.led = None
-        self.port_A = None
-        self.port_B = None
-        self.current = None
-        self.voltage = None
+    def _default_connection(self) -> Connection:
+        return get_connection_auto(hub_mac=self._address, hub_name=self.DEFAULT_NAME)
 
-        self._wait_for_devices()
+    @property
+    def port_A(self) -> RemoteButton:
+        return self.peripherals.get(self.PORT_A)
 
-    def _wait_for_devices(self, get_dev_set=None):
-        if not get_dev_set:
-            get_dev_set = lambda: (self.led, self.current, self.voltage)
+    @property
+    def port_B(self) -> RemoteButton:
+        return self.peripherals.get(self.PORT_B)
 
-        for num in range(0, 100):
-            devices = get_dev_set()
-            if all(devices):
-                log.debug("All devices are present: %s", devices)
-                return
-            log.debug("Waiting for builtin devices to appear: %s", devices)
-            time.sleep(0.1)
-        log.warning("Got only these devices: %s", get_dev_set())
+    @property
+    def led(self) -> LEDRGB:
+        return self.peripherals.get(self.PORT_LED)
 
-    # noinspection PyTypeChecker
-    def _handle_device_change(self, msg):
-        super()._handle_device_change(msg)
-        if (
-                isinstance(msg, MsgHubAttachedIO)
-                and msg.event != MsgHubAttachedIO.EVENT_DETACHED
-        ):
-            port = msg.port
-            if port == self.PORT_A:
-                self.port_A = self.peripherals[port]
-            elif port == self.PORT_B:
-                self.port_B = self.peripherals[port]
-            elif port == self.PORT_LED:
-                self.led = self.peripherals[port]
-            elif port == self.PORT_CURRENT:
-                self.current = self.peripherals[port]
-            elif port == self.PORT_VOLTAGE:
-                self.voltage = self.peripherals[port]
+    @property
+    def voltage(self) -> Voltage:
+        return self.peripherals.get(self.PORT_VOLTAGE)
 
-
-class RemoteHandset(Hub):
-    """
-    Class implementing remote handset specifics
-
-    :type led: LEDRGB
-    :type current: Current
-    :type voltage: Voltage
-    :type port_A: RemoteButton
-    :type port_B: RemoteButton
-    """
-
-    DEFAULT_NAME = "Remote Handset"
-
-    # PORTS
-    PORT_A = 0x00
-    PORT_B = 0x01
-    PORT_LED = 0x34
-    PORT_VOLTAGE = 0x3B
-    PORT_RSSI = 0x3C
-
-    def __init__(self, connection=None, address=None):
-        if connection is None:
-            connection = get_connection_auto(hub_mac=address, hub_name=self.DEFAULT_NAME)
-
-        super().__init__(connection)
-
-        self.led = None
-        self.port_A = None
-        self.port_B = None
-        self.port_RSSI = None
-        self.voltage = None
-
-        self._wait_for_devices()
-
-    def _wait_for_devices(self, get_dev_set=None):
-        if not get_dev_set:
-            get_dev_set = lambda: (self.port_A, self.port_B, self.port_RSSI, self.led, self.voltage)
-
-        for num in range(0, 100):
-            devices = get_dev_set()
-            if all(devices):
-                log.debug("All devices are present: %s", devices)
-                return
-            log.debug("Waiting for builtin devices to appear: %s", devices)
-            time.sleep(0.1)
-        log.warning("Got only these devices: %s", get_dev_set())
-
-    # noinspection PyTypeChecker
-    def _handle_device_change(self, msg):
-        super()._handle_device_change(msg)
-        if (
-                isinstance(msg, MsgHubAttachedIO)
-                and msg.event != MsgHubAttachedIO.EVENT_DETACHED
-        ):
-            port = msg.port
-            if port == self.PORT_A:
-                self.port_A = self.peripherals[port]
-            elif port == self.PORT_B:
-                self.port_B = self.peripherals[port]
-            elif port == self.PORT_LED:
-                self.led = self.peripherals[port]
-            elif port == self.PORT_VOLTAGE:
-                self.voltage = self.peripherals[port]
-            elif port == self.PORT_RSSI:
-                self.port_RSSI = self.peripherals[port]
+    @property
+    def port_RSSI(self) -> Peripheral:
+        return self.peripherals.get(self.PORT_RSSI)

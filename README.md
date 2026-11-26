@@ -4,7 +4,7 @@ _Move Hub is central controller block of [LEGO® Boost Robotics Set](https://www
 
 In fact, Move Hub is just a Bluetooth hardware piece, and all manipulations with it are made by commands passed through Bluetooth Low Energy (BLE) wireless protocol. One of the ways to issue these commands is to write Python program using this library.
 
-The best way to start is to look into [`demo.py`](examples/demo.py) file, and run it (assuming you have installed library).
+The best way to start is to look into [`demo.py`](examples/demo.py) file, written with the [async API](docs/Async.md), and run it (assuming you have installed library).
 
 If you have Vernie assembled, you might run scripts from [`examples/vernie`](examples/vernie) directory.
 
@@ -32,11 +32,11 @@ If you have Vernie assembled, you might run scripts from [`examples/vernie`](exa
 - [push button](docs/MoveHub.md#push-button) status subscription
 - [battery voltage and current](docs/VoltageCurrent.md) subscription available
 - [relay](#keeping-the-hub-connected-between-runs) that holds the hub connection between script runs
+- [async API](docs/Async.md), with the blocking API running on top of it
+- [errors](docs/Async.md#errors) raised for failed commands, timeouts and lost connections
 
 
 ## Usage
-
-_Please note that this library requires one of Bluetooth backend libraries to be installed, please read section [here](#bluetooth-backend-prerequisites) for details._
 
 Install library like this: 
 ```bash
@@ -88,7 +88,9 @@ python3 -m pylgbst.aio.relay --name "LEGO Move Hub"   # or --mac AA:BB:CC:DD:EE:
 
 Scripts need no changes: `get_connection_auto()`, and thus `MoveHub()` with no arguments, use the relay at `127.0.0.1:9090` when one is running, and fall back to Bluetooth otherwise. To skip the relay, pass an explicit connection, e.g. `MoveHub(get_connection_bleak(hub_name=...))`.
 
-The relay serves one script at a time; starting another one disconnects the previous. It replays the hub's peripheral announcements to every new script, and when a script exits, it stops the motors and switches off the sensor and button subscriptions that script left on. If the hub disconnects, the relay rescans for it.
+The relay serves one script at a time; starting another one disconnects the previous. It replays the hub's peripheral announcements to every new script, and when a script exits, it stops the motors and switches off the sensor and button subscriptions that script left on. A script's `hub.disconnect()` ends its session, while the hub stays connected. If the hub disconnects, the relay rescans for it.
+
+A script that asks for a particular hub (by `hub_mac` or `hub_name`, as `MoveHub()` does with its default name) fails with `HubError` when the relay holds another one.
 
 ## Roadmap & TODO
 
@@ -102,5 +104,5 @@ The relay serves one script at a time; starting another one disconnects the prev
 - https://github.com/JorgePe/BOOSTreveng - initial source of protocol knowledge
 - https://github.com/nathankellenicki/node-poweredup - JavaScript version of library
 - https://github.com/spezifisch/sphero-python/blob/master/BB8joyDrive.py - example with another approach to bluetooth libs
-- https://github.com/virantha/bricknil - for the lovers of async Python, alternative implementation of library to control PoweredUp Hubs
+- https://github.com/virantha/bricknil - alternative async implementation of library to control PoweredUp Hubs
 - https://virantha.github.io/bricknil/lego_api/lego.html - good infor about modes by BrickNil
