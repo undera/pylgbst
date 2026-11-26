@@ -106,9 +106,11 @@ class Hub:
 
     def _notify(self, handle, data):
         log.debug("Notification on %s: %s", handle, str2hex(data))
+        for msg in decode_upstream(data):
+            log.debug("Decoded message: %r", msg)
+            self._dispatch(msg)
 
-        msg = self._get_upstream_msg(data)
-
+    def _dispatch(self, msg):
         with self._sync_lock:
             if self._sync_request:
                 if self._sync_request.is_reply(msg):
@@ -120,17 +122,6 @@ class Hub:
             if isinstance(msg, msg_class):
                 log.debug("Handling msg with %s: %r", handler, msg)
                 handler(msg)
-
-    def _get_upstream_msg(self, data):
-        msg_type = usbyte(data, 2)
-        msg = None
-        for msg_kind in UPSTREAM_MSGS:
-            if msg_type == msg_kind.TYPE:
-                msg = msg_kind.decode(data)
-                log.debug("Decoded message: %r", msg)
-                break
-        assert msg
-        return msg
 
     def _handle_error(self, msg):
         log.warning("Command error: %s", msg.message())

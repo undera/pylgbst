@@ -3,7 +3,8 @@ import unittest
 from binascii import unhexlify
 
 from pylgbst.hub import Hub, MoveHub
-from pylgbst.messages import MsgHubAction, MsgHubAlert, MsgHubProperties
+from pylgbst.messages import MsgHubAction, MsgHubAlert, MsgHubProperties, MsgPortOutputFeedback, decode_upstream, \
+    encode_length, frame_length, length_size
 from pylgbst.peripherals import VisionSensor
 from pylgbst.utilities import usbyte
 from tests import ConnectionMock
@@ -45,6 +46,35 @@ class HubTest(unittest.TestCase):
 
         del hub
         conn.wait_notifications_handled()
+
+    def test_multi_port_feedback_is_split(self):
+        # recorded on a Move Hub: command on A while AB runs, AB discarded+idle, A in progress
+        msgs = decode_upstream(unhexlify('070082100c0001'))
+        self.assertEqual([(0x10, 0x0c), (0x00, 0x01)], [(m.port, m.status) for m in msgs])
+        self.assertTrue(all(isinstance(m, MsgPortOutputFeedback) for m in msgs))
+
+    def test_length_field_round_trip(self):
+        for rest in (2, 125, 126, 127, 300):
+            field = encode_length(rest)
+            self.assertEqual(rest + len(field), frame_length(field), rest)
+
+    def test_long_message_bytes(self):
+        msg = MsgHubProperties(MsgHubProperties.ADVERTISE_NAME, MsgHubProperties.SET, b"x" * 200)
+        data = msg.bytes()
+        self.assertEqual(2, length_size(data[0]))
+        self.assertEqual(len(data), frame_length(data))
+        self.assertEqual(b"x" * 200, MsgHubProperties.decode(data).parameters)
+
+    def test_multi_port_feedback_reaches_each_motor(self):
+        conn = ConnectionMock().connect()
+        hub = Hub(conn)
+        conn.notifications.append('0f0004000127000000001000000010')  # motor on A
+        conn.notifications.append('090004100227000001')  # virtual AB
+        conn.notifications.append('0500821001')  # AB in progress
+        conn.notifications.append('070082100c0001')
+        conn.wait_notifications_handled()
+        self.assertFalse(hub.peripherals[0x10].cmd_in_progress)
+        self.assertTrue(hub.peripherals[0x00].cmd_in_progress)
 
     def test_hub_actions(self):
         conn = ConnectionMock().connect()

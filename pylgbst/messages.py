@@ -25,6 +25,15 @@ def frame_length(length_field):
     return (length_field[0] & LENGTH_LOW_BITS) | (length_field[1] << 7)
 
 
+def encode_length(rest_len):
+    """Length field for a frame whose part after the length field is `rest_len` bytes long"""
+    total = rest_len + 1
+    if total <= LENGTH_LOW_BITS:
+        return pack("<B", total)
+    total += 1  # the length field grows to two bytes
+    return pack("<BB", (total & LENGTH_LOW_BITS) | LENGTH_EXTENDED, total >> 7)
+
+
 def payload_offset(frame):
     """Offset of the payload: the length field, hub id and message type precede it"""
     return length_size(frame[0]) + 2
@@ -41,9 +50,7 @@ class Message:
         """
         see https://lego.github.io/lego-ble-wireless-protocol-docs/#common-message-header
         """
-        msglen = len(self.payload) + 3
-        assert msglen < 127, "TODO: handle longer messages with 2-byte len"
-        return pack("<B", msglen) + pack("<B", self.hub_id) + pack("<B", self.TYPE) + self.payload
+        return encode_length(len(self.payload) + 2) + pack("<B", self.hub_id) + pack("<B", self.TYPE) + self.payload
 
     def __repr__(self):
         # assert self.bytes()  # to trigger any field changes
@@ -76,9 +83,8 @@ class UpstreamMsg(Message):
         see https://lego.github.io/lego-ble-wireless-protocol-docs/#common-message-header
         """
         msg = cls()
-        msg.payload = data
-        msglen = msg._byte()
-        assert msglen < 127, "TODO: handle longer messages with 2-byte len"
+        assert frame_length(data) == len(data), "Frame length mismatch: %s" % str2hex(data)
+        msg.payload = data[length_size(data[0]):]
         hub_id = msg._byte()
         assert hub_id == 0
         msg_type = msg._byte()
@@ -820,7 +826,7 @@ class MsgPortOutputFeedback(UpstreamMsg):
     def decode(cls, data):
         msg = super().decode(data)
         assert isinstance(msg, MsgPortOutputFeedback)
-        assert len(msg.payload) == 2, "TODO: implement multi-port feedback message"
+        assert len(msg.payload) == 2, "Multi-port feedback has to be split by decode_upstream()"
         msg.port = msg._byte()
         msg.status = msg._byte()
         return msg
@@ -848,3 +854,29 @@ UPSTREAM_MSGS = (
     MsgPortValueSingle, MsgPortValueCombined, MsgPortInputFmtSingle, MsgPortInputFmtCombined,
     MsgPortOutputFeedback
 )
+
+
+def decode_upstream(data):
+    """
+    Decode one frame received from the hub into messages. A port output feedback frame
+    may report several ports at once (when commands on overlapping ports, like A and AB,
+    interrupt each other); it is split into one message per port.
+
+    :rtype: list[UpstreamMsg]
+    """
+    offset = payload_offset(data)
+    msg_type = data[offset - 1]
+    for msg_kind in UPSTREAM_MSGS:
+        if msg_type == msg_kind.TYPE:
+            break
+    else:
+        raise ValueError("Unknown upstream message type 0x%x: %s" % (msg_type, str2hex(data)))
+
+    if msg_kind is MsgPortOutputFeedback:
+        body = data[offset:]
+        assert len(body) % 2 == 0, "Odd port feedback payload: %s" % str2hex(data)
+        header = data[offset - 2:offset]  # hub id, type
+        return [msg_kind.decode(encode_length(len(header) + 2) + header + body[i:i + 2])
+                for i in range(0, len(body), 2)]
+
+    return [msg_kind.decode(data)]
