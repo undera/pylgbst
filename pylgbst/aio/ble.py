@@ -22,7 +22,7 @@ LEGO_HUB_CHARACTERISTIC = '00001624-1212-efde-1623-785feabcd123'
 _HELLO = MsgHubProperties(MsgHubProperties.ADVERTISE_NAME, MsgHubProperties.UPD_REQUEST).bytes()
 _SCAN_SLICE = 10.0
 # a connect takes ~1.5s; a hung one must fail early: the hub advertises for only ~10s
-_CONNECT_TIMEOUT = 3.0
+_CONNECT_TIMEOUT = 5.0
 
 
 class BleakConnection(Connection):
