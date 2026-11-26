@@ -1,4 +1,5 @@
 import logging
+import queue
 import time
 import traceback
 from struct import pack, unpack
@@ -15,7 +16,7 @@ from pylgbst.messages import (
     MsgPortModeInfo,
     MsgPortInputFmtSingle,
 )
-from pylgbst.utilities import queue, str2hex, usbyte, ushort, usint, abs_scaled_100
+from pylgbst.utilities import str2hex, usbyte, ushort, usint, abs_scaled_100
 
 log = logging.getLogger("peripherals")
 

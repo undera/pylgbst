@@ -8,7 +8,7 @@ class ColorSorter(MoveHub):
     positions = [COLOR_YELLOW, COLOR_BLUE, COLOR_CYAN, COLOR_RED]
 
     def __init__(self, connection=None):
-        super(ColorSorter, self).__init__(connection)
+        super().__init__(connection)
         self.position = len(self.positions)
         self.color = 0
         self.distance = 10

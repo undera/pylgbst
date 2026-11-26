@@ -21,7 +21,7 @@ LINE_THICKNESS = 2
 
 class FaceTracker(MoveHub):
     def __init__(self, connection=None):
-        super(FaceTracker, self).__init__(connection)
+        super().__init__(connection)
         self._is_smile_on = False
         self.cur_img = None
         self.cur_face = None
@@ -170,7 +170,7 @@ class FaceTracker(MoveHub):
 
     def main(self):
         thr = Thread(target=self.capture)
-        thr.setDaemon(True)
+        thr.daemon = True
         thr.start()
 
         while self.cur_img is None:
@@ -182,7 +182,7 @@ class FaceTracker(MoveHub):
         pyplot.show()
 
         try:
-            while thr.isAlive() and self.connection.is_alive():
+            while thr.is_alive() and self.connection.is_alive():
                 self._process_picture(plt)
         finally:
             self._smile(False)

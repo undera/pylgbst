@@ -1,12 +1,13 @@
 # noinspection PyMethodOverriding
 import logging
+import queue
 import traceback
 from threading import Thread
 
 from gattlib import DiscoveryService, GATTRequester
 
 from pylgbst.comms import Connection
-from pylgbst.utilities import queue, str2hex
+from pylgbst.utilities import str2hex
 
 log = logging.getLogger('comms-gattlib')
 
@@ -23,8 +24,8 @@ class Requester(GATTRequester):
 
         self._notify_queue = queue.Queue()  # this queue is to minimize time spent in gattlib C code
         self.notify_thread = Thread(target=self._dispatch_notifications)
-        self.notify_thread.setDaemon(True)
-        self.notify_thread.setName("Notify queue dispatcher")
+        self.notify_thread.daemon = True
+        self.notify_thread.name = "Notify queue dispatcher"
         self.notify_thread.start()
 
     def on_notification(self, handle, data):
@@ -91,4 +92,4 @@ class GattLibConnection(Connection):
         return self.requester.write_by_handle(handle, data)
 
     def is_alive(self):
-        return self.requester.notify_thread.isAlive()
+        return self.requester.notify_thread.is_alive()

@@ -64,7 +64,7 @@ VERNIE_SINGLE_MOVE = 430
 
 class Vernie(MoveHub):
     def __init__(self, language='en'):
-        super(Vernie, self).__init__()
+        super().__init__()
         self.language = language
 
         while True:

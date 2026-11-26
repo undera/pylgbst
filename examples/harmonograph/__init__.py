@@ -1,8 +1,6 @@
 import logging
 import traceback
 
-from pylgbst import get_connection_auto
-from pylgbst.comms import DebugServerConnection
 from pylgbst.hub import MoveHub
 
 if __name__ == '__main__':

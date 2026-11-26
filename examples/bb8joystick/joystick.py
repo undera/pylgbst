@@ -15,7 +15,7 @@ class Joystick(object):
     RANGE_C = 30
 
     def __init__(self):
-        super(Joystick, self).__init__()
+        super().__init__()
         self._on_joystick = set()
         self.button_pressed = False
         self._angle_A = 0

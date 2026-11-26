@@ -1,11 +1,12 @@
 import logging
+import queue
 import re
 from threading import Thread, Event
 
 from bluepy import btle
 
 from pylgbst.comms import Connection
-from pylgbst.utilities import str2hex, queue
+from pylgbst.utilities import str2hex
 
 log = logging.getLogger('comms-bluepy')
 
@@ -47,8 +48,8 @@ class BluepyThreadedPeripheral:
         self._disconnect_event = Event()
 
         self._dispatcher_thread = Thread(target=self._dispatch_calls)
-        self._dispatcher_thread.setDaemon(True)
-        self._dispatcher_thread.setName("Bluepy call dispatcher")
+        self._dispatcher_thread.daemon = True
+        self._dispatcher_thread.name = "Bluepy call dispatcher"
         self._dispatcher_thread.start()
 
     def _dispatch_calls(self):

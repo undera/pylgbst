@@ -1,7 +1,7 @@
 import logging
 import traceback
 
-from pylgbst.comms import DebugServer, Connection
+from pylgbst.comms import Connection
 
 log = logging.getLogger('pylgbst')
 
@@ -61,26 +61,16 @@ def get_connection_auto(controller='hci0', hub_mac=None, hub_name=None) -> Conne
         get_connection_gattlib,
     ]
 
-    conn = None
     for fn in fns:
         try:
-            logging.info("Trying %s", fn.__name__)
-            return fn(controller, hub_mac, hub_name)
+            log.info("Trying %s", fn.__name__)
+            conn = fn(controller, hub_mac, hub_name)
         except KeyboardInterrupt:
             raise
         except BaseException:
-            logging.debug("Failed: %s", traceback.format_exc())
+            log.debug("Failed: %s", traceback.format_exc())
+        else:
+            log.info("Succeeded with %s", conn.__class__.__name__)
+            return conn
 
-    if conn is None:
-        raise Exception("Failed to autodetect connection, make sure you have installed prerequisites")
-
-    logging.info("Succeeded with %s", conn.__class__.__name__)
-    return conn
-
-
-def start_debug_server(iface="hci0", port=9090):
-    server = DebugServer(get_connection_auto(iface))
-    try:
-        server.start(port)
-    finally:
-        server.connection.disconnect()
+    raise Exception("Failed to autodetect connection, make sure you have installed prerequisites")
