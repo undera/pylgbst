@@ -9,6 +9,7 @@ from typing import Optional
 import bleak
 from bleak.exc import BleakError
 
+from pylgbst.messages import MsgHubProperties
 from .connection import Connection, FrameHandler, RelayConnection, RELAY_HOST, RELAY_PORT
 
 log = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ LEGO_HUB_SERVICE = '00001623-1212-efde-1623-785feabcd123'
 LEGO_HUB_CHARACTERISTIC = '00001624-1212-efde-1623-785feabcd123'
 
 # the hub drops a fresh connection unless it receives something: request the advertising name
-_HELLO = bytes([0x05, 0x00, 0x01, 0x01, 0x05])
+_HELLO = MsgHubProperties(MsgHubProperties.ADVERTISE_NAME, MsgHubProperties.UPD_REQUEST).bytes()
 _SCAN_SLICE = 10.0
 
 

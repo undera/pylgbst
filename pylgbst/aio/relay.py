@@ -11,30 +11,18 @@ One script is served at a time; a new one takes over from the previous. For each
 import argparse
 import asyncio
 import logging
+from struct import pack
 from typing import Awaitable, Callable, Dict, Optional, Set
+
+from pylgbst.messages import (
+    MsgHubAttachedIO, MsgHubProperties, MsgPortInputFmtSetupSingle, MsgPortOutput, payload_offset,
+)
+from pylgbst.peripherals import Motor
 
 from .ble import BleakConnection
 from .connection import Connection, RELAY_HOST, RELAY_PORT, read_frame
 
 log = logging.getLogger(__name__)
-
-MSG_HUB_PROPERTIES = 0x01
-MSG_HUB_ATTACHED_IO = 0x04
-MSG_PORT_INPUT_FMT_SETUP = 0x41
-MSG_PORT_OUTPUT = 0x81
-
-PROP_BUTTON = 0x02
-PROP_UPD_ENABLE = 0x02
-PROP_UPD_DISABLE = 0x03
-
-EVENT_DETACHED = 0x00
-EVENT_ATTACHED_VIRTUAL = 0x02
-
-SUBCMD_START_POWER = 0x01
-SUBCMD_START_POWER_GROUPED = 0x02
-SUBCMD_WRITE_DIRECT = 0x50
-SUBCMD_WRITE_DIRECT_MODE_DATA = 0x51
-
 
 class ClientState:
     """What a script switched on at the hub, so that it can be switched off after the script is gone"""
@@ -45,32 +33,36 @@ class ClientState:
         self.button_updates = False
 
     def track(self, frame: bytes) -> None:
-        msg_type = frame[2]
-        if msg_type == MSG_PORT_INPUT_FMT_SETUP:
-            port, mode, enabled = frame[3], frame[4], frame[9]
+        offset = payload_offset(frame)
+        msg_type, payload = frame[offset - 1], frame[offset:]
+        if msg_type == MsgPortInputFmtSetupSingle.TYPE:  # payload: port, mode, delta(4), update_enable
+            port, mode, enabled = payload[0], payload[1], payload[6]
             if enabled:
                 self.updating_ports[port] = mode
             else:
                 self.updating_ports.pop(port, None)
-        elif msg_type == MSG_PORT_OUTPUT:
-            if frame[5] not in (SUBCMD_WRITE_DIRECT, SUBCMD_WRITE_DIRECT_MODE_DATA):  # those set LEDs, encoders
-                self.driven_ports.add(frame[3])
-        elif msg_type == MSG_HUB_PROPERTIES and frame[3] == PROP_BUTTON:
-            if frame[4] == PROP_UPD_ENABLE:
-                self.button_updates = True
-            elif frame[4] == PROP_UPD_DISABLE:
-                self.button_updates = False
+        elif msg_type == MsgPortOutput.TYPE:  # payload: port, startup/completion flags, subcommand, params
+            port, subcommand = payload[0], payload[2]
+            if subcommand not in (MsgPortOutput.WRITE_DIRECT, MsgPortOutput.WRITE_DIRECT_MODE_DATA):  # LEDs, encoders
+                self.driven_ports.add(port)
+        elif msg_type == MsgHubProperties.TYPE:
+            msg = MsgHubProperties.decode(frame)
+            if msg.property == MsgHubProperties.BUTTON:
+                if msg.operation == MsgHubProperties.UPD_ENABLE:
+                    self.button_updates = True
+                elif msg.operation == MsgHubProperties.UPD_DISABLE:
+                    self.button_updates = False
 
     def undo_frames(self, virtual_ports: Set[int]):
         for port, mode in self.updating_ports.items():
-            yield bytes([0x0A, 0x00, MSG_PORT_INPUT_FMT_SETUP, port, mode, 0x01, 0x00, 0x00, 0x00, 0x00])
+            yield MsgPortInputFmtSetupSingle(port, mode, delta=1, update_enable=0).bytes()
         for port in self.driven_ports:
             if port in virtual_ports:
-                yield bytes([0x08, 0x00, MSG_PORT_OUTPUT, port, 0x11, SUBCMD_START_POWER_GROUPED, 0x00, 0x00])
+                yield MsgPortOutput(port, Motor.SUBCMD_START_POWER_GROUPED, pack('<bb', 0, 0)).bytes()
             else:
-                yield bytes([0x07, 0x00, MSG_PORT_OUTPUT, port, 0x11, SUBCMD_START_POWER, 0x00])
+                yield MsgPortOutput(port, Motor.SUBCMD_START_POWER, pack('<b', 0)).bytes()
         if self.button_updates:
-            yield bytes([0x05, 0x00, MSG_HUB_PROPERTIES, PROP_BUTTON, PROP_UPD_DISABLE])
+            yield MsgHubProperties(MsgHubProperties.BUTTON, MsgHubProperties.UPD_DISABLE).bytes()
 
 
 class Relay:
@@ -78,7 +70,8 @@ class Relay:
         self._connect_hub = connect_hub
         self._hub: Optional[Connection] = None
         self._hub_ready = asyncio.Event()
-        self._attached: Dict[int, bytes] = {}  # port -> attach announcement
+        self._attached: Dict[int, MsgHubAttachedIO] = {}
+        self._announcements: Dict[int, bytes] = {}  # port -> attach frame as the hub sent it, for replay
         self._client: Optional[asyncio.StreamWriter] = None
         self._client_gone: Optional[asyncio.Event] = None
         self._admission = asyncio.Lock()
@@ -93,6 +86,7 @@ class Relay:
         """Keep a hub connected, reconnecting whenever it drops"""
         while True:
             self._attached.clear()
+            self._announcements.clear()
             hub = await self._connect_hub()
             await hub.start(self._from_hub)
             self._hub = hub
@@ -105,15 +99,17 @@ class Relay:
                 self._client.close()
 
     def _virtual_ports(self) -> Set[int]:
-        return {port for port, frame in self._attached.items() if frame[4] == EVENT_ATTACHED_VIRTUAL}
+        return {port for port, msg in self._attached.items() if msg.event == MsgHubAttachedIO.EVENT_ATTACHED_VIRTUAL}
 
     def _from_hub(self, frame: bytes) -> None:
-        if frame[2] == MSG_HUB_ATTACHED_IO:
-            port, event = frame[3], frame[4]
-            if event == EVENT_DETACHED:
-                self._attached.pop(port, None)
+        if frame[payload_offset(frame) - 1] == MsgHubAttachedIO.TYPE:
+            msg = MsgHubAttachedIO.decode(frame)
+            if msg.event == MsgHubAttachedIO.EVENT_DETACHED:
+                self._attached.pop(msg.port, None)
+                self._announcements.pop(msg.port, None)
             else:
-                self._attached[port] = frame
+                self._attached[msg.port] = msg
+                self._announcements[msg.port] = frame
         if self._client:
             self._client.write(frame)
 
@@ -129,8 +125,8 @@ class Relay:
                 log.info("Client %s waits for the hub", peer)
                 await self._hub_ready.wait()
 
-            log.info("Client %s connected, replaying %s attach announcements", peer, len(self._attached))
-            for frame in self._attached.values():  # synchronously with registering: no frame is missed or doubled
+            log.info("Client %s connected, replaying %s attach announcements", peer, len(self._announcements))
+            for frame in self._announcements.values():  # synchronously with registering: no frame is missed or doubled
                 writer.write(frame)
             self._client = writer
             self._client_gone = asyncio.Event()

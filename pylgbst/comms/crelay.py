@@ -5,6 +5,7 @@ from threading import Thread
 
 from pylgbst.aio.connection import RELAY_HOST, RELAY_PORT
 from pylgbst.comms import Connection, MOVE_HUB_HARDWARE_HANDLE
+from pylgbst.messages import frame_length, length_size
 
 log = logging.getLogger('comms-relay')
 
@@ -28,14 +29,15 @@ class RelayConnection(Connection):
         self._reader.start()  # frames the relay sent so far wait in the socket buffer
 
     def _read_frame(self):
-        header = self._stream.read(1)
-        if not header:
+        """:return: next frame, or None when the stream has ended"""
+        length_field = self._stream.read(1)
+        if not length_field:
             return None
-        length = header[0]
-        if length & 0x80:
-            header += self._stream.read(1)
-            length = (length & 0x7F) | (header[1] << 7)
-        frame = header + self._stream.read(length - len(header))
+        length_field += self._stream.read(length_size(length_field[0]) - 1)
+        if len(length_field) < length_size(length_field[0]):
+            return None
+        length = frame_length(length_field)
+        frame = length_field + self._stream.read(length - len(length_field))
         return frame if len(frame) == length else None
 
     def _read(self):

@@ -4,6 +4,7 @@ import unittest
 from pylgbst.aio.connection import Connection, RelayConnection
 from pylgbst.aio.relay import Relay
 from pylgbst.comms import crelay
+from pylgbst.messages import frame_length, length_size, payload_offset
 
 ATTACH_A = bytes.fromhex('0f0004000127000000001000000010')
 ATTACH_AB = bytes.fromhex('090004100227000001')
@@ -139,3 +140,17 @@ class RelayTest(unittest.IsolatedAsyncioTestCase):
         conn.disconnect()
         await self._until(lambda: len(self.hubs[0].written) == 2)  # motor stopped after client left
         await self._until(lambda: not conn.is_alive())
+
+
+class FramingTest(unittest.TestCase):
+    def test_short_frame(self):
+        frame = bytes.fromhex('0500820001')
+        self.assertEqual(1, length_size(frame[0]))
+        self.assertEqual(5, frame_length(frame))
+        self.assertEqual(3, payload_offset(frame))
+
+    def test_extended_frame(self):
+        frame = bytes([0x82, 0x01]) + bytes(128)  # 0x02 | 0x01 << 7 = 130
+        self.assertEqual(2, length_size(frame[0]))
+        self.assertEqual(130, frame_length(frame))
+        self.assertEqual(4, payload_offset(frame))

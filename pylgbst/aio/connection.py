@@ -6,6 +6,8 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Callable, Optional
 
+from pylgbst.messages import frame_length, length_size
+
 log = logging.getLogger(__name__)
 
 RELAY_HOST = '127.0.0.1'
@@ -16,17 +18,13 @@ FrameHandler = Callable[[bytes], None]
 
 async def read_frame(reader: asyncio.StreamReader) -> bytes:
     """
-    Read one LWP3 frame from a byte stream. Frames carry their own total length:
-    one byte, or two bytes when the high bit of the first one is set.
+    Read one LWP3 frame from a byte stream
 
     :raises asyncio.IncompleteReadError: on end of stream
     """
-    header = await reader.readexactly(1)
-    length = header[0]
-    if length & 0x80:
-        header += await reader.readexactly(1)
-        length = (length & 0x7F) | (header[1] << 7)
-    return header + await reader.readexactly(length - len(header))
+    length_field = await reader.readexactly(1)
+    length_field += await reader.readexactly(length_size(length_field[0]) - 1)
+    return length_field + await reader.readexactly(frame_length(length_field) - len(length_field))
 
 
 class Connection(ABC):

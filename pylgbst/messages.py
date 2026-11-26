@@ -7,6 +7,29 @@ from pylgbst.utilities import str2hex
 log = logging.getLogger("hub")
 
 
+# https://lego.github.io/lego-ble-wireless-protocol-docs/#common-message-header
+# A frame starts with its own total length: one byte, or two when the first has this bit set
+LENGTH_EXTENDED = 0x80
+LENGTH_LOW_BITS = 0x7F
+
+
+def length_size(first_byte):
+    """Number of bytes the length field takes, judging by its first byte"""
+    return 2 if first_byte & LENGTH_EXTENDED else 1
+
+
+def frame_length(length_field):
+    """Total frame length, the length field included"""
+    if length_size(length_field[0]) == 1:
+        return length_field[0]
+    return (length_field[0] & LENGTH_LOW_BITS) | (length_field[1] << 7)
+
+
+def payload_offset(frame):
+    """Offset of the payload: the length field, hub id and message type precede it"""
+    return length_size(frame[0]) + 2
+
+
 class Message:
     TYPE = None
 
