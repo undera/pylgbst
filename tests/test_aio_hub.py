@@ -5,7 +5,7 @@ from contextlib import aclosing
 
 from pylgbst.aio.connection import Connection
 from pylgbst.aio.hub import Hub, MoveHub
-from pylgbst.aio.peripherals import EncodedMotor, TiltSensor
+from pylgbst.aio.peripherals import EncodedMotor, TiltSensor, VisionSensor
 from pylgbst.exceptions import CommandDiscarded, CommandFailed, HubDisconnected, ReplyTimeout
 from pylgbst.messages import MsgHubProperties, MsgPortInfoRequest, MsgPortOutput, MsgPortInfo
 
@@ -337,6 +337,23 @@ def combined_mode_connection():
     return conn
 
 
+
+def vision_combined_connection(values):
+    """Move Hub vision sensor on port C, set up for color and distance combined; `values` answers the value request"""
+    conn = move_hub_connection()
+    conn.replies.update({
+        '0500210202': ['07004302024f00'],  # possible combinations: modes 0-3 and 6
+        '060022020080': ['0a004402008001000300'],
+        '060022020180': ['0a004402018001000300'],
+        '0500420202': ['0a004702000100000000'],
+        '0a004102000100000001': ['0a004702000100000001'],
+        '0a004102010100000001': ['0a004702010100000001'],
+        '0500420203': ['07004802800300'],
+        '0500210200': ['080046020003' + values],
+        '0500420206': ['0a004702000100000000'],
+    })
+    return conn
+
 class CombinedModeTest(unittest.IsolatedAsyncioTestCase):
     async def test_values_of_two_modes(self):
         conn = combined_mode_connection()
@@ -398,6 +415,21 @@ class CombinedModeTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual([[1, 2]], await hub.motor_A.get_mode_combinations())
             with self.assertRaisesRegex(ValueError, "can't combine"):
                 await hub.motor_A.subscribe(print, (EncodedMotor.SENSOR_POWER, EncodedMotor.SENSOR_ANGLE))
+
+    async def test_garbled_values_refused(self):
+        conn = vision_combined_connection('ffc0')  # what a Move Hub sends with nothing in front: distance 192
+        async with MoveHub(conn, request_timeout=0.2) as hub:
+            with self.assertRaisesRegex(CommandFailed, "out of range"):
+                await hub.vision_sensor.subscribe(print, (VisionSensor.COLOR_INDEX, VisionSensor.DISTANCE_INCHES))
+            self.assertEqual(bytes.fromhex('0500420206'), conn.written[-1])
+            self.assertIsNone(hub.vision_sensor.combined_mode)
+
+    async def test_plausible_values_accepted(self):
+        async with MoveHub(vision_combined_connection('ff0a'), request_timeout=0.2) as hub:
+            got = asyncio.Queue()
+            await hub.vision_sensor.subscribe(lambda *v: got.put_nowait(v),
+                                              (VisionSensor.COLOR_INDEX, VisionSensor.DISTANCE_INCHES))
+            self.assertEqual((255, 10), await asyncio.wait_for(got.get(), 1))
 
     async def test_partly_accepted_setup_resets(self):
         conn = combined_mode_connection()

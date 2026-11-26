@@ -243,9 +243,19 @@ class Peripheral(Subscribable):
                                     % (self.port, bin(resp.pointer)[2:], entries))
             # the hub may not send the first values on its own, and later sends only the changed ones
             await self.hub.request(MsgPortInfoRequest(self.port, MsgPortInfoRequest.INFO_PORT_VALUE))
+            garbled = [mode for mode in hub_order
+                       if not self.plausible(mode, self.decode_mode_data(mode, self.combined_mode.mode_data(mode)))]
+            if garbled:
+                raise CommandFailed("Port 0x%x sends out of range values for modes %r in combined mode"
+                                    % (self.port, garbled))
         except Exception:
             await self._reset_combined_mode()  # unlocks the port
             raise
+
+    def plausible(self, mode: int, values: Tuple) -> bool:
+        """Whether decoded values are in range for the mode: combined mode refuses a hub that garbles them"""
+        del mode, values
+        return True
 
     async def get_mode_combinations(self) -> List[List[int]]:
         """Modes the device reports at once, see `subscribe()`: any subset of one of these lists"""
@@ -626,8 +636,11 @@ class VisionSensorConstants:
 
 class VisionSensor(VisionSensorConstants, Peripheral):
     """
-    TODO: in combined mode, distance, reflected light and RGB values differ from the same modes subscribed
-     one at a time (e.g. distance 192 vs 10 with nothing in front), so the decoding here may not fit them
+    A Move Hub (firmware as of 2026) garbles this sensor's combined mode, so subscribing to several modes
+    at once raises `CommandFailed` there. Its combined frames have the declared sizes, but the bytes come
+    from one buffer that each mode the sensor runs overwrites from the start. They are the same whatever
+    modes are requested, and leftovers of a mode read earlier show up in them, e.g. distance reads 192
+    with nothing in front and 53 at 2cm. Only the color in the first byte comes out right.
     """
 
     def decode_mode_data(self, mode, data):
@@ -653,6 +666,17 @@ class VisionSensor(VisionSensorConstants, Peripheral):
             return tuple(ushort(data, x * 2) for x in range(8))
         log.debug("Unhandled VisionSensor data in mode %s: %s", mode, str2hex(data))
         return ()
+
+    def plausible(self, mode, values):
+        if mode == self.COLOR_INDEX:
+            return values[0] in COLORS
+        if mode == self.DISTANCE_INCHES:
+            return values[0] <= 10
+        if mode == self.DISTANCE_REFLECTED:
+            return values[0] <= 1.0
+        if mode == self.COLOR_RGB:
+            return max(values) <= 255
+        return True
 
     async def set_color(self, color: int) -> None:
         """Color of the sensor's LED; COLOR_BLACK and COLOR_NONE turn it off"""

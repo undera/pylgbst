@@ -140,12 +140,14 @@ class RelayTest(unittest.IsolatedAsyncioTestCase):
         self.holder.cancel()
         self.announce = [ATTACH_A, ATTACH_AB, ATTACH_LED]
         self.holder = asyncio.create_task(self.relay.hold_hub())
+        await self._until(lambda: self.hubs and self.hubs[-1].written)
+        self.assertEqual([LED_IDLE], self.hubs[-1].written)  # no client yet
         conn, received = await self._client()
         await self._until(lambda: len(received) == 3)
-        self.assertEqual([LED_SERVING], self.hubs[-1].written)
+        self.assertEqual([LED_IDLE, LED_SERVING], self.hubs[-1].written)
         await conn.disconnect()
-        await self._until(lambda: len(self.hubs[-1].written) == 2)
-        self.assertEqual(LED_IDLE, self.hubs[-1].written[1])
+        await self._until(lambda: len(self.hubs[-1].written) == 3)
+        self.assertEqual(LED_IDLE, self.hubs[-1].written[2])
         await asyncio.sleep(0.02)
         self.assertNotIn(LED_FEEDBACK, received)  # the relay's own feedback
 

@@ -8,7 +8,7 @@ One script is served at a time; a new one takes over from the previous. For each
 - replays the attached-IO announcements the hub sent once, at connection time;
 - answers its request to disconnect the hub itself, keeping the hub connected;
 - on its exit, stops the motors it drove and switches off the value updates it enabled.
-The hub's LED shows it: blue while a script is served, red once it is gone.
+The hub's LED shows it: blue while a script is served, red otherwise.
 """
 import argparse
 import asyncio
@@ -99,6 +99,7 @@ class Relay:
         self._announcements: Dict[int, bytes] = {}  # port -> attach frame as the hub sent it, for replay
         self._led_port: Optional[int] = None
         self._led_done: Optional[asyncio.Event] = None  # the hub's feedback on the relay's LED command
+        self._led_idle_task: Optional[asyncio.Task] = None
         self._client: Optional[asyncio.StreamWriter] = None
         self._client_gone: Optional[asyncio.Event] = None
         self._admission = asyncio.Lock()
@@ -154,12 +155,20 @@ class Relay:
                 self._announcements[msg.port] = frame
                 if ushort(msg.payload, 0) == DevTypes.RGB_LIGHT.value:
                     self._led_port = msg.port
+                    self._led_idle_task = asyncio.get_running_loop().create_task(self._show_idle())
         elif msg_type == MsgPortOutputFeedback.TYPE and self._led_done and not self._led_done.is_set():
             if [msg.port for msg in decode_upstream(frame)] == [self._led_port]:  # the relay's own, not a client's
                 self._led_done.set()
                 return
         if self._client:
             self._client.write(frame)
+
+    async def _show_idle(self) -> None:
+        """On a fresh hub connection: red, unless a client got admitted first"""
+        await self._hub_ready.wait()
+        async with self._admission:
+            if self._client is None:
+                await self._show(LED_IDLE)
 
     async def _show(self, led_data: bytes) -> None:
         """Set the hub's LED, waiting for the hub's feedback so that no client gets it"""

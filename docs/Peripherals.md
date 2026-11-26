@@ -25,7 +25,7 @@ A tuple of modes subscribes to several modes of one sensor at once (the hub's "c
 |---|---|
 | Motors | `SENSOR_SPEED`, `SENSOR_ANGLE` |
 | Tilt sensor | `MODE_2AXIS_ANGLE`, `MODE_2AXIS_SIMPLE`, `MODE_3AXIS_SIMPLE`, `MODE_IMPACT_COUNT`, `MODE_3AXIS_ACCEL` |
-| Vision sensor | `COLOR_INDEX`, `DISTANCE_INCHES`, `COUNT_2INCH`, `DISTANCE_REFLECTED`, `COLOR_RGB` (TODO: distance, reflected light and RGB values differ from single mode, not decoded right yet) |
+| Vision sensor | `COLOR_INDEX`, `DISTANCE_INCHES`, `COUNT_2INCH`, `DISTANCE_REFLECTED`, `COLOR_RGB`, as the hub reports. The Move Hub sends garbled values for these, so `subscribe` raises `CommandFailed` there; see `VisionSensor` |
 
 Callbacks run on worker threads, so a callback may call other methods of the hub, e.g. start a motor when the button is pressed.
 
