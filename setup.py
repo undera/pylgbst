@@ -16,7 +16,7 @@ setup(
     url='https://github.com/undera/pylgbst',
     keywords=['LEGO', 'ROBOTICS', 'BLUETOOTH'],
 
-    packages=["pylgbst", "pylgbst.comms"],
+    packages=["pylgbst", "pylgbst.comms", "pylgbst.aio"],
     requires=[],
     extras_require={
         # Note that dbus and gi are normally system packages
